@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminContent from './tabs/AdminContent';
 import RecordContent from './tabs/RecordContent';
 import SettlementContent from './tabs/SettlementContent';
+import GinsengContent from './tabs/GinsengContent';
 import { SalesContent, GuideContent, DevContent } from './tabs/OtherContents';
 import './AppLayout.css';
 
@@ -10,6 +11,7 @@ const ALL_TABS = [
   { id: 'admin',      label: '👥 계정 관리',  roles: ['ADMIN'] },
   { id: 'record',     label: '📋 운행 기록',  roles: ['ADMIN', 'DEV'] },
   { id: 'settlement', label: '💰 업체별 정산', roles: ['ADMIN', 'DEV'] },
+  { id: 'ginseng',    label: '🌿 인삼 매출',  roles: ['ADMIN', 'DEV'] },
   { id: 'sales',      label: '💼 영업',        roles: ['SALES'] },
   { id: 'guide',      label: '📖 가이드',      roles: ['GUIDE'] },
   { id: 'dev',        label: '💻 개발',        roles: ['DEV'] },
@@ -23,10 +25,9 @@ const ROLE_STYLE = {
 };
 
 function AppLayout() {
-  const navigate = useNavigate();
-  const roles    = sessionStorage.getItem('roles') || '';
-  const username = sessionStorage.getItem('username') || '';
-
+  const navigate    = useNavigate();
+  const roles       = sessionStorage.getItem('roles') || '';
+  const username    = sessionStorage.getItem('username') || '';
   const myRoles     = Object.keys(ROLE_STYLE).filter(r => roles.includes(r));
   const mainRole    = myRoles[0] || '';
   const visibleTabs = ALL_TABS.filter(tab => tab.roles.some(r => roles.includes(r)));
@@ -42,6 +43,7 @@ function AppLayout() {
       case 'admin':      return <AdminContent />;
       case 'record':     return <RecordContent />;
       case 'settlement': return <SettlementContent />;
+      case 'ginseng':    return <GinsengContent />;
       case 'sales':      return <SalesContent />;
       case 'guide':      return <GuideContent />;
       case 'dev':        return <DevContent />;
