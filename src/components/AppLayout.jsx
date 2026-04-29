@@ -4,7 +4,8 @@ import AdminContent from './tabs/AdminContent';
 import RecordContent from './tabs/RecordContent';
 import SettlementContent from './tabs/SettlementContent';
 import GinsengContent from './tabs/GinsengContent';
-import { SalesContent, GuideContent, DevContent } from './tabs/OtherContents';
+import GuideFormContent from './tabs/GuideFormContent';
+import { SalesContent, DevContent } from './tabs/OtherContents';
 import './AppLayout.css';
 
 const ALL_TABS = [
@@ -12,8 +13,8 @@ const ALL_TABS = [
   { id: 'record',     label: '📋 운행 기록',  roles: ['ADMIN', 'DEV'] },
   { id: 'settlement', label: '💰 업체별 정산', roles: ['ADMIN', 'DEV'] },
   { id: 'ginseng',    label: '🌿 인삼 매출',  roles: ['ADMIN', 'DEV'] },
+  { id: 'guide-form', label: '📝 가이드 정산', roles: ['GUIDE'] },
   { id: 'sales',      label: '💼 영업',        roles: ['SALES'] },
-  { id: 'guide',      label: '📖 가이드',      roles: ['GUIDE'] },
   { id: 'dev',        label: '💻 개발',        roles: ['DEV'] },
 ];
 
@@ -31,7 +32,6 @@ function AppLayout() {
   const myRoles     = Object.keys(ROLE_STYLE).filter(r => roles.includes(r));
   const mainRole    = myRoles[0] || '';
   const visibleTabs = ALL_TABS.filter(tab => tab.roles.some(r => roles.includes(r)));
-
   const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || '');
 
   useEffect(() => { if (!roles) navigate('/'); }, []);
@@ -44,8 +44,8 @@ function AppLayout() {
       case 'record':     return <RecordContent />;
       case 'settlement': return <SettlementContent />;
       case 'ginseng':    return <GinsengContent />;
+      case 'guide-form': return <GuideFormContent />;
       case 'sales':      return <SalesContent />;
-      case 'guide':      return <GuideContent />;
       case 'dev':        return <DevContent />;
       default:           return null;
     }
