@@ -5,17 +5,19 @@ import RecordContent from './tabs/RecordContent';
 import SettlementContent from './tabs/SettlementContent';
 import GinsengContent from './tabs/GinsengContent';
 import GuideFormContent from './tabs/GuideFormContent';
+import GuideAdminContent from './tabs/GuideAdminContent';
 import { SalesContent, DevContent } from './tabs/OtherContents';
 import './AppLayout.css';
 
 const ALL_TABS = [
-  { id: 'admin',      label: '👥 계정 관리',  roles: ['ADMIN'] },
-  { id: 'record',     label: '📋 운행 기록',  roles: ['ADMIN', 'DEV'] },
-  { id: 'settlement', label: '💰 업체별 정산', roles: ['ADMIN', 'DEV'] },
-  { id: 'ginseng',    label: '🌿 인삼 매출',  roles: ['ADMIN', 'DEV'] },
-  { id: 'guide-form', label: '📝 가이드 정산', roles: ['GUIDE'] },
-  { id: 'sales',      label: '💼 영업',        roles: ['SALES'] },
-  { id: 'dev',        label: '💻 개발',        roles: ['DEV'] },
+  { id: 'admin',        label: '👥 계정 관리',       roles: ['ADMIN'] },
+  { id: 'record',       label: '📋 운행 기록',       roles: ['ADMIN', 'DEV'] },
+  { id: 'settlement',   label: '💰 업체별 정산',     roles: ['ADMIN', 'DEV'] },
+  { id: 'ginseng',      label: '🌿 인삼 매출',       roles: ['ADMIN', 'DEV'] },
+  { id: 'guide-admin',  label: '📂 가이드 정산관리', roles: ['ADMIN', 'DEV'] },
+  { id: 'guide-form',   label: '📝 가이드 정산',     roles: ['GUIDE'] },
+  { id: 'sales',        label: '💼 영업',             roles: ['SALES'] },
+  { id: 'dev',          label: '💻 개발',             roles: ['DEV'] },
 ];
 
 const ROLE_STYLE = {
@@ -40,14 +42,15 @@ function AppLayout() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'admin':      return <AdminContent />;
-      case 'record':     return <RecordContent />;
-      case 'settlement': return <SettlementContent />;
-      case 'ginseng':    return <GinsengContent />;
-      case 'guide-form': return <GuideFormContent />;
-      case 'sales':      return <SalesContent />;
-      case 'dev':        return <DevContent />;
-      default:           return null;
+      case 'admin':       return <AdminContent />;
+      case 'record':      return <RecordContent />;
+      case 'settlement':  return <SettlementContent />;
+      case 'ginseng':     return <GinsengContent />;
+      case 'guide-admin': return <GuideAdminContent />;
+      case 'guide-form':  return <GuideFormContent />;
+      case 'sales':       return <SalesContent />;
+      case 'dev':         return <DevContent />;
+      default:            return null;
     }
   };
 
