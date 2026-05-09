@@ -51,8 +51,13 @@ export const removeCategory = (id) =>
 // 업체별 정산
 export const fetchPlatforms = () =>
   axios.get(`${BASE_URL}/settlement/platforms`, authHeader());
-export const addPlatform = (name) =>
-  axios.post(`${BASE_URL}/settlement/platforms`, { name }, authHeader());
+// 업체 추가 (region, memo 포함)
+export const addPlatform = (name, region, memo) =>
+  axios.post(
+    `${BASE_URL}/settlement/platforms`,
+    { name, region, memo },
+    authHeader(),
+  );
 export const removePlatform = (id) =>
   axios.delete(`${BASE_URL}/settlement/platforms/${id}`, authHeader());
 export const fetchMonthlySettlement = (year, month) =>
@@ -60,10 +65,11 @@ export const fetchMonthlySettlement = (year, month) =>
     ...authHeader(),
     params: { year, month },
   });
-export const saveSettlement = (platformId, year, month, amount, region, memo) =>
+// 정산 저장 (upsert - region 제거, memo 추가)
+export const saveSettlement = (platformId, year, month, amount, memo) =>
   axios.post(
     `${BASE_URL}/settlement/save`,
-    { platformId, year, month, amount, region, memo },
+    { platformId, year, month, amount, memo },
     authHeader(),
   );
 export const deleteSettlement = (id) =>
