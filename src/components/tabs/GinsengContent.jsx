@@ -8,7 +8,6 @@ import {
   toggleGinsengGuide,
   fetchGinsengMonthly,
   saveGinsengRecord,
-  deleteGinsengRecord,
 } from "../../api/auth";
 import "./GinsengContent.css";
 
@@ -16,16 +15,14 @@ export default function GinsengContent() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-
-  const [guides, setGuides] = useState([]); // 활성 가이드
-  const [allGuides, setAllGuides] = useState([]); // 전체 가이드 (관리용)
-  const [records, setRecords] = useState([]);
+  const [guides, setGuides] = useState([]);
+  const [allGuides, setAllGuides] = useState([]);
   const [price, setPrice] = useState(5000);
   const [editPrice, setEditPrice] = useState(false);
   const [tempPrice, setTempPrice] = useState(5000);
-  const [cellMap, setCellMap] = useState({}); // "guideName_day" → {count, priceSnapshot}
+  const [cellMap, setCellMap] = useState({});
   const [saving, setSaving] = useState("");
-  const [showInactive, setShowInactive] = useState(false); // 비활성 가이드 보기
+  const [showInactive, setShowInactive] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [newGuideName, setNewGuideName] = useState("");
   const [error, setError] = useState("");
@@ -46,8 +43,6 @@ export default function GinsengContent() {
       setAllGuides(ag.data);
       setPrice(p.data.pricePerUnit);
       setTempPrice(p.data.pricePerUnit);
-      setRecords(r.data);
-
       const map = {};
       r.data.forEach((rec) => {
         const day = Number(rec.date.split("-")[2]);
@@ -66,49 +61,31 @@ export default function GinsengContent() {
     load();
   }, [load]);
 
-  // 단가 저장
   const handleSavePrice = async () => {
     try {
       await saveGinsengPrice(Number(tempPrice));
       setPrice(Number(tempPrice));
       setEditPrice(false);
-      setSuccess(
-        "단가가 저장되었습니다. 이후 새로 입력하는 데이터부터 적용됩니다.",
-      );
+      setSuccess("단가가 저장되었습니다.");
     } catch {
       setError("단가 저장 실패");
     }
   };
-
-  // 셀 입력
   const handleCellChange = (guideName, day, value) => {
-    const key = `${guideName}_${day}`;
-    setCellMap((prev) => ({ ...prev, [key]: { ...prev[key], count: value } }));
+    setCellMap((prev) => ({
+      ...prev,
+      [`${guideName}_${day}`]: { ...prev[`${guideName}_${day}`], count: value },
+    }));
   };
-
-  // 셀 저장 (blur 시)
   const handleCellBlur = async (guideName, day) => {
     const key = `${guideName}_${day}`;
     const value = cellMap[key]?.count;
+    if (value === "" || value === undefined || value === null) return;
+    const count = parseFloat(value);
+    if (isNaN(count) || count < 0) return;
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
     setSaving(key);
     try {
-      // 빈 값이면 DB에서 삭제
-      if (value === "" || value === undefined || value === null) {
-        const existing = records.find(
-          (r) => r.guideName === guideName && r.date === dateStr,
-        );
-        if (existing) {
-          await deleteGinsengRecord(existing.id);
-          await load();
-        }
-        return;
-      }
-
-      const count = parseFloat(value);
-      if (isNaN(count) || count < 0) return;
-
       await saveGinsengRecord(guideName, dateStr, count);
       await load();
     } catch {
@@ -117,8 +94,6 @@ export default function GinsengContent() {
       setSaving("");
     }
   };
-
-  // 가이드 추가
   const handleAddGuide = async (e) => {
     e.preventDefault();
     setError("");
@@ -134,8 +109,6 @@ export default function GinsengContent() {
       setError(err.response?.data?.error || "추가 실패");
     }
   };
-
-  // 가이드 활성/비활성 토글
   const handleToggleGuide = async (id) => {
     try {
       await toggleGinsengGuide(id);
@@ -145,42 +118,34 @@ export default function GinsengContent() {
     }
   };
 
-  // 정산금액 계산 - priceSnapshot 사용 (저장 시점 단가)
-  const guideTotal = (guideName) =>
-    days.reduce((sum, day) => {
-      const v = parseFloat(cellMap[`${guideName}_${day}`]?.count || 0);
-      return sum + (isNaN(v) ? 0 : v);
+  const guideTotal = (n) =>
+    days.reduce((s, d) => {
+      const v = parseFloat(cellMap[`${n}_${d}`]?.count || 0);
+      return s + (isNaN(v) ? 0 : v);
     }, 0);
-
-  const guideSettlement = (guideName) =>
-    days.reduce((sum, day) => {
-      const cell = cellMap[`${guideName}_${day}`];
-      if (!cell) return sum;
-      const v = parseFloat(cell.count || 0);
-      const p = cell.priceSnapshot || price;
-      return sum + (isNaN(v) ? 0 : v * p);
+  const guideSettlement = (n) =>
+    days.reduce((s, d) => {
+      const c = cellMap[`${n}_${d}`];
+      if (!c) return s;
+      const v = parseFloat(c.count || 0);
+      return s + (isNaN(v) ? 0 : v * (c.priceSnapshot || price));
     }, 0);
-
-  const grandTotal = guides.reduce((sum, g) => sum + guideTotal(g.name), 0);
+  const grandTotal = guides.reduce((s, g) => s + guideTotal(g.name), 0);
   const grandSettlement = guides.reduce(
-    (sum, g) => sum + guideSettlement(g.name),
+    (s, g) => s + guideSettlement(g.name),
     0,
   );
-
-  const percent = (guideName) => {
-    if (grandTotal === 0) return "-";
-    return ((guideTotal(guideName) / grandTotal) * 100).toFixed(1) + "%";
-  };
-
-  // 표시할 가이드 (showInactive면 전체, 아니면 활성만)
+  const percent = (n) =>
+    grandTotal === 0
+      ? "-"
+      : ((guideTotal(n) / grandTotal) * 100).toFixed(1) + "%";
   const displayGuides = showInactive ? allGuides : guides;
-
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const fmt = (n) => Math.round(n).toLocaleString() + "원";
 
   return (
     <div className="ginseng-wrapper">
-      {/* 툴바 */}
       <div className="ginseng-toolbar">
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <select
@@ -205,7 +170,6 @@ export default function GinsengContent() {
               </option>
             ))}
           </select>
-          {/* 비활성 가이드 보기 토글 */}
           <button
             className={showInactive ? "btn-toggle-on" : "btn-toggle-off"}
             onClick={() => setShowInactive(!showInactive)}
@@ -213,9 +177,7 @@ export default function GinsengContent() {
             {showInactive ? "👁 전체 보기 중" : "👁 비활성 포함 보기"}
           </button>
         </div>
-
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {/* 단가 */}
           <div className="price-area">
             <span className="price-label">인삼 단가</span>
             {editPrice ? (
@@ -256,7 +218,6 @@ export default function GinsengContent() {
               </div>
             )}
           </div>
-          {/* 가이드 관리 */}
           <button
             className="btn-outline"
             onClick={() => setShowGuideModal(true)}
@@ -266,10 +227,124 @@ export default function GinsengContent() {
         </div>
       </div>
 
-      {error && <div className="alert alert-error">⚠ {error}</div>}
+      {error && (
+        <div className="alert alert-error" onClick={() => setError("")}>
+          ⚠ {error}
+        </div>
+      )}
       {success && (
         <div className="alert alert-success" onClick={() => setSuccess("")}>
           ✅ {success}
+        </div>
+      )}
+
+      {/* 합계 카드 */}
+      {grandTotal > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: "12px",
+            marginBottom: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "10px",
+              border: "1px solid #e8eaed",
+              padding: "14px 18px",
+              borderLeft: "4px solid #1557b0",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#888",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.4px",
+                marginBottom: "6px",
+              }}
+            >
+              {year}년 {month}월 총 판매량
+            </div>
+            <div
+              style={{ fontSize: "24px", fontWeight: 700, color: "#1557b0" }}
+            >
+              {grandTotal.toLocaleString()}
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#888",
+                  marginLeft: "4px",
+                }}
+              >
+                개
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              background: "#1557b0",
+              borderRadius: "10px",
+              padding: "14px 18px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "rgba(255,255,255,0.7)",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.4px",
+                marginBottom: "6px",
+              }}
+            >
+              총 정산금액
+            </div>
+            <div style={{ fontSize: "24px", fontWeight: 700, color: "#fff" }}>
+              {fmt(grandSettlement)}
+            </div>
+          </div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "10px",
+              border: "1px solid #e8eaed",
+              padding: "14px 18px",
+              borderLeft: "4px solid #059669",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#888",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.4px",
+                marginBottom: "6px",
+              }}
+            >
+              참여 가이드
+            </div>
+            <div
+              style={{ fontSize: "24px", fontWeight: 700, color: "#059669" }}
+            >
+              {guides.filter((g) => guideTotal(g.name) > 0).length}
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#888",
+                  marginLeft: "4px",
+                }}
+              >
+                명
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -333,8 +408,7 @@ export default function GinsengContent() {
                   <td className="td-total">{guideTotal(g.name) || "-"}</td>
                   <td className="td-settle">
                     {guideSettlement(g.name)
-                      ? Math.round(guideSettlement(g.name)).toLocaleString() +
-                        "원"
+                      ? fmt(guideSettlement(g.name))
                       : "-"}
                   </td>
                   <td className="td-percent">
@@ -346,16 +420,19 @@ export default function GinsengContent() {
           </tbody>
           {displayGuides.length > 0 && (
             <tfoot>
-              <tr>
-                <td className="td-guide" style={{ fontWeight: 700 }}>
+              <tr style={{ background: "#f0f4ff" }}>
+                <td
+                  className="td-guide"
+                  style={{ fontWeight: 700, color: "#1557b0" }}
+                >
                   전체 합계
                 </td>
                 {days.map((day) => {
-                  const dayTotal = guides.reduce((sum, g) => {
+                  const dayTotal = guides.reduce((s, g) => {
                     const v = parseFloat(
                       cellMap[`${g.name}_${day}`]?.count || 0,
                     );
-                    return sum + (isNaN(v) ? 0 : v);
+                    return s + (isNaN(v) ? 0 : v);
                   }, 0);
                   return (
                     <td
@@ -363,7 +440,7 @@ export default function GinsengContent() {
                       className="td-cell"
                       style={{
                         fontWeight: 600,
-                        color: "#1d4ed8",
+                        color: "#1557b0",
                         textAlign: "center",
                         fontSize: "11px",
                       }}
@@ -372,13 +449,30 @@ export default function GinsengContent() {
                     </td>
                   );
                 })}
-                <td className="td-total" style={{ fontWeight: 700 }}>
-                  {grandTotal}
+                <td
+                  className="td-total"
+                  style={{
+                    fontWeight: 700,
+                    color: "#1557b0",
+                    fontSize: "14px",
+                  }}
+                >
+                  {grandTotal.toLocaleString()}
                 </td>
-                <td className="td-settle" style={{ fontWeight: 700 }}>
-                  {Math.round(grandSettlement).toLocaleString()}원
+                <td
+                  className="td-settle"
+                  style={{
+                    fontWeight: 700,
+                    color: "#1557b0",
+                    fontSize: "14px",
+                  }}
+                >
+                  {fmt(grandSettlement)}
                 </td>
-                <td className="td-percent" style={{ fontWeight: 700 }}>
+                <td
+                  className="td-percent"
+                  style={{ fontWeight: 700, color: "#1557b0" }}
+                >
                   100%
                 </td>
               </tr>
@@ -386,7 +480,6 @@ export default function GinsengContent() {
           )}
         </table>
       </div>
-
       <p className="ginseng-hint">
         셀 입력 후 탭/클릭 이동 시 자동 저장 · 셀에 마우스 올리면 저장된 단가
         확인 가능
@@ -394,16 +487,25 @@ export default function GinsengContent() {
 
       {/* 가이드 관리 모달 */}
       {showGuideModal && (
-        <div className="modal-bg" onClick={() => setShowGuideModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">가이드 관리</h3>
+        <div className="modal-bg">
+          <div className="modal">
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ margin: 0 }}>
+                가이드 관리
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowGuideModal(false)}
+              >
+                ✕
+              </button>
+            </div>
             <p
               style={{ fontSize: "13px", color: "#888", marginBottom: "1rem" }}
             >
               비활성화된 가이드는 스프레드시트에서 숨겨지지만 데이터는
               유지됩니다.
             </p>
-
             <div
               style={{
                 display: "flex",
@@ -464,7 +566,6 @@ export default function GinsengContent() {
                 <p className="empty">등록된 가이드가 없습니다.</p>
               )}
             </div>
-
             <form
               onSubmit={handleAddGuide}
               style={{ display: "flex", gap: "8px", marginBottom: "1rem" }}
@@ -487,7 +588,6 @@ export default function GinsengContent() {
                 추가
               </button>
             </form>
-
             {error && (
               <p
                 style={{
