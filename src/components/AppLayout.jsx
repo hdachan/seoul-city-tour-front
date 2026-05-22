@@ -49,23 +49,13 @@ export default function AppLayout() {
   const [active, setActive] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!role || isTokenExpired()) {
-      clearSession();
-      return;
-    }
-
-    loadPermissions();
-  }, [loadPermissions, role]);
-
+  // ✅ 함수 먼저 선언
   const loadPermissions = useCallback(async () => {
     // 1) sessionStorage 우선
     try {
       const stored = sessionStorage.getItem("allowedTabs");
-
       if (stored) {
         const parsed = JSON.parse(stored);
-
         if (Array.isArray(parsed) && parsed.length > 0) {
           setAllowedTabIds(parsed);
           setActive(parsed[0]);
@@ -81,11 +71,8 @@ export default function AppLayout() {
         `${BASE_URL}/dev/permissions/${encodeURIComponent(role)}`,
         authHeader(),
       );
-
       const tabs = res.data.allowedTabs || [];
-
       sessionStorage.setItem("allowedTabs", JSON.stringify(tabs));
-
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } catch {
@@ -99,7 +86,6 @@ export default function AppLayout() {
           "guide-admin",
           "sales-admin",
         ],
-
         ROLE_DEV: [
           "record",
           "settlement",
@@ -108,20 +94,25 @@ export default function AppLayout() {
           "sales-admin",
           "dev",
         ],
-
         ROLE_SALES: ["sales"],
-
         ROLE_GUIDE: ["guide-form"],
       };
-
       const tabs = fallback[role] || [];
-
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } finally {
       setLoading(false);
     }
   }, [role]);
+
+  // ✅ 그 다음 useEffect
+  useEffect(() => {
+    if (!role || isTokenExpired()) {
+      clearSession();
+      return;
+    }
+    loadPermissions();
+  }, [loadPermissions, role]);
 
   useEffect(() => {
     const timer = setInterval(
