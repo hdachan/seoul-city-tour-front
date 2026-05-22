@@ -16,7 +16,7 @@ import DevContent from "./tabs/DevContent";
 import axios from "axios";
 import "./AppLayout.css";
 
-const BASE_URL = "http://1.234.65.127:8080/api";
+const BASE_URL = "https://seoul3345.cafe24.com/api";
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
