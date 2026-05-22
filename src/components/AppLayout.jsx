@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   getRoleFromToken,
   isTokenExpired,
@@ -54,15 +54,18 @@ export default function AppLayout() {
       clearSession();
       return;
     }
-    loadPermissions();
-  }, [role]);
 
-  const loadPermissions = async () => {
+    loadPermissions();
+  }, [loadPermissions, role]);
+
+  const loadPermissions = useCallback(async () => {
     // 1) sessionStorage 우선
     try {
       const stored = sessionStorage.getItem("allowedTabs");
+
       if (stored) {
         const parsed = JSON.parse(stored);
+
         if (Array.isArray(parsed) && parsed.length > 0) {
           setAllowedTabIds(parsed);
           setActive(parsed[0]);
@@ -78,8 +81,11 @@ export default function AppLayout() {
         `${BASE_URL}/dev/permissions/${encodeURIComponent(role)}`,
         authHeader(),
       );
+
       const tabs = res.data.allowedTabs || [];
+
       sessionStorage.setItem("allowedTabs", JSON.stringify(tabs));
+
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } catch {
@@ -93,6 +99,7 @@ export default function AppLayout() {
           "guide-admin",
           "sales-admin",
         ],
+
         ROLE_DEV: [
           "record",
           "settlement",
@@ -101,16 +108,20 @@ export default function AppLayout() {
           "sales-admin",
           "dev",
         ],
+
         ROLE_SALES: ["sales"],
+
         ROLE_GUIDE: ["guide-form"],
       };
+
       const tabs = fallback[role] || [];
+
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } finally {
       setLoading(false);
     }
-  };
+  }, [role]);
 
   useEffect(() => {
     const timer = setInterval(
