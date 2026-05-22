@@ -55,7 +55,7 @@ export default function AppLayout() {
       return;
     }
     loadPermissions();
-  }, []);
+  }, [role]);
 
   const loadPermissions = async () => {
     // 1) sessionStorage 우선
