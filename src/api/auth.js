@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://seoul3345.cafe24.com/api";
+const BASE_URL = "http://localhost:8080/api";
 
 // 토큰을 헤더에 담는 함수
 const authHeader = () => ({

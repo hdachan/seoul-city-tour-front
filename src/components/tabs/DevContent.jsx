@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const BASE_URL = "https://seoul3345.cafe24.com/api";
+const BASE_URL = "http://localhost:8080/api";
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });

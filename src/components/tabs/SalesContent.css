@@ -1,0 +1,176 @@
+/* SalesContent.css */
+
+/* 반응형 - 데스크탑/모바일 테이블 전환 */
+@media (min-width: 769px) {
+  .desktop-table {
+    display: block !important;
+  }
+  .mobile-cards {
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none !important;
+  }
+  .mobile-cards {
+    display: flex !important;
+  }
+}
+
+/* 운행일지 표 */
+.sc-table-wrap {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  overflow: visible;
+  margin-bottom: 12px;
+}
+
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 700px;
+}
+
+.sc-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  white-space: nowrap;
+  background: #f8f9fb;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.sc-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+/* 당일 요약 박스 */
+.sc-summary {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  overflow: hidden;
+}
+
+.sc-summary-row {
+  display: flex;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.sc-summary-cell {
+  flex: 1;
+  padding: 10px 12px;
+  text-align: center;
+  border-right: 1px solid #f0f2f5;
+}
+.sc-summary-cell:last-child {
+  border-right: none;
+}
+
+.sc-summary-label {
+  font-size: 10px;
+  color: #aaa;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+
+.sc-summary-value {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 비고 영역 */
+.sc-note {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.sc-note-label {
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sc-note-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1.5px solid #1557b0;
+  border-radius: 7px;
+  font-size: 13px;
+  outline: none;
+}
+
+/* 모바일 카드 */
+.sc-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  padding: 12px 14px;
+}
+
+.sc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sc-card-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+
+/* 타입 뱃지 */
+.type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.type-badge-업무 {
+  background: #e8f0fe;
+  color: #1557b0;
+}
+.type-badge-주유 {
+  background: #fef3c7;
+  color: #92400e;
+}
+.type-badge-휴가 {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+/* 날짜 드롭다운 */
+.sc-date-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+  .sc-summary-cell {
+    padding: 8px 6px;
+  }
+  .sc-summary-value {
+    font-size: 12px;
+  }
+  .sc-summary-label {
+    font-size: 9px;
+  }
+}

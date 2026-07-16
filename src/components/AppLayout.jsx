@@ -16,7 +16,7 @@ import DevContent from "./tabs/DevContent";
 import axios from "axios";
 import "./AppLayout.css";
 
-const BASE_URL = "https://seoul3345.cafe24.com/api";
+const BASE_URL = "http://localhost:8080/api";
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
@@ -48,10 +48,9 @@ export default function AppLayout() {
   const [allowedTabIds, setAllowedTabIds] = useState([]);
   const [active, setActive] = useState("");
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false); // 모바일 더보기 메뉴
 
-  // ✅ 함수 먼저 선언
   const loadPermissions = useCallback(async () => {
-    // 1) sessionStorage 우선
     try {
       const stored = sessionStorage.getItem("allowedTabs");
       if (stored) {
@@ -65,7 +64,6 @@ export default function AppLayout() {
       }
     } catch {}
 
-    // 2) 서버에서 직접 가져옴
     try {
       const res = await axios.get(
         `${BASE_URL}/dev/permissions/${encodeURIComponent(role)}`,
@@ -76,7 +74,6 @@ export default function AppLayout() {
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } catch {
-      // 3) 폴백 기본값
       const fallback = {
         ROLE_ADMIN: [
           "admin",
@@ -105,7 +102,6 @@ export default function AppLayout() {
     }
   }, [role]);
 
-  // ✅ 그 다음 useEffect
   useEffect(() => {
     if (!role || isTokenExpired()) {
       clearSession();
@@ -130,6 +126,15 @@ export default function AppLayout() {
   const visibleTabs = ALL_TABS.filter((t) => allowedTabIds.includes(t.id));
   const currentItem = ALL_TABS.find((n) => n.id === active);
   const roleLabel = ROLE_LABEL[role] || role?.replace("ROLE_", "") || "";
+
+  // 모바일 바텀 네비: 최대 4개 + 더보기
+  const bottomTabs = visibleTabs.slice(0, 4);
+  const extraTabs = visibleTabs.slice(4);
+
+  const handleTabClick = (id) => {
+    setActive(id);
+    setMenuOpen(false);
+  };
 
   const renderContent = () => {
     if (!allowedTabIds.includes(active)) return null;
@@ -175,6 +180,7 @@ export default function AppLayout() {
 
   return (
     <div className="al-root">
+      {/* 헤더 */}
       <header className="al-header">
         <div className="al-header-left">
           <span className="al-logo">🗺</span>
@@ -190,6 +196,7 @@ export default function AppLayout() {
       </header>
 
       <div className="al-body">
+        {/* 데스크탑 사이드바 */}
         <nav className="al-sidebar">
           <div className="al-nav-section">메뉴</div>
           {visibleTabs.map((item) => (
@@ -204,6 +211,7 @@ export default function AppLayout() {
           ))}
         </nav>
 
+        {/* 메인 */}
         <main className="al-main">
           <div className="al-page-title">
             <span className="al-page-icon">{currentItem?.icon}</span>
@@ -212,6 +220,64 @@ export default function AppLayout() {
           <div className="al-content">{renderContent()}</div>
         </main>
       </div>
+
+      {/* 모바일 바텀 네비게이션 */}
+      <nav className="al-bottom-nav">
+        <div className="al-bottom-nav-inner">
+          {bottomTabs.map((item) => (
+            <button
+              key={item.id}
+              className={`al-bottom-item ${active === item.id ? "active" : ""}`}
+              onClick={() => handleTabClick(item.id)}
+            >
+              <span className="al-bottom-icon">{item.icon}</span>
+              <span className="al-bottom-label">{item.label}</span>
+            </button>
+          ))}
+          {extraTabs.length > 0 && (
+            <button
+              className={`al-bottom-item ${menuOpen ? "active" : ""}`}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <span className="al-bottom-icon">☰</span>
+              <span className="al-bottom-label">더보기</span>
+            </button>
+          )}
+        </div>
+        {/* 더보기 메뉴 */}
+        {menuOpen && (
+          <div
+            style={{
+              background: "#fff",
+              borderTop: "1px solid #e8eaed",
+              padding: "8px 0",
+            }}
+          >
+            {extraTabs.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleTabClick(item.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  width: "100%",
+                  padding: "12px 20px",
+                  border: "none",
+                  background: active === item.id ? "#e8f0fe" : "transparent",
+                  color: active === item.id ? "#1557b0" : "#555",
+                  fontSize: "14px",
+                  fontWeight: active === item.id ? 600 : 400,
+                  cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: "18px" }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </nav>
     </div>
   );
 }

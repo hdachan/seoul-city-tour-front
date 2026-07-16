@@ -1,353 +1,429 @@
-import { useEffect, useState, useRef } from "react";
-import {
-  fetchSalesLockStatus,
-  fetchSalesReceipts,
-  addSalesReceipt,
-  updateSalesReceipt,
-  deleteSalesReceipt,
-  fetchSalesDriving,
-  addSalesDriving,
-  updateSalesDriving,
-  deleteSalesDriving,
-} from "../../api/auth";
+import { useEffect, useState, useRef, useCallback } from "react";
+import "./SalesContent.css";
 import axios from "axios";
 
-const BASE_URL = "https://seoul3345.cafe24.com/api";
+const BASE_URL = "http://localhost:8080/api";
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
-const fetchSalesCategories = () =>
-  axios.get(`${BASE_URL}/sales-form/categories`, authHeader());
-const fetchCash = () => axios.get(`${BASE_URL}/sales-form/cash`, authHeader());
-const addCash = (data) =>
-  axios.post(`${BASE_URL}/sales-form/cash`, data, authHeader());
-const updateCash = (id, d) =>
-  axios.put(`${BASE_URL}/sales-form/cash/${id}`, d, authHeader());
-const deleteCashFn = (id) =>
-  axios.delete(`${BASE_URL}/sales-form/cash/${id}`, authHeader());
 
-const getWeekRange = () => {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const f = (d) => d.toISOString().split("T")[0];
-  return { min: f(monday), max: f(sunday) };
+const api = {
+  getLockStatus: (y, m) =>
+    axios.get(`${BASE_URL}/sales-form/lock-status`, {
+      ...authHeader(),
+      params: { year: y, month: m },
+    }),
+  getMyCard: () => axios.get(`${BASE_URL}/sales-form/my-card`, authHeader()),
+  getCategories: () =>
+    axios.get(`${BASE_URL}/sales-form/categories`, authHeader()),
+  getPurposes: () => axios.get(`${BASE_URL}/sales-form/purposes`, authHeader()),
+  getDriving: (y, m) =>
+    axios.get(`${BASE_URL}/sales-form/driving`, {
+      ...authHeader(),
+      params: { year: y, month: m },
+    }),
+  getDrivingDate: (date) =>
+    axios.get(`${BASE_URL}/sales-form/driving/date`, {
+      ...authHeader(),
+      params: { date },
+    }),
+  getPrevMeter: (date) =>
+    axios.get(`${BASE_URL}/sales-form/driving/prev-meter`, {
+      ...authHeader(),
+      params: { date },
+    }),
+  addDriving: (data) =>
+    axios.post(`${BASE_URL}/sales-form/driving`, data, authHeader()),
+  updateDriving: (id, data) =>
+    axios.put(`${BASE_URL}/sales-form/driving/${id}`, data, authHeader()),
+  deleteDriving: (id) =>
+    axios.delete(`${BASE_URL}/sales-form/driving/${id}`, authHeader()),
+  getReceipts: (y, m) =>
+    axios.get(`${BASE_URL}/sales-form/receipt`, {
+      ...authHeader(),
+      params: { year: y, month: m },
+    }),
+  addReceipt: (data) =>
+    axios.post(`${BASE_URL}/sales-form/receipt`, data, authHeader()),
+  updateReceipt: (id, data) =>
+    axios.put(`${BASE_URL}/sales-form/receipt/${id}`, data, authHeader()),
+  deleteReceipt: (id) =>
+    axios.delete(`${BASE_URL}/sales-form/receipt/${id}`, authHeader()),
+  getDailyNote: (date) =>
+    axios.get(`${BASE_URL}/sales-form/daily-note`, {
+      ...authHeader(),
+      params: { date },
+    }),
+  saveDailyNote: (date, note) =>
+    axios.post(
+      `${BASE_URL}/sales-form/daily-note`,
+      { date, note },
+      authHeader(),
+    ),
 };
 
-const fmt = (n) => Number(n || 0).toLocaleString() + "원";
+const fmt = (n) => Number(n || 0).toLocaleString();
+const fmtWon = (n) => fmt(n) + "원";
+const pad2 = (n) => String(n).padStart(2, "0");
+const TYPES = ["업무", "주유", "휴가"];
+const TODAY = new Date().toISOString().split("T")[0];
+const getKoreaTime = () =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+
+const TYPE_STYLE = {
+  업무: { bg: "#e8f0fe", color: "#1557b0" },
+  주유: { bg: "#fef3c7", color: "#92400e" },
+  휴가: { bg: "#fce7f3", color: "#9d174d" },
+};
 
 export default function SalesContent() {
   const now = new Date();
   const username = sessionStorage.getItem("username");
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const { min: weekMin, max: weekMax } = getWeekRange();
-  const todayStr = now.toISOString().split("T")[0];
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [mainTab, setMainTab] = useState("driving");
 
   const [isLocked, setIsLocked] = useState(false);
-  const [receipts, setReceipts] = useState([]);
-  const [drivings, setDrivings] = useState([]);
-  const [cashes, setCashes] = useState([]);
+  const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
-  const [activeTab, setActiveTab] = useState("receipt");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [purposes, setPurposes] = useState([]);
+  const [monthDriving, setMonthDriving] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+
+  // 선택 날짜 관련
+  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [dayDriving, setDayDriving] = useState([]);
+  const [prevMeter, setPrevMeter] = useState(0);
+  const [dailyNote, setDailyNote] = useState("");
+  const [noteInput, setNoteInput] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteEditing, setNoteEditing] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
+  const purposeRef = useRef(null);
 
-  const [receiptModal, setReceiptModal] = useState({ mode: null, data: null });
-  const [drivingModal, setDrivingModal] = useState({ mode: null, data: null });
-  const [cashModal, setCashModal] = useState({ mode: null, data: null });
-
-  const emptyReceipt = {
-    date: todayStr,
+  const [drivingForm, setDrivingForm] = useState({
+    date: TODAY,
+    type: "업무",
+    destination: "",
+    arrivalTime: getKoreaTime(),
+    meterReading: "",
+    purpose: "",
+    fuelAmount: "",
+    fuelCost: "",
+    fuelUnitPrice: "",
+  });
+  const [receiptForm, setReceiptForm] = useState({
+    date: TODAY,
     category: "",
     content: "",
     amount: "",
-    totalAmount: "",
     businessNumber: "",
     companyName: "",
-  };
-  const emptyDriving = {
-    date: todayStr,
-    totalFuelDetail: "",
-    averageDistance: "",
-    totalFuelCost: "",
-  };
-  const emptyCash = {
-    date: todayStr,
-    type: "지출",
-    paymentType: "현금",
-    category: "",
-    content: "",
-    amount: "",
-    totalAmount: "",
-    companyName: "",
-  };
+  });
+  const [purposeSearch, setPurposeSearch] = useState("");
+  const [showPurposeDrop, setShowPurposeDrop] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [receiptForm, setReceiptForm] = useState(emptyReceipt);
-  const [drivingForm, setDrivingForm] = useState(emptyDriving);
-  const [cashForm, setCashForm] = useState(emptyCash);
+  const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - 1 + i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
 
-  // receiptForm 선언 후에 참조
-  const selectedUnit =
-    categories.find((c) => c.name === receiptForm.category)?.unit || "원";
-  const isLUnit = selectedUnit === "L";
-  const cashSelectedUnit =
-    categories.find((c) => c.name === cashForm.category)?.unit || "원";
-  const isCashLUnit = cashSelectedUnit === "L";
+  // 날짜 드롭다운 목록 (이번 달 날짜들)
+  const dateOptions = Array.from({ length: daysInMonth }, (_, i) => {
+    const d = `${year}-${pad2(month)}-${pad2(i + 1)}`;
+    return d;
+  });
 
-  const load = async () => {
+  const isToday = selectedDate === TODAY;
+  const isPast = selectedDate < TODAY;
+
+  const receiptBase = Number(receiptForm.amount || 0);
+  const supplyPreview = receiptBase ? Math.round(receiptBase / 1.1) : 0;
+  const vatPreview = receiptBase ? receiptBase - supplyPreview : 0;
+  const distPreview =
+    drivingForm.meterReading && prevMeter
+      ? parseInt(drivingForm.meterReading) - prevMeter
+      : null;
+  const meterTooLow =
+    drivingForm.meterReading &&
+    prevMeter > 0 &&
+    parseInt(drivingForm.meterReading) < prevMeter;
+
+  const enteredDates = new Set(monthDriving.map((d) => d.date));
+
+  const loadMonth = useCallback(async () => {
     try {
-      const [lock, r, d, ca, c] = await Promise.all([
-        fetchSalesLockStatus(),
-        fetchSalesReceipts(),
-        fetchSalesDriving(),
-        fetchCash(),
-        fetchSalesCategories(),
+      const [lock, drv, rec, cats, purp, card] = await Promise.all([
+        api.getLockStatus(year, month),
+        api.getDriving(year, month),
+        api.getReceipts(year, month),
+        api.getCategories(),
+        api.getPurposes(),
+        api.getMyCard(),
       ]);
       setIsLocked(lock.data.locked);
-      setReceipts(r.data);
-      setDrivings(d.data);
-      setCashes(ca.data);
-      setCategories(c.data);
+      setMonthDriving(drv.data);
+      setReceipts(rec.data);
+      setCategories(cats.data);
+      setPurposes(purp.data);
+      setMyCard(card.data.cardNumber);
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
-  };
+  }, [year, month]);
+
+  const loadDay = useCallback(async () => {
+    try {
+      const [day, prev, note] = await Promise.all([
+        api.getDrivingDate(selectedDate),
+        api.getPrevMeter(selectedDate),
+        api.getDailyNote(selectedDate),
+      ]);
+      setDayDriving(day.data);
+      setPrevMeter(prev.data.prevMeter);
+      setDailyNote(note.data.note || "");
+      setNoteInput(note.data.note || "");
+      setNoteEditing(false);
+    } catch {}
+  }, [selectedDate]);
 
   useEffect(() => {
-    load();
-  }, []);
-
-  // 바깥 클릭 시 메뉴 닫기
+    loadMonth();
+  }, [loadMonth]);
   useEffect(() => {
-    const handler = (e) => {
+    loadDay();
+  }, [loadDay]);
+  useEffect(() => {
+    const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
         setOpenMenu(null);
+      if (purposeRef.current && !purposeRef.current.contains(e.target))
+        setShowPurposeDrop(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const checkLocked = () => {
-    if (isLocked) {
-      setError("이번 달은 잠겨있습니다.");
-      return true;
+  const handleSaveNote = async () => {
+    if (isPast) {
+      setError("이전 날짜의 비고는 수정할 수 없습니다.");
+      return;
     }
-    return false;
+    setNoteSaving(true);
+    try {
+      await api.saveDailyNote(selectedDate, noteInput);
+      setDailyNote(noteInput);
+      setNoteEditing(false);
+      setSuccess("비고가 저장되었습니다.");
+    } catch (err) {
+      setError(err.response?.data?.error || "저장 실패");
+    }
+    setNoteSaving(false);
   };
 
-  // 법인카드
+  // 운행일지 모달
+  const openAdd = async () => {
+    setError("");
+    setEditTarget(null);
+    const prev = await api.getPrevMeter(selectedDate);
+    setPrevMeter(prev.data.prevMeter);
+    setDrivingForm({
+      startDate: selectedDate,
+      endDate: "",
+      type: "업무",
+      destination: "",
+      arrivalTime: getKoreaTime(),
+      meterReading: "",
+      fuelAmount: "",
+      fuelCost: "",
+      fuelUnitPrice: "",
+    });
+    setShowModal(true);
+  };
+  const openEdit = (row) => {
+    setError("");
+    setEditTarget(row);
+    setOpenMenu(null);
+    setDrivingForm({
+      startDate: row.date,
+      endDate: "",
+      type: row.type,
+      destination: row.destination,
+      arrivalTime: row.arrivalTime,
+      meterReading: row.meterReading || "",
+      fuelAmount: row.fuelAmount || "",
+      fuelCost: row.fuelCost || "",
+      fuelUnitPrice: row.fuelUnitPrice || "",
+    });
+    setShowModal(true);
+  };
+  const handleSubmitDriving = async (e) => {
+    e.preventDefault();
+    setError("");
+    try {
+      const payload = { ...drivingForm, date: drivingForm.startDate };
+      if (editTarget) await api.updateDriving(editTarget.id, payload);
+      else await api.addDriving(payload);
+      setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
+      setShowModal(false);
+      loadMonth();
+      loadDay();
+    } catch (err) {
+      setError(err.response?.data?.error || "처리 실패");
+    }
+  };
+  const handleDelete = async (id) => {
+    setOpenMenu(null);
+    if (!window.confirm("삭제할까요?")) return;
+    try {
+      await api.deleteDriving(id);
+      loadMonth();
+      loadDay();
+    } catch (err) {
+      setError(err.response?.data?.error || "삭제 실패");
+    }
+  };
+
+  // 법인카드 모달
   const openReceiptAdd = () => {
     setError("");
-    setReceiptForm({ ...emptyReceipt, category: categories[0]?.name || "" });
-    setReceiptModal({ mode: "add" });
+    setEditTarget(null);
+    setReceiptForm({
+      date: TODAY,
+      category: categories[0]?.name || "",
+      content: "",
+      amount: "",
+      businessNumber: "",
+      companyName: "",
+    });
+    setShowReceiptModal(true);
   };
   const openReceiptEdit = (row) => {
     setError("");
+    setEditTarget(row);
     setOpenMenu(null);
     setReceiptForm({
       date: row.date,
       category: row.category,
       content: row.content,
-      amount: row.amount || "",
-      totalAmount: row.totalAmount || "",
+      amount: row.totalAmount || "",
       businessNumber: row.businessNumber,
       companyName: row.companyName,
     });
-    setReceiptModal({ mode: "edit", data: row });
+    setShowReceiptModal(true);
   };
   const handleSubmitReceipt = async (e) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
-    if (checkLocked()) return;
-    if (!receiptForm.category) {
-      setError("카테고리를 선택해주세요.");
-      return;
-    }
     try {
-      if (receiptModal.mode === "add") {
-        await addSalesReceipt({ ...receiptForm });
-        setSuccess("추가되었습니다.");
-      } else {
-        await updateSalesReceipt(receiptModal.data.id, { ...receiptForm });
-        setSuccess("수정되었습니다.");
-      }
-      setReceiptModal({ mode: null });
-      load();
+      if (editTarget) await api.updateReceipt(editTarget.id, receiptForm);
+      else await api.addReceipt(receiptForm);
+      setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
+      setShowReceiptModal(false);
+      loadMonth();
     } catch (err) {
       setError(err.response?.data?.error || "처리 실패");
     }
   };
   const handleDeleteReceipt = async (id) => {
-    if (checkLocked()) return;
     setOpenMenu(null);
     if (!window.confirm("삭제할까요?")) return;
     try {
-      await deleteSalesReceipt(id);
-      load();
+      await api.deleteReceipt(id);
+      loadMonth();
     } catch (err) {
       setError(err.response?.data?.error || "삭제 실패");
     }
   };
 
-  // 운행내역
-  const openDrivingAdd = () => {
-    setError("");
-    setDrivingForm(emptyDriving);
-    setDrivingModal({ mode: "add" });
-  };
-  const openDrivingEdit = (row) => {
-    setError("");
-    setOpenMenu(null);
-    setDrivingForm({
-      date: row.date || todayStr,
-      totalFuelDetail: row.totalFuelDetail,
-      averageDistance: row.averageDistance,
-      totalFuelCost: row.totalFuelCost,
-    });
-    setDrivingModal({ mode: "edit", data: row });
-  };
-  const handleSubmitDriving = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    if (checkLocked()) return;
-    try {
-      if (drivingModal.mode === "add") {
-        await addSalesDriving({ ...drivingForm });
-        setSuccess("추가되었습니다.");
-      } else {
-        await updateSalesDriving(drivingModal.data.id, { ...drivingForm });
-        setSuccess("수정되었습니다.");
-      }
-      setDrivingModal({ mode: null });
-      load();
-    } catch (err) {
-      setError(err.response?.data?.error || "처리 실패");
-    }
-  };
-  const handleDeleteDriving = async (id) => {
-    if (checkLocked()) return;
-    setOpenMenu(null);
-    if (!window.confirm("삭제할까요?")) return;
-    try {
-      await deleteSalesDriving(id);
-      load();
-    } catch (err) {
-      setError(err.response?.data?.error || "삭제 실패");
-    }
-  };
-
-  // 현금 핸들러
-  const openCashAdd = () => {
-    setError("");
-    const firstCat = categories[0];
-    setCashForm({ ...emptyCash, category: firstCat?.name || "" });
-    setCashModal({ mode: "add" });
-  };
-  const openCashEdit = (row) => {
-    setError("");
-    setOpenMenu(null);
-    setCashForm({
-      date: row.date,
-      type: row.type,
-      paymentType: row.paymentType || "현금",
-      category: row.category,
-      content: row.content,
-      amount: row.amount || "",
-      totalAmount: row.totalAmount || "",
-      companyName: row.companyName,
-    });
-    setCashModal({ mode: "edit", data: row });
-  };
-  const handleSubmitCash = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    if (checkLocked()) return;
-    const payload = { ...cashForm, unit: cashSelectedUnit };
-    try {
-      if (cashModal.mode === "add") {
-        await addCash(payload);
-        setSuccess("추가되었습니다.");
-      } else {
-        await updateCash(cashModal.data.id, payload);
-        setSuccess("수정되었습니다.");
-      }
-      setCashModal({ mode: null });
-      load();
-    } catch (err) {
-      setError(err.response?.data?.error || "처리 실패");
-    }
-  };
-  const handleDeleteCash = async (id) => {
-    if (checkLocked()) return;
-    setOpenMenu(null);
-    if (!window.confirm("삭제할까요?")) return;
-    try {
-      await deleteCashFn(id);
-      load();
-    } catch (err) {
-      setError(err.response?.data?.error || "삭제 실패");
-    }
-  };
-
-  // L단위: totalAmount(금액)로 계산, 원단위: amount로 계산
-  const priceBase = isLUnit ? receiptForm.totalAmount : receiptForm.amount;
-  const previewSupply = priceBase ? Math.round(Number(priceBase) / 1.1) : 0;
-  const previewVat = priceBase ? Number(priceBase) - previewSupply : 0;
-  const cashPriceBase = isCashLUnit ? cashForm.totalAmount : cashForm.amount;
-  const cashPreviewSup = cashPriceBase
-    ? Math.round(Number(cashPriceBase) / 1.1)
-    : 0;
-  const cashPreviewVat = cashPriceBase
-    ? Number(cashPriceBase) - cashPreviewSup
-    : 0;
-
-  const DateField = ({ value, onChange }) => (
-    <div className="field">
-      <label>
-        날짜 *{" "}
-        <span style={{ color: "#f59e0b", fontWeight: 400, fontSize: "11px" }}>
-          이번 주만 입력 가능 ({weekMin} ~ {weekMax})
-        </span>
-      </label>
-      <input
-        type="date"
-        min={weekMin}
-        max={weekMax}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-
-  // ··· 드롭다운 메뉴
   const DotMenu = ({ id, onEdit, onDelete }) => (
     <div
-      style={{ position: "relative" }}
+      style={{
+        position: "relative",
+        display: "inline-block",
+        zIndex: openMenu === id ? 1000 : 1,
+      }}
       ref={openMenu === id ? menuRef : null}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <button
-        onClick={() => setOpenMenu(openMenu === id ? null : id)}
-        style={dotBtnStyle}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpenMenu(openMenu === id ? null : id);
+        }}
+        style={{
+          background: "none",
+          border: "none",
+          fontSize: "18px",
+          color: "#bbb",
+          cursor: "pointer",
+          padding: "2px 8px",
+          lineHeight: 1,
+        }}
       >
         ···
       </button>
       {openMenu === id && (
-        <div style={dropdownStyle}>
-          <button onClick={onEdit} style={menuItemStyle}>
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "100%",
+            zIndex: 1000,
+            background: "#fff",
+            border: "1px solid #e8eaed",
+            borderRadius: "10px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            overflow: "hidden",
+            minWidth: "90px",
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "10px 16px",
+              border: "none",
+              background: "#fff",
+              fontSize: "13px",
+              color: "#333",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
             수정
           </button>
           <button
-            onClick={onDelete}
-            style={{ ...menuItemStyle, color: "#dc2626" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "10px 16px",
+              border: "none",
+              background: "#fff",
+              fontSize: "13px",
+              color: "#dc2626",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
           >
             삭제
           </button>
@@ -356,60 +432,79 @@ export default function SalesContent() {
     </div>
   );
 
-  return (
-    <div className="gf-wrapper">
-      {/* 헤더 */}
-      <div className="gf-header">
-        <div>
-          <h2 className="gf-title">💼 영업 정산</h2>
-          <p className="gf-subtitle">
-            {username} · {year}년 {month}월 전체 조회
-          </p>
-        </div>
-        {!isLocked && (
-          <div style={{ display: "flex", gap: "8px" }}>
-            {activeTab === "receipt" && (
-              <button className="btn-primary" onClick={openReceiptAdd}>
-                ＋ 법인카드 추가
-              </button>
-            )}
-            {activeTab === "driving" && (
-              <button className="btn-primary" onClick={openDrivingAdd}>
-                ＋ 운행내역 추가
-              </button>
-            )}
-            {activeTab === "cash" && (
-              <button className="btn-primary" onClick={openCashAdd}>
-                ＋ 현금 추가
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+  // 당일 합산 - 시간순 정렬 후 미터기 기준 운행거리 재계산
+  const recalcDayDriving = (() => {
+    const sorted = [...dayDriving].sort((a, b) => {
+      if (!a.arrivalTime) return 1;
+      if (!b.arrivalTime) return -1;
+      return a.arrivalTime.localeCompare(b.arrivalTime);
+    });
+    let lastMeter = prevMeter;
+    return sorted.map((d) => {
+      let dist = 0;
+      if (d.meterReading > 0 && lastMeter > 0 && d.meterReading > lastMeter) {
+        dist = d.meterReading - lastMeter;
+      }
+      if (d.meterReading > 0) lastMeter = d.meterReading;
+      return { ...d, distance: dist };
+    });
+  })();
 
-      {/* 주간 안내 */}
+  const dayMeters = recalcDayDriving
+    .map((d) => d.meterReading)
+    .filter((m) => m > 0);
+  const endMeter = dayMeters.length ? Math.max(...dayMeters) : 0;
+  const totalKm = recalcDayDriving.reduce((s, d) => s + (d.distance || 0), 0);
+  const totalFuelC = recalcDayDriving.reduce(
+    (s, d) => s + (d.fuelCost || 0),
+    0,
+  );
+
+  return (
+    <div>
+      {/* 헤더 */}
       <div
         style={{
-          background: "#fffbeb",
-          border: "1px solid #fde68a",
-          borderRadius: "8px",
-          padding: "9px 14px",
-          marginBottom: "12px",
-          fontSize: "12px",
-          color: "#92400e",
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: "6px",
+          marginBottom: "14px",
+          flexWrap: "wrap",
+          gap: "8px",
         }}
       >
-        📅{" "}
-        <span>
-          입력은{" "}
-          <strong>
-            이번 주({weekMin} ~ {weekMax})
-          </strong>
-          만 가능 · 조회는 {month}월 전체
-        </span>
+        <div>
+          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>
+            💼 영업 정산
+          </h2>
+          <p style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>
+            {username} {myCard ? `· ${myCard}` : ""}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "6px" }}>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            style={selStyle}
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}년
+              </option>
+            ))}
+          </select>
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            style={selStyle}
+          >
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {m}월
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLocked && (
@@ -425,10 +520,9 @@ export default function SalesContent() {
             fontWeight: 500,
           }}
         >
-          🔒 이번 달은 관리자에 의해 잠겨있습니다.
+          🔒 이번 달은 잠겨있습니다.
         </div>
       )}
-
       {error && (
         <div className="alert alert-error" onClick={() => setError("")}>
           ⚠ {error}
@@ -440,829 +534,1491 @@ export default function SalesContent() {
         </div>
       )}
 
-      {/* 탭 */}
-      <div className="gf-tab-bar">
+      {/* 메인 탭 */}
+      <div className="gf-tab-bar" style={{ marginBottom: "14px" }}>
         <button
-          className={`gf-tab ${activeTab === "receipt" ? "active" : ""}`}
-          onClick={() => setActiveTab("receipt")}
+          className={`gf-tab ${mainTab === "driving" ? "active" : ""}`}
+          onClick={() => setMainTab("driving")}
         >
-          법인카드(지출) <span style={countBadge}>{receipts.length}</span>
+          📋 운행일지
         </button>
         <button
-          className={`gf-tab ${activeTab === "driving" ? "active" : ""}`}
-          onClick={() => setActiveTab("driving")}
+          className={`gf-tab ${mainTab === "receipt" ? "active" : ""}`}
+          onClick={() => setMainTab("receipt")}
         >
-          운행내역 <span style={countBadge}>{drivings.length}</span>
-        </button>
-        <button
-          className={`gf-tab ${activeTab === "cash" ? "active" : ""}`}
-          onClick={() => setActiveTab("cash")}
-        >
-          현금 <span style={countBadge}>{cashes.length}</span>
+          💳 법인카드
         </button>
       </div>
 
-      {/* 법인카드 탭 */}
-      {activeTab === "receipt" && (
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "10px",
-            border: "1px solid #e8eaed",
-            overflow: "visible",
-          }}
-        >
-          <table
+      {/* ──── 운행일지 ──── */}
+      {mainTab === "driving" && (
+        <div>
+          {/* 날짜 선택 + 추가 버튼 */}
+          <div
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "13px",
-              tableLayout: "fixed",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              marginBottom: "12px",
+              flexWrap: "wrap",
             }}
           >
-            <colgroup>
-              <col style={{ width: "92px" }} />
-              <col style={{ width: "90px" }} />
-              <col />
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "100px" }} />
-              <col style={{ width: "90px" }} />
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "100px" }} />
-              {!isLocked && <col style={{ width: "44px" }} />}
-            </colgroup>
-            <thead>
-              <tr
-                style={{
-                  background: "#f8f9fb",
-                  borderBottom: "1px solid #e8eaed",
-                }}
-              >
-                <th style={thS}>날짜</th>
-                <th style={thS}>카테고리</th>
-                <th style={thS}>내용</th>
-                <th style={{ ...thS, textAlign: "right" }}>총금액</th>
-                <th style={{ ...thS, textAlign: "right" }}>공급가액</th>
-                <th style={{ ...thS, textAlign: "right" }}>VAT(10%)</th>
-                <th style={thS}>사업자번호</th>
-                <th style={thS}>상호</th>
-                {!isLocked && <th style={thS}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {receipts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    style={{
-                      textAlign: "center",
-                      padding: "3rem",
-                      color: "#bbb",
-                      fontSize: "13px",
-                    }}
-                  >
-                    법인카드 내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                receipts.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: "1px solid #f0f2f5" }}>
-                    <td style={tdS}>
-                      <span style={{ fontSize: "12px", color: "#888" }}>
-                        {r.date}
-                      </span>
-                    </td>
-                    <td style={tdS}>
-                      {r.category ? (
-                        <span style={catBadge}>
-                          {r.category}
-                          {r.unit === "L" && (
-                            <span
-                              style={{
-                                marginLeft: "3px",
-                                fontSize: "10px",
-                                background: "#fef3c7",
-                                color: "#92400e",
-                                padding: "1px 4px",
-                                borderRadius: "3px",
-                              }}
-                            >
-                              L
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span style={{ color: "#ccc", fontSize: "12px" }}>
-                          -
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {r.content || "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        fontWeight: 600,
-                        color: r.unit === "L" ? "#92400e" : "#1557b0",
-                      }}
-                    >
-                      {r.unit === "L"
-                        ? r.amount
-                          ? `${r.amount}L`
-                          : "-"
-                        : r.totalAmount
-                          ? fmt(r.totalAmount)
-                          : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        color: "#555",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {r.unit !== "L" && r.supplyAmount
-                        ? fmt(r.supplyAmount)
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        color: "#059669",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {r.unit !== "L" && r.vat ? fmt(r.vat) : "-"}
-                    </td>
-                    <td style={{ ...tdS, fontSize: "12px", color: "#666" }}>
-                      {r.businessNumber || "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        fontSize: "12px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {r.companyName || "-"}
-                    </td>
-                    {!isLocked && (
-                      <td style={{ ...tdS, position: "relative" }}>
-                        <DotMenu
-                          id={`r-${r.id}`}
-                          onEdit={() => openReceiptEdit(r)}
-                          onDelete={() => handleDeleteReceipt(r.id)}
-                        />
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-            {receipts.length > 0 && (
-              <tfoot>
-                <tr
-                  style={{
-                    background: "#f0f4ff",
-                    borderTop: "2px solid #e8eaed",
-                  }}
-                >
-                  <td
-                    colSpan={3}
-                    style={{ ...tdS, fontWeight: 700, color: "#1557b0" }}
-                  >
-                    합계
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      fontWeight: 700,
-                      color: "#1557b0",
-                    }}
-                  >
-                    {fmt(
-                      receipts.reduce((s, r) => s + (r.totalAmount || 0), 0),
-                    )}
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      color: "#555",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {fmt(
-                      receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0),
-                    )}
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      color: "#059669",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {fmt(receipts.reduce((s, r) => s + (r.vat || 0), 0))}
-                  </td>
-                  <td colSpan={isLocked ? 2 : 3}></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      )}
-
-      {/* 운행내역 탭 */}
-      {activeTab === "driving" && (
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "10px",
-            border: "1px solid #e8eaed",
-            overflow: "visible",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "13px",
-            }}
-          >
-            <thead>
-              <tr
-                style={{
-                  background: "#f8f9fb",
-                  borderBottom: "1px solid #e8eaed",
-                }}
-              >
-                <th style={thS}>날짜</th>
-                <th style={thS}>총주유내역</th>
-                <th style={{ ...thS, textAlign: "center" }}>평균거리</th>
-                <th style={{ ...thS, textAlign: "right" }}>총주유금액</th>
-                {!isLocked && <th style={{ ...thS, width: "44px" }}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {drivings.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    style={{
-                      textAlign: "center",
-                      padding: "3rem",
-                      color: "#bbb",
-                      fontSize: "13px",
-                    }}
-                  >
-                    운행내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                drivings.map((d) => (
-                  <tr key={d.id} style={{ borderBottom: "1px solid #f0f2f5" }}>
-                    <td style={tdS}>
-                      <span style={{ fontSize: "12px", color: "#888" }}>
-                        {d.date || "-"}
-                      </span>
-                    </td>
-                    <td style={tdS}>{d.totalFuelDetail || "-"}</td>
-                    <td style={{ ...tdS, textAlign: "center", color: "#555" }}>
-                      {d.averageDistance ? `${d.averageDistance}km` : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        fontWeight: 600,
-                        color: "#1557b0",
-                      }}
-                    >
-                      {d.totalFuelCost ? fmt(d.totalFuelCost) : "-"}
-                    </td>
-                    {!isLocked && (
-                      <td style={{ ...tdS, position: "relative" }}>
-                        <DotMenu
-                          id={`d-${d.id}`}
-                          onEdit={() => openDrivingEdit(d)}
-                          onDelete={() => handleDeleteDriving(d.id)}
-                        />
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* 현금 탭 */}
-      {activeTab === "cash" && (
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "10px",
-            border: "1px solid #e8eaed",
-            overflow: "visible",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "13px",
-              tableLayout: "fixed",
-            }}
-          >
-            <colgroup>
-              <col style={{ width: "92px" }} />
-              <col style={{ width: "70px" }} />
-              <col style={{ width: "70px" }} />
-              <col style={{ width: "90px" }} />
-              <col />
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "100px" }} />
-              <col style={{ width: "90px" }} />
-              <col style={{ width: "100px" }} />
-              {!isLocked && <col style={{ width: "44px" }} />}
-            </colgroup>
-            <thead>
-              <tr
-                style={{
-                  background: "#f8f9fb",
-                  borderBottom: "1px solid #e8eaed",
-                }}
-              >
-                <th style={thS}>날짜</th>
-                <th style={thS}>구분</th>
-                <th style={thS}>결제수단</th>
-                <th style={thS}>카테고리</th>
-                <th style={thS}>내용</th>
-                <th style={{ ...thS, textAlign: "right" }}>금액</th>
-                <th style={{ ...thS, textAlign: "right" }}>공급가액</th>
-                <th style={{ ...thS, textAlign: "right" }}>VAT(10%)</th>
-                <th style={thS}>상호</th>
-                {!isLocked && <th style={thS}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {cashes.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    style={{
-                      textAlign: "center",
-                      padding: "3rem",
-                      color: "#bbb",
-                      fontSize: "13px",
-                    }}
-                  >
-                    현금 내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                cashes.map((c) => (
-                  <tr key={c.id} style={{ borderBottom: "1px solid #f0f2f5" }}>
-                    <td style={tdS}>
-                      <span style={{ fontSize: "12px", color: "#888" }}>
-                        {c.date}
-                      </span>
-                    </td>
-                    <td style={tdS}>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: "99px",
-                          background: c.type === "수입" ? "#d1fae5" : "#fee2e2",
-                          color: c.type === "수입" ? "#065f46" : "#dc2626",
-                        }}
-                      >
-                        {c.type}
-                      </span>
-                    </td>
-                    <td style={tdS}>
-                      {c.type === "수입" && c.paymentType ? (
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            padding: "2px 7px",
-                            borderRadius: "99px",
-                            background: "#e8f0fe",
-                            color: "#1557b0",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {c.paymentType}
-                        </span>
-                      ) : (
-                        <span style={{ color: "#ccc", fontSize: "12px" }}>
-                          -
-                        </span>
-                      )}
-                    </td>
-                    <td style={tdS}>
-                      {c.category ? (
-                        <span style={catBadge}>{c.category}</span>
-                      ) : (
-                        <span style={{ color: "#ccc", fontSize: "12px" }}>
-                          -
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {c.content || "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        fontWeight: 600,
-                        color:
-                          c.unit === "L"
-                            ? "#92400e"
-                            : c.type === "수입"
-                              ? "#059669"
-                              : "#1557b0",
-                      }}
-                    >
-                      {c.unit === "L"
-                        ? `${c.amount}L / ${fmt(c.totalAmount)}`
-                        : c.totalAmount
-                          ? fmt(c.totalAmount)
-                          : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        color: "#555",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {c.supplyAmount ? fmt(c.supplyAmount) : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        textAlign: "right",
-                        color: "#059669",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {c.vat ? fmt(c.vat) : "-"}
-                    </td>
-                    <td
-                      style={{
-                        ...tdS,
-                        fontSize: "12px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {c.companyName || "-"}
-                    </td>
-                    {!isLocked && (
-                      <td style={{ ...tdS, position: "relative" }}>
-                        <DotMenu
-                          id={`c-${c.id}`}
-                          onEdit={() => openCashEdit(c)}
-                          onDelete={() => handleDeleteCash(c.id)}
-                        />
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-            {cashes.length > 0 && (
-              <tfoot>
-                <tr
-                  style={{
-                    background: "#f0f4ff",
-                    borderTop: "2px solid #e8eaed",
-                  }}
-                >
-                  <td
-                    colSpan={5}
-                    style={{ ...tdS, fontWeight: 700, color: "#1557b0" }}
-                  >
-                    합계
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      fontWeight: 700,
-                      color: "#1557b0",
-                    }}
-                  >
-                    {fmt(cashes.reduce((s, c) => s + (c.totalAmount || 0), 0))}
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      color: "#555",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {fmt(cashes.reduce((s, c) => s + (c.supplyAmount || 0), 0))}
-                  </td>
-                  <td
-                    style={{
-                      ...tdS,
-                      textAlign: "right",
-                      color: "#059669",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {fmt(cashes.reduce((s, c) => s + (c.vat || 0), 0))}
-                  </td>
-                  <td colSpan={isLocked ? 1 : 2}></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      )}
-
-      {/* 현금 모달 */}
-      {cashModal.mode && (
-        <div className="modal-bg">
-          <div className="modal">
-            <div className="modal-header">
-              <h3 className="modal-title" style={{ margin: 0 }}>
-                현금 {cashModal.mode === "add" ? "추가" : "수정"}
-              </h3>
-              <button
-                className="modal-close"
-                onClick={() => setCashModal({ mode: null })}
-              >
-                ✕
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ ...selStyle, flex: 1 }}
+            >
+              {dateOptions.map((d) => {
+                const day = parseInt(d.split("-")[2]);
+                const hasEntry = enteredDates.has(d);
+                const isT = d === TODAY;
+                return (
+                  <option key={d} value={d}>
+                    {month}월 {day}일{isT ? " (오늘)" : ""}
+                    {hasEntry ? " ●" : ""}
+                  </option>
+                );
+              })}
+            </select>
+            {!isLocked && isToday && (
+              <button className="btn-primary" onClick={openAdd}>
+                ＋ 추가
               </button>
+            )}
+            {isPast && (
+              <span
+                style={{ fontSize: "12px", color: "#bbb", padding: "0 4px" }}
+              >
+                이전 날짜 (조회만)
+              </span>
+            )}
+          </div>
+
+          {/* 전일 미터기 정보 */}
+          {prevMeter > 0 && (
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#888",
+                marginBottom: "8px",
+                paddingLeft: "4px",
+              }}
+            >
+              전일 미터기:{" "}
+              <strong style={{ color: "#555" }}>{fmt(prevMeter)}km</strong>
             </div>
-            <form onSubmit={handleSubmitCash} className="modal-form">
-              <DateField
-                value={cashForm.date}
-                onChange={(v) => setCashForm((f) => ({ ...f, date: v }))}
-              />
+          )}
 
-              {/* 수입/지출 버튼 */}
-              <div className="field">
-                <label>구분 *</label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {["지출", "수입"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() =>
-                        setCashForm((f) => ({
-                          ...f,
-                          type: t,
-                          paymentType: t === "수입" ? "현금" : "",
-                        }))
-                      }
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        border: "1.5px solid",
-                        borderRadius: "8px",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        fontWeight: cashForm.type === t ? 700 : 400,
-                        background:
-                          cashForm.type === t
-                            ? t === "수입"
-                              ? "#d1fae5"
-                              : "#fee2e2"
-                            : "#fff",
-                        color:
-                          cashForm.type === t
-                            ? t === "수입"
-                              ? "#065f46"
-                              : "#dc2626"
-                            : "#888",
-                        borderColor:
-                          cashForm.type === t
-                            ? t === "수입"
-                              ? "#6ee7b7"
-                              : "#fca5a5"
-                            : "#e0e0e0",
-                      }}
-                    >
-                      {t === "수입" ? "📈 수입" : "📉 지출"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 수입일 때만 결제수단 */}
-              {cashForm.type === "수입" && (
-                <div className="field">
-                  <label>결제수단 *</label>
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    {["카드", "현금", "기타"].map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() =>
-                          setCashForm((f) => ({ ...f, paymentType: p }))
-                        }
-                        style={{
-                          flex: 1,
-                          padding: "9px",
-                          border: "1.5px solid",
-                          borderRadius: "8px",
-                          fontSize: "13px",
-                          cursor: "pointer",
-                          fontWeight: cashForm.paymentType === p ? 700 : 400,
-                          background:
-                            cashForm.paymentType === p ? "#e8f0fe" : "#fff",
-                          color:
-                            cashForm.paymentType === p ? "#1557b0" : "#888",
-                          borderColor:
-                            cashForm.paymentType === p ? "#93c5fd" : "#e0e0e0",
-                        }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="field">
-                <label>카테고리</label>
-                <select
-                  value={cashForm.category}
-                  onChange={(e) =>
-                    setCashForm((f) => ({
-                      ...f,
-                      category: e.target.value,
-                      amount: "",
-                      totalAmount: "",
-                    }))
-                  }
-                >
-                  <option value="">선택 안함</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                      {c.unit === "L" ? " (L)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label>내용</label>
-                <input
-                  type="text"
-                  placeholder="내용 입력"
-                  value={cashForm.content}
-                  onChange={(e) =>
-                    setCashForm((f) => ({ ...f, content: e.target.value }))
-                  }
-                />
-              </div>
-
-              {isCashLUnit ? (
-                <>
-                  <div className="field">
-                    <label>주유량 (L) *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="예: 45.5"
-                        value={cashForm.amount}
-                        onChange={(e) =>
-                          setCashForm((f) => ({ ...f, amount: e.target.value }))
-                        }
-                        style={{ width: "100%", paddingRight: "36px" }}
-                        required
-                      />
-                      <span style={unitSuffix}>L</span>
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>금액 *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        step="1"
-                        placeholder="금액 입력"
-                        value={cashForm.totalAmount}
-                        onChange={(e) =>
-                          setCashForm((f) => ({
-                            ...f,
-                            totalAmount: e.target.value,
-                          }))
-                        }
-                        style={{ width: "100%", paddingRight: "36px" }}
-                        required
-                      />
-                      <span style={unitSuffix}>원</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="field">
-                  <label>금액 *</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="number"
-                      step="1"
-                      placeholder="금액 입력"
-                      value={cashForm.amount}
-                      onChange={(e) =>
-                        setCashForm((f) => ({ ...f, amount: e.target.value }))
-                      }
-                      style={{ width: "100%", paddingRight: "36px" }}
-                      required
-                    />
-                    <span style={unitSuffix}>원</span>
-                  </div>
-                </div>
-              )}
-
-              {Number(cashPriceBase) > 0 && (
+          {/* 운행 기록 */}
+          {dayDriving.length === 0 ? (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "10px",
+                border: "1.5px dashed #e0e0e0",
+                padding: "2.5rem",
+                textAlign: "center",
+                color: "#bbb",
+                fontSize: "13px",
+              }}
+            >
+              {isToday ? "오늘 운행 기록이 없습니다." : "기록이 없습니다."}
+            </div>
+          ) : (
+            <>
+              {/* 데스크탑 표 */}
+              <div style={{ display: "none" }} className="desktop-table">
                 <div
                   style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #86efac",
-                    borderRadius: "8px",
-                    padding: "10px 14px",
-                    fontSize: "13px",
+                    background: "#fff",
+                    borderRadius: "10px",
+                    border: "1px solid #e8eaed",
+                    overflow: "visible",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "13px",
+                      minWidth: "700px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "#f8f9fb",
+                          borderBottom: "1px solid #e8eaed",
+                        }}
+                      >
+                        <th style={thS}>시간</th>
+                        <th style={thS}>도착지</th>
+                        <th style={{ ...thS, textAlign: "right" }}>미터기</th>
+                        <th style={{ ...thS, textAlign: "right" }}>운행거리</th>
+                        <th style={thS}>용무</th>
+                        <th style={{ ...thS, textAlign: "right" }}>주유량</th>
+                        <th style={{ ...thS, textAlign: "right" }}>주유금액</th>
+                        <th style={{ ...thS, textAlign: "right" }}>단가</th>
+                        <th style={thS}>구분</th>
+                        {!isLocked && isToday && <th style={thS}></th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recalcDayDriving.map((d) => {
+                        const ts = TYPE_STYLE[d.type] || {
+                          bg: "#f3f4f6",
+                          color: "#555",
+                        };
+                        return (
+                          <tr
+                            key={d.id}
+                            style={{ borderBottom: "1px solid #f0f2f5" }}
+                          >
+                            <td style={{ ...tdS }}>
+                              {d.arrivalTime ? (
+                                <span
+                                  style={{
+                                    fontSize: "13px",
+                                    fontWeight: 700,
+                                    color: "#1557b0",
+                                    background: "#e8f0fe",
+                                    padding: "2px 8px",
+                                    borderRadius: "6px",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  ⏰ {d.arrivalTime}
+                                </span>
+                              ) : (
+                                <span style={{ color: "#ccc" }}>-</span>
+                              )}
+                            </td>
+                            <td
+                              style={{
+                                ...tdS,
+                                fontWeight: d.destination ? 500 : 400,
+                                color: d.destination ? "#1a1a2e" : "#ccc",
+                              }}
+                            >
+                              {d.destination || "-"}
+                            </td>
+                            <td style={{ ...tdS, textAlign: "right" }}>
+                              {d.meterReading > 0
+                                ? `${fmt(d.meterReading)}km`
+                                : "-"}
+                            </td>
+                            <td
+                              style={{
+                                ...tdS,
+                                textAlign: "right",
+                                fontWeight: 600,
+                                color: "#1557b0",
+                              }}
+                            >
+                              {d.distance > 0 ? `${fmt(d.distance)}km` : "-"}
+                            </td>
+                            <td style={{ ...tdS, color: "#555" }}>
+                              {d.purpose || "-"}
+                            </td>
+                            <td
+                              style={{
+                                ...tdS,
+                                textAlign: "right",
+                                color: "#92400e",
+                              }}
+                            >
+                              {d.fuelAmount > 0 ? `${d.fuelAmount}L` : "-"}
+                            </td>
+                            <td style={{ ...tdS, textAlign: "right" }}>
+                              {d.fuelCost > 0 ? fmtWon(d.fuelCost) : "-"}
+                            </td>
+                            <td
+                              style={{
+                                ...tdS,
+                                textAlign: "right",
+                                fontSize: "12px",
+                                color: "#888",
+                              }}
+                            >
+                              {d.fuelUnitPrice > 0
+                                ? `${fmt(d.fuelUnitPrice)}원`
+                                : "-"}
+                            </td>
+                            <td style={tdS}>
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  padding: "3px 8px",
+                                  borderRadius: "99px",
+                                  background: ts.bg,
+                                  color: ts.color,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {d.type}
+                              </span>
+                            </td>
+                            {!isLocked && isToday && (
+                              <td style={{ ...tdS, position: "relative" }}>
+                                <DotMenu
+                                  id={d.id}
+                                  onEdit={() => openEdit(d)}
+                                  onDelete={() => handleDelete(d.id)}
+                                />
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 모바일 카드 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  marginBottom: "12px",
+                }}
+                className="mobile-cards"
+              >
+                {recalcDayDriving.map((d) => {
+                  const ts = TYPE_STYLE[d.type] || {
+                    bg: "#f3f4f6",
+                    color: "#555",
+                  };
+                  return (
+                    <div
+                      key={d.id}
+                      style={{
+                        background: "#fff",
+                        borderRadius: "10px",
+                        border: "1px solid #e8eaed",
+                        padding: "12px 14px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          {d.arrivalTime && (
+                            <span
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                color: "#1557b0",
+                                background: "#e8f0fe",
+                                padding: "2px 8px",
+                                borderRadius: "6px",
+                                letterSpacing: "0.5px",
+                              }}
+                            >
+                              ⏰ {d.arrivalTime}
+                            </span>
+                          )}
+                          {d.destination && (
+                            <span style={{ fontWeight: 600, fontSize: "14px" }}>
+                              {d.destination}
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              padding: "3px 8px",
+                              borderRadius: "99px",
+                              background: ts.bg,
+                              color: ts.color,
+                            }}
+                          >
+                            {d.type}
+                          </span>
+                        </div>
+                        {!isLocked && isToday && (
+                          <DotMenu
+                            id={d.id}
+                            onEdit={() => openEdit(d)}
+                            onDelete={() => handleDelete(d.id)}
+                          />
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "4px 12px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {d.meterReading > 0 && (
+                          <Row
+                            label="미터기"
+                            value={`${fmt(d.meterReading)}km`}
+                          />
+                        )}
+                        {d.distance > 0 && (
+                          <Row
+                            label="운행거리"
+                            value={`${fmt(d.distance)}km`}
+                            color="#1557b0"
+                          />
+                        )}
+                        {d.purpose && <Row label="용무" value={d.purpose} />}
+                        {d.fuelAmount > 0 && (
+                          <Row
+                            label="주유량"
+                            value={`${d.fuelAmount}L`}
+                            color="#92400e"
+                          />
+                        )}
+                        {d.fuelCost > 0 && (
+                          <Row label="주유금액" value={fmtWon(d.fuelCost)} />
+                        )}
+                        {d.fuelUnitPrice > 0 && (
+                          <Row
+                            label="단가"
+                            value={`${fmt(d.fuelUnitPrice)}원/L`}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* 당일 요약 + 비고 */}
+          {(dayDriving.length > 0 || !isPast) && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "10px",
+                border: "1px solid #e8eaed",
+                overflow: "hidden",
+              }}
+            >
+              {/* 누계 행 */}
+              {dayDriving.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0",
+                    borderBottom: "1px solid #f0f2f5",
+                  }}
+                >
+                  {[
+                    {
+                      label: "전일누계",
+                      value: prevMeter > 0 ? `${fmt(prevMeter)}km` : "-",
+                      color: "#555",
+                    },
+                    {
+                      label: "금일누계",
+                      value: totalKm > 0 ? `${fmt(totalKm)}km` : "-",
+                      color: "#1557b0",
+                    },
+                    {
+                      label: "총누계",
+                      value: endMeter > 0 ? `${fmt(endMeter)}km` : "-",
+                      color: "#059669",
+                    },
+                    ...(totalFuelC > 0
+                      ? [
+                          {
+                            label: "금일주유",
+                            value: fmtWon(totalFuelC),
+                            color: "#92400e",
+                          },
+                        ]
+                      : []),
+                  ].map((r, i, arr) => (
+                    <div
+                      key={r.label}
+                      style={{
+                        flex: 1,
+                        padding: "10px 12px",
+                        textAlign: "center",
+                        borderRight:
+                          i < arr.length - 1 ? "1px solid #f0f2f5" : "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          color: "#aaa",
+                          marginBottom: "3px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {r.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: r.color,
+                        }}
+                      >
+                        {r.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 비고 */}
+              <div
+                style={{
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  minHeight: "44px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "#aaa",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  📝 비고
+                </span>
+                {isPast ? (
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      color: dailyNote ? "#333" : "#ccc",
+                    }}
+                  >
+                    {dailyNote || "없음"}
+                  </span>
+                ) : noteEditing ? (
+                  <>
+                    <input
+                      type="text"
+                      value={noteInput}
+                      onChange={(e) => setNoteInput(e.target.value)}
+                      autoFocus
+                      placeholder="이날 비고 입력..."
+                      disabled={isLocked}
+                      style={{
+                        flex: 1,
+                        padding: "7px 10px",
+                        border: "1.5px solid #1557b0",
+                        borderRadius: "7px",
+                        fontSize: "13px",
+                        outline: "none",
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveNote();
+                        if (e.key === "Escape") {
+                          setNoteEditing(false);
+                          setNoteInput(dailyNote);
+                        }
+                      }}
+                    />
+                    <button
+                      className="btn-primary"
+                      onClick={handleSaveNote}
+                      disabled={noteSaving}
+                      style={{ padding: "7px 12px", fontSize: "12px" }}
+                    >
+                      {noteSaving ? "..." : "저장"}
+                    </button>
+                    <button
+                      className="btn-outline"
+                      onClick={() => {
+                        setNoteEditing(false);
+                        setNoteInput(dailyNote);
+                      }}
+                      style={{ padding: "7px 10px", fontSize: "12px" }}
+                    >
+                      취소
+                    </button>
+                  </>
+                ) : (
+                  <span
+                    onClick={() => !isLocked && setNoteEditing(true)}
+                    style={{
+                      flex: 1,
+                      fontSize: "13px",
+                      color: dailyNote ? "#333" : "#bbb",
+                      cursor: isLocked ? "default" : "pointer",
+                      padding: "4px 0",
+                    }}
+                  >
+                    {dailyNote || (isLocked ? "없음" : "클릭해서 입력...")}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ──── 법인카드 ──── */}
+      {mainTab === "receipt" && (
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "12px",
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "#888" }}>
+              카드번호:{" "}
+              <strong style={{ color: "#1a1a2e" }}>{myCard || "미등록"}</strong>
+            </p>
+            {!isLocked && (
+              <button className="btn-primary" onClick={openReceiptAdd}>
+                ＋ 지출내역
+              </button>
+            )}
+          </div>
+          {/* 모바일 법인카드 카드 */}
+          <div
+            className="mobile-cards"
+            style={{
+              display: "none",
+              flexDirection: "column",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            {receipts.length === 0 ? (
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: "10px",
+                  border: "1.5px dashed #e0e0e0",
+                  padding: "2rem",
+                  textAlign: "center",
+                  color: "#bbb",
+                  fontSize: "13px",
+                }}
+              >
+                내역이 없습니다.
+              </div>
+            ) : (
+              receipts.map((r) => (
+                <div
+                  key={r.id}
+                  style={{
+                    background: "#fff",
+                    borderRadius: "10px",
+                    border: "1px solid #e8eaed",
+                    padding: "12px 14px",
                   }}
                 >
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      marginBottom: "4px",
+                      alignItems: "center",
+                      marginBottom: "8px",
                     }}
                   >
-                    <span style={{ color: "#555" }}>공급가액 (자동)</span>
-                    <strong style={{ color: "#1557b0" }}>
-                      {cashPreviewSup.toLocaleString()}원
-                    </strong>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span style={{ fontSize: "12px", color: "#888" }}>
+                        {r.date}
+                      </span>
+                      {r.category && (
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: "99px",
+                            background: "#e8f0fe",
+                            color: "#1557b0",
+                          }}
+                        >
+                          {r.category}
+                        </span>
+                      )}
+                    </div>
+                    {!isLocked && (
+                      <DotMenu
+                        id={`rm-${r.id}`}
+                        onEdit={() => openReceiptEdit(r)}
+                        onDelete={() => handleDeleteReceipt(r.id)}
+                      />
+                    )}
                   </div>
+                  {r.content && (
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {r.content}
+                    </div>
+                  )}
                   <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "4px 12px",
+                      fontSize: "12px",
+                    }}
                   >
-                    <span style={{ color: "#555" }}>VAT 10% (자동)</span>
-                    <strong style={{ color: "#059669" }}>
-                      {cashPreviewVat.toLocaleString()}원
-                    </strong>
+                    {r.totalAmount > 0 && (
+                      <Row
+                        label="총금액"
+                        value={fmtWon(r.totalAmount)}
+                        color="#1557b0"
+                      />
+                    )}
+                    {r.supplyAmount > 0 && (
+                      <Row label="공급가액" value={fmtWon(r.supplyAmount)} />
+                    )}
+                    {r.vat > 0 && (
+                      <Row label="VAT" value={fmtWon(r.vat)} color="#059669" />
+                    )}
+                    {r.businessNumber && (
+                      <Row label="사업자" value={r.businessNumber} />
+                    )}
+                    {r.companyName && (
+                      <Row label="상호" value={r.companyName} />
+                    )}
                   </div>
                 </div>
+              ))
+            )}
+            {receipts.length > 0 && (
+              <div
+                style={{
+                  background: "#f0f4ff",
+                  borderRadius: "10px",
+                  padding: "12px 14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#1557b0",
+                  }}
+                >
+                  합계
+                </span>
+                <span
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#1557b0",
+                  }}
+                >
+                  {fmtWon(
+                    receipts.reduce((s, r) => s + (r.totalAmount || 0), 0),
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* 데스크탑 법인카드 표 */}
+          <div className="desktop-table" style={{ display: "none" }}>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "10px",
+                border: "1px solid #e8eaed",
+                overflow: "visible",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "13px",
+                  minWidth: "600px",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f8f9fb",
+                      borderBottom: "1px solid #e8eaed",
+                    }}
+                  >
+                    <th style={thS}>날짜</th>
+                    <th style={thS}>카테고리</th>
+                    <th style={thS}>신용카드 번호</th>
+                    <th style={{ ...thS, textAlign: "right" }}>총금액</th>
+                    <th style={{ ...thS, textAlign: "right" }}>공급가액</th>
+                    <th style={{ ...thS, textAlign: "right" }}>VAT</th>
+                    <th style={thS}>사업자</th>
+                    <th style={thS}>상호</th>
+                    {!isLocked && <th style={thS}></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipts.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        style={{
+                          textAlign: "center",
+                          padding: "2.5rem",
+                          color: "#bbb",
+                          fontSize: "13px",
+                        }}
+                      >
+                        내역이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    receipts.map((r) => (
+                      <tr
+                        key={r.id}
+                        style={{ borderBottom: "1px solid #f0f2f5" }}
+                      >
+                        <td
+                          style={{
+                            ...tdS,
+                            fontSize: "12px",
+                            color: "#888",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.date}
+                        </td>
+                        <td style={tdS}>
+                          {r.category ? (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                padding: "3px 8px",
+                                borderRadius: "99px",
+                                background: "#e8f0fe",
+                                color: "#1557b0",
+                              }}
+                            >
+                              {r.category}
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td
+                          style={{
+                            ...tdS,
+                            maxWidth: "120px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.content || "-"}
+                        </td>
+                        <td
+                          style={{
+                            ...tdS,
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#1557b0",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
+                        </td>
+                        <td
+                          style={{
+                            ...tdS,
+                            textAlign: "right",
+                            color: "#555",
+                            fontSize: "12px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.supplyAmount ? fmtWon(r.supplyAmount) : "-"}
+                        </td>
+                        <td
+                          style={{
+                            ...tdS,
+                            textAlign: "right",
+                            color: "#059669",
+                            fontSize: "12px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.vat ? fmtWon(r.vat) : "-"}
+                        </td>
+                        <td style={{ ...tdS, fontSize: "12px" }}>
+                          {r.businessNumber || "-"}
+                        </td>
+                        <td
+                          style={{
+                            ...tdS,
+                            fontSize: "12px",
+                            maxWidth: "80px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {r.companyName || "-"}
+                        </td>
+                        {!isLocked && (
+                          <td style={{ ...tdS, position: "relative" }}>
+                            <DotMenu
+                              id={`r-${r.id}`}
+                              onEdit={() => openReceiptEdit(r)}
+                              onDelete={() => handleDeleteReceipt(r.id)}
+                            />
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {receipts.length > 0 && (
+                  <tfoot>
+                    <tr
+                      style={{
+                        background: "#f0f4ff",
+                        borderTop: "2px solid #e8eaed",
+                      }}
+                    >
+                      <td
+                        colSpan={3}
+                        style={{ ...tdS, fontWeight: 700, color: "#1557b0" }}
+                      >
+                        합계
+                      </td>
+                      <td
+                        style={{
+                          ...tdS,
+                          textAlign: "right",
+                          fontWeight: 700,
+                          color: "#1557b0",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {fmtWon(
+                          receipts.reduce(
+                            (s, r) => s + (r.totalAmount || 0),
+                            0,
+                          ),
+                        )}
+                      </td>
+                      <td
+                        style={{
+                          ...tdS,
+                          textAlign: "right",
+                          color: "#555",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {fmtWon(
+                          receipts.reduce(
+                            (s, r) => s + (r.supplyAmount || 0),
+                            0,
+                          ),
+                        )}
+                      </td>
+                      <td
+                        style={{
+                          ...tdS,
+                          textAlign: "right",
+                          color: "#059669",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {fmtWon(receipts.reduce((s, r) => s + (r.vat || 0), 0))}
+                      </td>
+                      <td colSpan={isLocked ? 2 : 3}></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── 운행일지 모달 ──── */}
+      {showModal && (
+        <div className="modal-bg" style={{ alignItems: "center" }}>
+          <div
+            className="modal"
+            style={{ width: "480px", borderRadius: "14px", maxHeight: "90vh" }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ margin: 0 }}>
+                운행일지 {editTarget ? "수정" : "추가"}
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleSubmitDriving} className="modal-form">
+              {/* 날짜 - 업무/주유는 단일, 휴가는 범위 */}
+              {drivingForm.type !== "휴가" ? (
+                <div className="field">
+                  <label>날짜 *</label>
+                  <input
+                    type="date"
+                    value={drivingForm.startDate || ""}
+                    min={TODAY}
+                    onChange={(e) =>
+                      setDrivingForm((f) => ({
+                        ...f,
+                        startDate: e.target.value,
+                        endDate: "",
+                      }))
+                    }
+                    required
+                  />
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "10px",
+                    }}
+                  >
+                    <div className="field">
+                      <label>시작 날짜 *</label>
+                      <input
+                        type="date"
+                        value={drivingForm.startDate || ""}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            startDate: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="field">
+                      <label>
+                        종료 날짜{" "}
+                        <span
+                          style={{
+                            color: "#aaa",
+                            fontWeight: 400,
+                            fontSize: "11px",
+                          }}
+                        >
+                          (당일이면 생략)
+                        </span>
+                      </label>
+                      <input
+                        type="date"
+                        value={drivingForm.endDate || ""}
+                        min={drivingForm.startDate || ""}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            endDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  {drivingForm.startDate &&
+                    drivingForm.endDate &&
+                    drivingForm.endDate > drivingForm.startDate && (
+                      <div
+                        style={{
+                          background: "#fce7f3",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          fontSize: "12px",
+                          color: "#9d174d",
+                          fontWeight: 600,
+                        }}
+                      >
+                        🏖 {drivingForm.startDate} ~ {drivingForm.endDate}{" "}
+                        기간으로 저장됩니다.
+                      </div>
+                    )}
+                </>
               )}
 
-              <div className="field">
-                <label>
-                  상호{" "}
-                  <span
-                    style={{ color: "#aaa", fontWeight: 400, fontSize: "11px" }}
+              {/* 업무 */}
+              {drivingForm.type === "업무" && (
+                <>
+                  <div className="field">
+                    <label
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        color: "#1557b0",
+                      }}
+                    >
+                      🕐 도착 시간 *
+                    </label>
+                    <input
+                      type="time"
+                      value={drivingForm.arrivalTime}
+                      onChange={(e) =>
+                        setDrivingForm((f) => ({
+                          ...f,
+                          arrivalTime: e.target.value,
+                        }))
+                      }
+                      required
+                      style={{
+                        fontSize: "16px",
+                        padding: "12px",
+                        letterSpacing: "1px",
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>도착지 *</label>
+                    <input
+                      type="text"
+                      placeholder="경복궁"
+                      value={drivingForm.destination}
+                      onChange={(e) =>
+                        setDrivingForm((f) => ({
+                          ...f,
+                          destination: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="field">
+                    <label>미터기 (km) *</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="number"
+                        placeholder="오늘 계량기"
+                        value={drivingForm.meterReading}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            meterReading: e.target.value,
+                          }))
+                        }
+                        style={{ width: "100%", paddingRight: "40px" }}
+                        required
+                      />
+                      <span style={unitSuffix}>km</span>
+                    </div>
+                    {distPreview !== null && distPreview >= 0 && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#1557b0",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        운행거리: {fmt(distPreview)}km
+                      </p>
+                    )}
+                    {meterTooLow && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ 전일 미터기({fmt(prevMeter)}km)보다 낮습니다!
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className="field"
+                    style={{ position: "relative" }}
+                    ref={purposeRef}
                   >
-                    (선택)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="상호명"
-                  value={cashForm.companyName}
-                  onChange={(e) =>
-                    setCashForm((f) => ({ ...f, companyName: e.target.value }))
-                  }
-                />
+                    <label>용무</label>
+                    <input
+                      type="text"
+                      placeholder="용무 입력"
+                      value={drivingForm.purpose}
+                      autoComplete="off"
+                      onChange={(e) => {
+                        setDrivingForm((f) => ({
+                          ...f,
+                          purpose: e.target.value,
+                        }));
+                        setPurposeSearch(e.target.value);
+                        setShowPurposeDrop(true);
+                      }}
+                      onFocus={() => setShowPurposeDrop(true)}
+                    />
+                    {showPurposeDrop &&
+                      purposes.filter((p) =>
+                        p
+                          .toLowerCase()
+                          .includes((purposeSearch || "").toLowerCase()),
+                      ).length > 0 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            background: "#fff",
+                            border: "1px solid #e8eaed",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                            zIndex: 100,
+                            maxHeight: "140px",
+                            overflowY: "auto",
+                          }}
+                        >
+                          {purposes
+                            .filter((p) =>
+                              p
+                                .toLowerCase()
+                                .includes((purposeSearch || "").toLowerCase()),
+                            )
+                            .map((p) => (
+                              <div
+                                key={p}
+                                onClick={() => {
+                                  setDrivingForm((f) => ({ ...f, purpose: p }));
+                                  setShowPurposeDrop(false);
+                                }}
+                                style={{
+                                  padding: "9px 14px",
+                                  cursor: "pointer",
+                                  fontSize: "13px",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.target.style.background = "#f4f5f7")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.target.style.background = "#fff")
+                                }
+                              >
+                                {p}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                  </div>
+                </>
+              )}
+
+              {/* 주유 */}
+              {drivingForm.type === "주유" && (
+                <>
+                  <div
+                    style={{
+                      background: "#fef3c7",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      border: "1px solid #fde68a",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#92400e",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      ⛽ 주유 정보
+                    </p>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gap: "8px",
+                      }}
+                    >
+                      <div className="field">
+                        <label>주유량 *</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="48.13"
+                            value={drivingForm.fuelAmount}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelAmount: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                            required
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            L
+                          </span>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>주유금액 *</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="52000"
+                            value={drivingForm.fuelCost}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelCost: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                            required
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            원
+                          </span>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>단가 *</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="1615"
+                            value={drivingForm.fuelUnitPrice}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelUnitPrice: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                            required
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            원
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 휴가 */}
+              {drivingForm.type === "휴가" && (
+                <>
+                  <div className="field">
+                    <label>미터기 (km) *</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="number"
+                        placeholder="오늘 계량기"
+                        value={drivingForm.meterReading}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            meterReading: e.target.value,
+                          }))
+                        }
+                        style={{ width: "100%", paddingRight: "40px" }}
+                        required
+                      />
+                      <span style={unitSuffix}>km</span>
+                    </div>
+                    {distPreview !== null && distPreview >= 0 && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#9d174d",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        개인 운행거리: {fmt(distPreview)}km
+                      </p>
+                    )}
+                    {meterTooLow && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ 전일 미터기({fmt(prevMeter)}km)보다 낮습니다!
+                      </p>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#fce7f3",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      border: "1px solid #f9a8d4",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#9d174d",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      ⛽ 개인 주유 (선택)
+                    </p>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gap: "8px",
+                      }}
+                    >
+                      <div className="field">
+                        <label>주유량</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="48.13"
+                            value={drivingForm.fuelAmount}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelAmount: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            L
+                          </span>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>주유금액</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="52000"
+                            value={drivingForm.fuelCost}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelCost: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            원
+                          </span>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>단가</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="1615"
+                            value={drivingForm.fuelUnitPrice}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                fuelUnitPrice: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "24px" }}
+                          />
+                          <span style={{ ...unitSuffix, fontSize: "11px" }}>
+                            원
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 구분 - 맨 아래 */}
+              <div className="field">
+                <label>구분 *</label>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  {TYPES.map((t) => {
+                    const c = TYPE_STYLE[t];
+                    const isActive = drivingForm.type === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            type: t,
+                            destination: "",
+                            arrivalTime: "",
+                            fuelAmount: "",
+                            fuelCost: "",
+                            fuelUnitPrice: "",
+                          }))
+                        }
+                        style={{
+                          flex: 1,
+                          padding: "10px",
+                          border: `1.5px solid ${isActive ? c.color : "#e0e0e0"}`,
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                          fontWeight: isActive ? 700 : 400,
+                          background: isActive ? c.bg : "#fff",
+                          color: isActive ? c.color : "#888",
+                        }}
+                      >
+                        {t === "주유" ? "⛽ " : t === "휴가" ? "🏖 " : "💼 "}
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {error && <p className="field-error">⚠ {error}</p>}
@@ -1270,12 +2026,12 @@ export default function SalesContent() {
                 <button
                   type="button"
                   className="btn-outline"
-                  onClick={() => setCashModal({ mode: null })}
+                  onClick={() => setShowModal(false)}
                 >
                   취소
                 </button>
                 <button type="submit" className="btn-primary">
-                  {cashModal.mode === "add" ? "추가" : "수정"}
+                  {editTarget ? "수정" : "추가"}
                 </button>
               </div>
             </form>
@@ -1283,134 +2039,82 @@ export default function SalesContent() {
         </div>
       )}
 
-      {/* 법인카드 모달 */}
-      {receiptModal.mode && (
-        <div className="modal-bg">
-          <div className="modal">
+      {/* ──── 법인카드 모달 ──── */}
+      {showReceiptModal && (
+        <div className="modal-bg" style={{ alignItems: "center" }}>
+          <div
+            className="modal"
+            style={{ width: "440px", borderRadius: "14px", maxHeight: "90vh" }}
+          >
             <div className="modal-header">
               <h3 className="modal-title" style={{ margin: 0 }}>
-                법인카드(지출) {receiptModal.mode === "add" ? "추가" : "수정"}
+                지출내역 {editTarget ? "수정" : "추가"}
               </h3>
               <button
                 className="modal-close"
-                onClick={() => setReceiptModal({ mode: null })}
+                onClick={() => setShowReceiptModal(false)}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSubmitReceipt} className="modal-form">
-              <DateField
-                value={receiptForm.date}
-                onChange={(v) => setReceiptForm({ ...receiptForm, date: v })}
-              />
               <div className="field">
-                <label>카테고리 *</label>
+                <label>날짜</label>
+                <input
+                  type="date"
+                  value={receiptForm.date}
+                  min={TODAY}
+                  max={TODAY}
+                  onChange={(e) =>
+                    setReceiptForm((f) => ({ ...f, date: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label>카테고리</label>
                 <select
                   value={receiptForm.category}
                   onChange={(e) =>
-                    setReceiptForm({
-                      ...receiptForm,
-                      category: e.target.value,
-                      amount: "",
-                      totalAmount: "",
-                    })
+                    setReceiptForm((f) => ({ ...f, category: e.target.value }))
                   }
-                  required
                 >
                   {categories.length === 0 ? (
-                    <option value="">
-                      카테고리가 없습니다 (관리자에게 문의)
-                    </option>
+                    <option value="">없음</option>
                   ) : (
                     categories.map((c) => (
                       <option key={c.id} value={c.name}>
-                        {c.name} {c.unit === "L" ? "(L)" : ""}
+                        {c.name}
                       </option>
                     ))
                   )}
                 </select>
               </div>
               <div className="field">
-                <label>내용</label>
+                <label>신용카드 번호</label>
                 <input
                   type="text"
-                  placeholder="내용 입력"
                   value={receiptForm.content}
                   onChange={(e) =>
-                    setReceiptForm({ ...receiptForm, content: e.target.value })
+                    setReceiptForm((f) => ({ ...f, content: e.target.value }))
                   }
                 />
               </div>
-
-              {/* L 단위: 주유량 + 금액 둘 다 */}
-              {isLUnit ? (
-                <>
-                  <div className="field">
-                    <label>주유량 (L) *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="예: 45.5"
-                        value={receiptForm.amount}
-                        onChange={(e) =>
-                          setReceiptForm({
-                            ...receiptForm,
-                            amount: e.target.value,
-                          })
-                        }
-                        style={{ width: "100%", paddingRight: "36px" }}
-                        required
-                      />
-                      <span style={unitSuffix}>L</span>
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>주유 금액 *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        step="1"
-                        placeholder="금액 입력"
-                        value={receiptForm.totalAmount}
-                        onChange={(e) =>
-                          setReceiptForm({
-                            ...receiptForm,
-                            totalAmount: e.target.value,
-                          })
-                        }
-                        style={{ width: "100%", paddingRight: "36px" }}
-                        required
-                      />
-                      <span style={unitSuffix}>원</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="field">
-                  <label>총금액 *</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="number"
-                      step="1"
-                      placeholder="금액 입력"
-                      value={receiptForm.amount}
-                      onChange={(e) =>
-                        setReceiptForm({
-                          ...receiptForm,
-                          amount: e.target.value,
-                        })
-                      }
-                      style={{ width: "100%", paddingRight: "36px" }}
-                      required
-                    />
-                    <span style={unitSuffix}>원</span>
-                  </div>
+              <div className="field">
+                <label>총금액 *</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="number"
+                    value={receiptForm.amount}
+                    onChange={(e) =>
+                      setReceiptForm((f) => ({ ...f, amount: e.target.value }))
+                    }
+                    style={{ width: "100%", paddingRight: "36px" }}
+                    required
+                  />
+                  <span style={unitSuffix}>원</span>
                 </div>
-              )}
-
-              {/* 공급가액/VAT 미리보기 - L/원 둘 다 표시 */}
-              {Number(priceBase) > 0 && (
+              </div>
+              {receiptBase > 0 && (
                 <div
                   style={{
                     background: "#f0fdf4",
@@ -1427,27 +2131,26 @@ export default function SalesContent() {
                       marginBottom: "4px",
                     }}
                   >
-                    <span style={{ color: "#555" }}>공급가액 (자동계산)</span>
+                    <span style={{ color: "#555" }}>공급가액</span>
                     <strong style={{ color: "#1557b0" }}>
-                      {previewSupply.toLocaleString()}원
+                      {fmtWon(supplyPreview)}
                     </strong>
                   </div>
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
                   >
-                    <span style={{ color: "#555" }}>VAT 10% (자동계산)</span>
+                    <span style={{ color: "#555" }}>VAT 10%</span>
                     <strong style={{ color: "#059669" }}>
-                      {previewVat.toLocaleString()}원
+                      {fmtWon(vatPreview)}
                     </strong>
                   </div>
                 </div>
               )}
-
               <div className="field">
                 <label>
-                  사업자등록번호{" "}
+                  사업자번호{" "}
                   <span
-                    style={{ color: "#aaa", fontWeight: 400, fontSize: "11px" }}
+                    style={{ color: "#aaa", fontSize: "11px", fontWeight: 400 }}
                   >
                     (선택)
                   </span>
@@ -1457,10 +2160,10 @@ export default function SalesContent() {
                   placeholder="000-00-00000"
                   value={receiptForm.businessNumber}
                   onChange={(e) =>
-                    setReceiptForm({
-                      ...receiptForm,
+                    setReceiptForm((f) => ({
+                      ...f,
                       businessNumber: e.target.value,
-                    })
+                    }))
                   }
                 />
               </div>
@@ -1468,20 +2171,19 @@ export default function SalesContent() {
                 <label>
                   상호{" "}
                   <span
-                    style={{ color: "#aaa", fontWeight: 400, fontSize: "11px" }}
+                    style={{ color: "#aaa", fontSize: "11px", fontWeight: 400 }}
                   >
                     (선택)
                   </span>
                 </label>
                 <input
                   type="text"
-                  placeholder="상호명"
                   value={receiptForm.companyName}
                   onChange={(e) =>
-                    setReceiptForm({
-                      ...receiptForm,
+                    setReceiptForm((f) => ({
+                      ...f,
                       companyName: e.target.value,
-                    })
+                    }))
                   }
                 />
               </div>
@@ -1490,101 +2192,12 @@ export default function SalesContent() {
                 <button
                   type="button"
                   className="btn-outline"
-                  onClick={() => setReceiptModal({ mode: null })}
+                  onClick={() => setShowReceiptModal(false)}
                 >
                   취소
                 </button>
                 <button type="submit" className="btn-primary">
-                  {receiptModal.mode === "add" ? "추가" : "수정"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 운행내역 모달 */}
-      {drivingModal.mode && (
-        <div className="modal-bg">
-          <div className="modal">
-            <div className="modal-header">
-              <h3 className="modal-title" style={{ margin: 0 }}>
-                운행내역 {drivingModal.mode === "add" ? "추가" : "수정"}
-              </h3>
-              <button
-                className="modal-close"
-                onClick={() => setDrivingModal({ mode: null })}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSubmitDriving} className="modal-form">
-              <DateField
-                value={drivingForm.date}
-                onChange={(v) => setDrivingForm({ ...drivingForm, date: v })}
-              />
-              <div className="field">
-                <label>총주유내역</label>
-                <input
-                  type="text"
-                  placeholder="주유 내역"
-                  value={drivingForm.totalFuelDetail}
-                  onChange={(e) =>
-                    setDrivingForm({
-                      ...drivingForm,
-                      totalFuelDetail: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                }}
-              >
-                <div className="field">
-                  <label>평균거리 (km)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="km"
-                    value={drivingForm.averageDistance}
-                    onChange={(e) =>
-                      setDrivingForm({
-                        ...drivingForm,
-                        averageDistance: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>총주유금액</label>
-                  <input
-                    type="number"
-                    placeholder="금액"
-                    value={drivingForm.totalFuelCost}
-                    onChange={(e) =>
-                      setDrivingForm({
-                        ...drivingForm,
-                        totalFuelCost: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              {error && <p className="field-error">⚠ {error}</p>}
-              <div className="modal-btns">
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() => setDrivingModal({ mode: null })}
-                >
-                  취소
-                </button>
-                <button type="submit" className="btn-primary">
-                  {drivingModal.mode === "add" ? "추가" : "수정"}
+                  {editTarget ? "수정" : "추가"}
                 </button>
               </div>
             </form>
@@ -1595,65 +2208,34 @@ export default function SalesContent() {
   );
 }
 
+function Row({ label, value, color }) {
+  return (
+    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+      <span style={{ color: "#aaa", fontSize: "11px" }}>{label}</span>
+      <span style={{ fontWeight: 600, color: color || "#1a1a2e" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+const selStyle = {
+  padding: "8px 12px",
+  border: "1.5px solid #d8dce3",
+  borderRadius: "7px",
+  fontSize: "13px",
+  outline: "none",
+  background: "#fff",
+};
 const thS = {
-  padding: "10px 14px",
+  padding: "9px 12px",
   textAlign: "left",
   fontSize: "11px",
   fontWeight: 600,
   color: "#888",
-  letterSpacing: "0.3px",
+  whiteSpace: "nowrap",
 };
-const tdS = { padding: "12px 14px" };
-const catBadge = {
-  fontSize: "11px",
-  fontWeight: 600,
-  padding: "3px 8px",
-  borderRadius: "99px",
-  background: "#e8f0fe",
-  color: "#1557b0",
-};
-const countBadge = {
-  fontSize: "11px",
-  fontWeight: 600,
-  padding: "2px 7px",
-  borderRadius: "99px",
-  background: "#e8eaed",
-  color: "#555",
-  marginLeft: "4px",
-};
-const dotBtnStyle = {
-  background: "none",
-  border: "none",
-  fontSize: "16px",
-  color: "#aaa",
-  cursor: "pointer",
-  padding: "2px 6px",
-  borderRadius: "4px",
-  letterSpacing: "1px",
-};
-const dropdownStyle = {
-  position: "absolute",
-  right: 0,
-  top: "100%",
-  zIndex: 50,
-  background: "#fff",
-  border: "1px solid #e8eaed",
-  borderRadius: "10px",
-  boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-  overflow: "hidden",
-  minWidth: "100px",
-};
-const menuItemStyle = {
-  display: "block",
-  width: "100%",
-  padding: "10px 16px",
-  border: "none",
-  background: "#fff",
-  fontSize: "13px",
-  color: "#333",
-  textAlign: "left",
-  cursor: "pointer",
-};
+const tdS = { padding: "11px 12px" };
 const unitSuffix = {
   position: "absolute",
   right: "12px",
