@@ -89,6 +89,7 @@ export default function SalesContent() {
   const [mainTab, setMainTab] = useState("driving");
 
   const [isLocked, setIsLocked] = useState(false);
+  const [weekLocks, setWeekLocks] = useState({}); // ← 이 줄 추가
   const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
   const [purposes, setPurposes] = useState([]);
@@ -99,6 +100,7 @@ export default function SalesContent() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [dayDriving, setDayDriving] = useState([]);
   const [prevMeter, setPrevMeter] = useState(0);
+  const [lastMeter, setLastMeter] = useState(0); // 오늘 마지막 미터기 (추가 시 기준)
   const [dailyNote, setDailyNote] = useState("");
   const [noteInput, setNoteInput] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -146,19 +148,77 @@ export default function SalesContent() {
   });
 
   const isToday = selectedDate === TODAY;
+
+  // 월요일 기준 주 계산
+  // 날짜 문자열을 로컬 시간으로 파싱 (UTC 문제 방지)
+  const parseLocalDate = (dateStr) => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const getWeeksOfMonth = (y, m) => {
+    const weeks = [];
+    const firstDay = new Date(y, m - 1, 1);
+    const lastDay = new Date(y, m, 0);
+    let start = new Date(firstDay);
+    const dow = start.getDay();
+    if (dow !== 1) {
+      start.setDate(start.getDate() + (dow === 0 ? -6 : 1 - dow));
+    }
+    let weekNum = 1;
+    while (start <= lastDay) {
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      const cs = start < firstDay ? new Date(firstDay) : new Date(start);
+      const ce = end > lastDay ? new Date(lastDay) : new Date(end);
+      weeks.push({
+        weekNum,
+        start: cs,
+        end: ce,
+        label: `${cs.getDate()}일~${ce.getDate()}일`,
+      });
+      start.setDate(start.getDate() + 7);
+      weekNum++;
+    }
+    return weeks;
+  };
+
+  // 선택 날짜가 속한 주 번호 (로컬 시간 기준)
+  const getWeekNumForDate = (dateStr) => {
+    const d = parseLocalDate(dateStr);
+    const weeks = getWeeksOfMonth(d.getFullYear(), d.getMonth() + 1);
+    for (const w of weeks) {
+      if (d >= w.start && d <= w.end) return w.weekNum;
+    }
+    return -1;
+  };
+
+  // 선택 날짜 주 번호
+  const selectedWeekNum = getWeekNumForDate(selectedDate);
+
+  // DB weekLocks 기준으로만 체크 (스케줄러가 이번주=false, 지난주=true 관리)
+  const isWeekLocked = weekLocks[selectedWeekNum] === true;
+  const isAnyLocked = isLocked || isWeekLocked;
   const isPast = selectedDate < TODAY;
+
+  // 이번 주 여부 (UI 표시용)
+  const todayWeekNum = getWeekNumForDate(TODAY);
+  const isThisWeek =
+    selectedWeekNum === todayWeekNum &&
+    year === new Date().getFullYear() &&
+    month === new Date().getMonth() + 1;
 
   const receiptBase = Number(receiptForm.amount || 0);
   const supplyPreview = receiptBase ? Math.round(receiptBase / 1.1) : 0;
   const vatPreview = receiptBase ? receiptBase - supplyPreview : 0;
   const distPreview =
-    drivingForm.meterReading && prevMeter
-      ? parseInt(drivingForm.meterReading) - prevMeter
+    drivingForm.meterReading && lastMeter
+      ? parseInt(drivingForm.meterReading) - lastMeter
       : null;
   const meterTooLow =
     drivingForm.meterReading &&
-    prevMeter > 0 &&
-    parseInt(drivingForm.meterReading) < prevMeter;
+    lastMeter > 0 &&
+    parseInt(drivingForm.meterReading) < lastMeter;
 
   const enteredDates = new Set(monthDriving.map((d) => d.date));
 
@@ -173,6 +233,7 @@ export default function SalesContent() {
         api.getMyCard(),
       ]);
       setIsLocked(lock.data.locked);
+      setWeekLocks(lock.data.weekLocks || {});
       setMonthDriving(drv.data);
       setReceipts(rec.data);
       setCategories(cats.data);
@@ -195,6 +256,13 @@ export default function SalesContent() {
       setDailyNote(note.data.note || "");
       setNoteInput(note.data.note || "");
       setNoteEditing(false);
+      // 오늘 마지막 미터기 계산 (추가 시 기준)
+      const todayMeters = day.data
+        .map((d) => d.meterReading)
+        .filter((m) => m > 0);
+      setLastMeter(
+        todayMeters.length > 0 ? Math.max(...todayMeters) : prev.data.prevMeter,
+      );
     } catch {}
   }, [selectedDate]);
 
@@ -234,10 +302,22 @@ export default function SalesContent() {
 
   // 운행일지 모달
   const openAdd = async () => {
+    if (isAnyLocked) {
+      setError("잠긴 주입니다. 입력할 수 없습니다.");
+      return;
+    }
     setError("");
     setEditTarget(null);
     const prev = await api.getPrevMeter(selectedDate);
     setPrevMeter(prev.data.prevMeter);
+    // 오늘 마지막 미터기 갱신
+    const todayRes = await api.getDrivingDate(selectedDate);
+    const todayMeters = todayRes.data
+      .map((d) => d.meterReading)
+      .filter((m) => m > 0);
+    setLastMeter(
+      todayMeters.length > 0 ? Math.max(...todayMeters) : prev.data.prevMeter,
+    );
     setDrivingForm({
       startDate: selectedDate,
       endDate: "",
@@ -271,6 +351,10 @@ export default function SalesContent() {
   const handleSubmitDriving = async (e) => {
     e.preventDefault();
     setError("");
+    if (isAnyLocked) {
+      setError("잠긴 주입니다. 입력할 수 없습니다.");
+      return;
+    }
     try {
       const payload = { ...drivingForm, date: drivingForm.startDate };
       if (editTarget) await api.updateDriving(editTarget.id, payload);
@@ -285,6 +369,10 @@ export default function SalesContent() {
   };
   const handleDelete = async (id) => {
     setOpenMenu(null);
+    if (isAnyLocked) {
+      setError("잠긴 주입니다. 삭제할 수 없습니다.");
+      return;
+    }
     if (!window.confirm("삭제할까요?")) return;
     try {
       await api.deleteDriving(id);
@@ -297,6 +385,10 @@ export default function SalesContent() {
 
   // 법인카드 모달
   const openReceiptAdd = () => {
+    if (isAnyLocked) {
+      setError("잠긴 주입니다. 입력할 수 없습니다.");
+      return;
+    }
     setError("");
     setEditTarget(null);
     setReceiptForm({
@@ -520,7 +612,37 @@ export default function SalesContent() {
             fontWeight: 500,
           }}
         >
-          🔒 이번 달은 잠겨있습니다.
+          🔒 이번 달은 잠겨있습니다. 입력/수정/삭제가 불가합니다.
+        </div>
+      )}
+      {!isLocked && isWeekLocked && (
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "2px solid #f59e0b",
+            borderRadius: "10px",
+            padding: "12px 16px",
+            marginBottom: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <span style={{ fontSize: "20px" }}>🔒</span>
+          <div>
+            <div
+              style={{ fontSize: "14px", fontWeight: 700, color: "#92400e" }}
+            >
+              {!isThisWeek
+                ? "이번 주가 아닙니다."
+                : `${selectedWeekNum}주차 기록이 잠겨있습니다.`}
+            </div>
+            <div
+              style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}
+            >
+              {"이 주의 기록은 입력/수정/삭제할 수 없습니다."}
+            </div>
+          </div>
         </div>
       )}
       {error && (
@@ -580,16 +702,16 @@ export default function SalesContent() {
                 );
               })}
             </select>
-            {!isLocked && isToday && (
+            {!isAnyLocked && isThisWeek && (
               <button className="btn-primary" onClick={openAdd}>
                 ＋ 추가
               </button>
             )}
-            {isPast && (
+            {!isThisWeek && isWeekLocked && !isLocked && (
               <span
                 style={{ fontSize: "12px", color: "#bbb", padding: "0 4px" }}
               >
-                이전 날짜 (조회만)
+                이번 주가 아닙니다 (조회만)
               </span>
             )}
           </div>
@@ -622,7 +744,7 @@ export default function SalesContent() {
                 fontSize: "13px",
               }}
             >
-              {isToday ? "오늘 운행 기록이 없습니다." : "기록이 없습니다."}
+              "기록이 없습니다."
             </div>
           ) : (
             <>
@@ -661,7 +783,7 @@ export default function SalesContent() {
                         <th style={{ ...thS, textAlign: "right" }}>주유금액</th>
                         <th style={{ ...thS, textAlign: "right" }}>단가</th>
                         <th style={thS}>구분</th>
-                        {!isLocked && isToday && <th style={thS}></th>}
+                        {!isAnyLocked && isThisWeek && <th style={thS}></th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -905,7 +1027,7 @@ export default function SalesContent() {
           )}
 
           {/* 당일 요약 + 비고 */}
-          {(dayDriving.length > 0 || !isPast) && (
+          {(dayDriving.length > 0 || isThisWeek) && (
             <div
               style={{
                 background: "#fff",
@@ -1626,7 +1748,18 @@ export default function SalesContent() {
                     />
                   </div>
                   <div className="field">
-                    <label>미터기 (km) *</label>
+                    <label>
+                      미터기 (km) *{" "}
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#1557b0",
+                          fontWeight: 400,
+                        }}
+                      >
+                        현재 기준: {fmt(lastMeter)}km 이상
+                      </span>
+                    </label>
                     <div style={{ position: "relative" }}>
                       <input
                         type="number"
@@ -1664,7 +1797,7 @@ export default function SalesContent() {
                           fontWeight: 600,
                         }}
                       >
-                        ⚠ 전일 미터기({fmt(prevMeter)}km)보다 낮습니다!
+                        ⚠ 이전 미터기({fmt(lastMeter)}km)보다 낮습니다!
                       </p>
                     )}
                   </div>
@@ -1883,7 +2016,7 @@ export default function SalesContent() {
                           fontWeight: 600,
                         }}
                       >
-                        ⚠ 전일 미터기({fmt(prevMeter)}km)보다 낮습니다!
+                        ⚠ 이전 미터기({fmt(lastMeter)}km)보다 낮습니다!
                       </p>
                     )}
                   </div>
