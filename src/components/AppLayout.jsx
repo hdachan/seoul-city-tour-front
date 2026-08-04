@@ -9,9 +9,11 @@ import RecordContent from "./tabs/RecordContent";
 import SettlementContent from "./tabs/SettlementContent";
 import GinsengContent from "./tabs/GinsengContent";
 import GuideAdminContent from "./tabs/GuideAdminContent";
-import SalesAdminContent from "./tabs/SalesAdminContent";
+import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
+import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
+
 import GuideFormContent from "./tabs/GuideFormContent";
-import SalesContent from "./tabs/SalesContent";
+
 import DevContent from "./tabs/DevContent";
 import axios from "axios";
 import "./AppLayout.css";

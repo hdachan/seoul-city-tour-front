@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import "./SalesContent.css";
+import "./SalesContent.css"; // 수정
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 const BASE_URL = "http://localhost:8080/api";
 const authHeader = () => ({
@@ -17,6 +18,8 @@ const api = {
   getCategories: () =>
     axios.get(`${BASE_URL}/sales-form/categories`, authHeader()),
   getPurposes: () => axios.get(`${BASE_URL}/sales-form/purposes`, authHeader()),
+  getDestinations: () =>
+    axios.get(`${BASE_URL}/sales-form/destinations`, authHeader()),
   getDriving: (y, m) =>
     axios.get(`${BASE_URL}/sales-form/driving`, {
       ...authHeader(),
@@ -93,6 +96,10 @@ export default function SalesContent() {
   const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
   const [purposes, setPurposes] = useState([]);
+  const [destinations, setDestinations] = useState([]);
+  const [destSearch, setDestSearch] = useState("");
+  const [showDestDrop, setShowDestDrop] = useState(false);
+  const destRef = useRef(null);
   const [monthDriving, setMonthDriving] = useState([]);
   const [receipts, setReceipts] = useState([]);
 
@@ -239,6 +246,11 @@ export default function SalesContent() {
       setCategories(cats.data);
       setPurposes(purp.data);
       setMyCard(card.data.cardNumber);
+      // destinations는 별도 로드 (실패해도 전체 영향 없음)
+      api
+        .getDestinations()
+        .then((r) => setDestinations(r.data))
+        .catch(() => {});
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
@@ -278,6 +290,8 @@ export default function SalesContent() {
         setOpenMenu(null);
       if (purposeRef.current && !purposeRef.current.contains(e.target))
         setShowPurposeDrop(false);
+      if (destRef.current && !destRef.current.contains(e.target))
+        setShowDestDrop(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -339,9 +353,10 @@ export default function SalesContent() {
       startDate: row.date,
       endDate: "",
       type: row.type,
-      destination: row.destination,
-      arrivalTime: row.arrivalTime,
+      destination: row.destination || "",
+      arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
+      purpose: row.purpose || "",
       fuelAmount: row.fuelAmount || "",
       fuelCost: row.fuelCost || "",
       fuelUnitPrice: row.fuelUnitPrice || "",
@@ -437,6 +452,314 @@ export default function SalesContent() {
     } catch (err) {
       setError(err.response?.data?.error || "삭제 실패");
     }
+  };
+
+  // 법인카드 엑셀 다운로드
+  // 운행일지 엑셀 다운로드 (월 전체)
+  const downloadDrivingExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // 미터기 기반 거리 재계산 (월 전체)
+    const sorted = [...monthDriving].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      if (!a.arrivalTime) return 1;
+      if (!b.arrivalTime) return -1;
+      return a.arrivalTime.localeCompare(b.arrivalTime);
+    });
+    let lastM = 0;
+    const withDist = sorted.map((d) => {
+      const m = d.meterReading || 0;
+      let dist = 0;
+      if (m > 0 && lastM > 0 && m > lastM) dist = m - lastM;
+      if (m > 0) lastM = m;
+      return { ...d, calcDist: dist };
+    });
+
+    const titleRow = [[`${year}년 ${month}월 운행일지`]];
+    const infoRow = [[`작성자: ${username}`, "", "", "", "", "", "", ""]];
+    const colHeader = [
+      [
+        "날짜",
+        "구분",
+        "시간",
+        "도착지",
+        "미터기(km)",
+        "운행거리(km)",
+        "용무",
+        "주유량(L)",
+        "주유금액(원)",
+        "단가(원/L)",
+      ],
+    ];
+    const dataRows = withDist.map((d) => [
+      d.date,
+      d.type,
+      d.arrivalTime || "",
+      d.destination || "",
+      d.meterReading || 0,
+      d.calcDist || 0,
+      d.purpose || "",
+      d.fuelAmount || 0,
+      d.fuelCost || 0,
+      d.fuelUnitPrice || 0,
+    ]);
+    const totalRow = [
+      "합계",
+      "",
+      "",
+      "",
+      "",
+      withDist.reduce((s, d) => s + (d.calcDist || 0), 0),
+      "",
+      withDist.reduce((s, d) => s + (d.fuelAmount || 0), 0),
+      withDist.reduce((s, d) => s + (d.fuelCost || 0), 0),
+      "",
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([
+      ...titleRow,
+      ...infoRow,
+      ...colHeader,
+      ...dataRows,
+      totalRow,
+    ]);
+    ws["!cols"] = [
+      { wch: 12 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 14 },
+      { wch: 12 },
+    ];
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }];
+    ws["!pageSetup"] = {
+      orientation: "landscape",
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+    };
+    XLSX.utils.book_append_sheet(wb, ws, `${month}월 운행일지`);
+    XLSX.writeFile(wb, `${year}년_${month}월_운행일지_${username}.xlsx`);
+  };
+
+  // 운행일지 인쇄 (월 전체)
+  const printDriving = () => {
+    const sorted = [...monthDriving].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      if (!a.arrivalTime) return 1;
+      if (!b.arrivalTime) return -1;
+      return a.arrivalTime.localeCompare(b.arrivalTime);
+    });
+    let lastM = 0;
+    const withDist = sorted.map((d) => {
+      const m = d.meterReading || 0;
+      let dist = 0;
+      if (m > 0 && lastM > 0 && m > lastM) dist = m - lastM;
+      if (m > 0) lastM = m;
+      return { ...d, calcDist: dist };
+    });
+
+    const typeColor = { 업무: "#1557b0", 주유: "#92400e", 휴가: "#9d174d" };
+    const rows = withDist
+      .map(
+        (d) => `
+      <tr>
+        <td>${d.date}</td>
+        <td style="color:${typeColor[d.type] || "#333"};font-weight:bold">${d.type}</td>
+        <td>${d.arrivalTime || ""}</td>
+        <td>${d.destination || ""}</td>
+        <td style="text-align:right">${d.meterReading ? fmt(d.meterReading) : ""}</td>
+        <td style="text-align:right;font-weight:bold;color:#1557b0">${d.calcDist > 0 ? fmt(d.calcDist) : ""}</td>
+        <td>${d.purpose || ""}</td>
+        <td style="text-align:right">${d.fuelAmount > 0 ? d.fuelAmount + "L" : ""}</td>
+        <td style="text-align:right">${d.fuelCost > 0 ? fmt(d.fuelCost) + "원" : ""}</td>
+        <td style="text-align:right">${d.fuelUnitPrice > 0 ? fmt(d.fuelUnitPrice) : ""}</td>
+      </tr>`,
+      )
+      .join("");
+    const totalDist = withDist.reduce((s, d) => s + (d.calcDist || 0), 0);
+    const totalFuelL = withDist.reduce((s, d) => s + (d.fuelAmount || 0), 0);
+    const totalFuelC = withDist.reduce((s, d) => s + (d.fuelCost || 0), 0);
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>
+        body { font-family: 맑은고딕, sans-serif; margin: 10mm; }
+        h2 { text-align: center; font-size: 15pt; margin-bottom: 4px; }
+        .info { font-size: 10pt; margin-bottom: 8px; text-align: right; }
+        table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+        th, td { border: 1px solid #999; padding: 3px 5px; }
+        th { background: #f0f0f0; text-align: center; font-weight: bold; }
+        .total { font-weight: bold; background: #f0f4ff; }
+        @media print { @page { size: A4 landscape; margin: 8mm; } }
+      </style></head><body>
+      <h2>${year}년 ${month}월 운행일지</h2>
+      <div class="info">작성자: ${username}</div>
+      <table>
+        <thead><tr>
+          <th>날짜</th><th>구분</th><th>시간</th><th>도착지</th>
+          <th>미터기(km)</th><th>운행거리(km)</th><th>용무</th>
+          <th>주유량</th><th>주유금액</th><th>단가</th>
+        </tr></thead>
+        <tbody>
+          ${rows}
+          <tr class="total">
+            <td colspan="5" style="text-align:center">합 계</td>
+            <td style="text-align:right">${fmt(totalDist)}km</td>
+            <td></td>
+            <td style="text-align:right">${totalFuelL.toFixed(2)}L</td>
+            <td style="text-align:right">${fmt(totalFuelC)}원</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <script>window.onload=()=>{window.print();window.close();}</script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const downloadReceiptExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const titleRow = [["신용카드 매출전표 등 수취금액 합계표"]];
+    const infoRow = [
+      [
+        `20${String(year).slice(2)}  년  ${month}  월`,
+        "",
+        `작성자: ${username}`,
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+    ];
+    const colHeader = [
+      [
+        "날 짜",
+        "신용카드 카드번호",
+        "내  용",
+        "총 금액",
+        "공급가액",
+        "VAT",
+        "사업자등록번호",
+        "상호",
+      ],
+    ];
+    const dataRows = receipts.map((r) => [
+      r.date,
+      r.content || "",
+      r.category || "",
+      r.totalAmount || 0,
+      r.supplyAmount || 0,
+      r.vat || 0,
+      r.businessNumber || "",
+      r.companyName || "",
+    ]);
+    const emptyRows = Array.from(
+      { length: Math.max(0, 20 - dataRows.length) },
+      () => ["", "", "", "", "", "", "", ""],
+    );
+    const totalRow = [
+      "합  계",
+      "",
+      "",
+      receipts.reduce((s, r) => s + (r.totalAmount || 0), 0),
+      receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0),
+      receipts.reduce((s, r) => s + (r.vat || 0), 0),
+      "",
+      "",
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([
+      ...titleRow,
+      ...infoRow,
+      ...colHeader,
+      ...dataRows,
+      ...emptyRows,
+      totalRow,
+    ]);
+    ws["!cols"] = [
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 14 },
+    ];
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+    ws["!pageSetup"] = {
+      orientation: "landscape",
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+    };
+    XLSX.utils.book_append_sheet(wb, ws, `${month}월 법인카드`);
+    XLSX.writeFile(
+      wb,
+      `${year}년_${month}월_신용카드매출전표_${username}.xlsx`,
+    );
+  };
+
+  // 법인카드 인쇄
+  const printReceipt = () => {
+    const fmt = (n) => Number(n || 0).toLocaleString();
+    const rows = receipts
+      .map(
+        (r) => `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.content || ""}</td>
+        <td>${r.category || ""}</td>
+        <td style="text-align:right">${fmt(r.totalAmount)}원</td>
+        <td style="text-align:right">${fmt(r.supplyAmount)}원</td>
+        <td style="text-align:right">${fmt(r.vat)}원</td>
+        <td>${r.businessNumber || ""}</td>
+        <td>${r.companyName || ""}</td>
+      </tr>`,
+      )
+      .join("");
+    const emptyRows = Array.from(
+      { length: Math.max(0, 20 - receipts.length) },
+      () => `<tr>${Array(8).fill("<td>&nbsp;</td>").join("")}</tr>`,
+    ).join("");
+    const total = `<tr style="font-weight:bold;border-top:2px solid #000">
+      <td colspan="3" style="text-align:center">합 계</td>
+      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.totalAmount || 0), 0))}원</td>
+      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0))}원</td>
+      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.vat || 0), 0))}원</td>
+      <td colspan="2"></td></tr>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>
+        body { font-family: 맑은고딕, sans-serif; margin: 10mm; }
+        h2 { text-align: center; font-size: 16pt; margin-bottom: 4px; }
+        .info { font-size: 10pt; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        th, td { border: 1px solid #000; padding: 4px 6px; }
+        th { background: #f0f0f0; text-align: center; font-weight: bold; }
+        @media print { @page { size: A4 landscape; margin: 10mm; } }
+      </style></head><body>
+      <h2>신용카드 매출전표 등 수취금액 합계표</h2>
+      <div class="info">20&nbsp;&nbsp;년&nbsp;&nbsp;${month}&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;작성자: ${username}</div>
+      <table>
+        <thead><tr>
+          <th>날 짜</th><th>신용카드 카드번호</th><th>내 용</th>
+          <th>총 금액</th><th>공급가액</th><th>VAT</th>
+          <th>사업자등록번호</th><th>상호</th>
+        </tr></thead>
+        <tbody>${rows}${emptyRows}${total}</tbody>
+      </table>
+      <script>window.onload=()=>{window.print();window.close();}</script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
   };
 
   const DotMenu = ({ id, onEdit, onDelete }) => (
@@ -702,6 +1025,24 @@ export default function SalesContent() {
                 );
               })}
             </select>
+            {monthDriving.length > 0 && (
+              <>
+                <button
+                  className="btn-outline"
+                  onClick={downloadDrivingExcel}
+                  style={{ fontSize: "12px", padding: "7px 12px" }}
+                >
+                  📥 엑셀
+                </button>
+                <button
+                  className="btn-outline"
+                  onClick={printDriving}
+                  style={{ fontSize: "12px", padding: "7px 12px" }}
+                >
+                  🖨 인쇄
+                </button>
+              </>
+            )}
             {!isAnyLocked && isThisWeek && (
               <button className="btn-primary" onClick={openAdd}>
                 ＋ 추가
@@ -1213,11 +1554,31 @@ export default function SalesContent() {
               카드번호:{" "}
               <strong style={{ color: "#1a1a2e" }}>{myCard || "미등록"}</strong>
             </p>
-            {!isLocked && (
-              <button className="btn-primary" onClick={openReceiptAdd}>
-                ＋ 지출내역
-              </button>
-            )}
+            <div style={{ display: "flex", gap: "6px" }}>
+              {receipts.length > 0 && (
+                <>
+                  <button
+                    className="btn-outline"
+                    onClick={downloadReceiptExcel}
+                    style={{ fontSize: "12px", padding: "7px 12px" }}
+                  >
+                    📥 엑셀
+                  </button>
+                  <button
+                    className="btn-outline"
+                    onClick={printReceipt}
+                    style={{ fontSize: "12px", padding: "7px 12px" }}
+                  >
+                    🖨 인쇄
+                  </button>
+                </>
+              )}
+              {!isLocked && (
+                <button className="btn-primary" onClick={openReceiptAdd}>
+                  ＋ 지출내역
+                </button>
+              )}
+            </div>
           </div>
           {/* 모바일 법인카드 카드 */}
           <div
@@ -1732,20 +2093,83 @@ export default function SalesContent() {
                       }}
                     />
                   </div>
-                  <div className="field">
+                  <div
+                    className="field"
+                    style={{ position: "relative" }}
+                    ref={destRef}
+                  >
                     <label>도착지 *</label>
                     <input
                       type="text"
                       placeholder="경복궁"
                       value={drivingForm.destination}
-                      onChange={(e) =>
+                      autoComplete="off"
+                      required
+                      onChange={(e) => {
                         setDrivingForm((f) => ({
                           ...f,
                           destination: e.target.value,
-                        }))
-                      }
-                      required
+                        }));
+                        setDestSearch(e.target.value);
+                        setShowDestDrop(true);
+                      }}
+                      onFocus={() => setShowDestDrop(true)}
                     />
+                    {showDestDrop &&
+                      destinations.filter((d) =>
+                        d
+                          .toLowerCase()
+                          .includes((destSearch || "").toLowerCase()),
+                      ).length > 0 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            background: "#fff",
+                            border: "1px solid #e8eaed",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                            zIndex: 100,
+                            maxHeight: "90px",
+                            overflowY: "auto",
+                          }}
+                        >
+                          {destinations
+                            .filter((d) =>
+                              d
+                                .toLowerCase()
+                                .includes((destSearch || "").toLowerCase()),
+                            )
+                            .slice(0, 3)
+                            .map((d) => (
+                              <div
+                                key={d}
+                                onClick={() => {
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    destination: d,
+                                  }));
+                                  setShowDestDrop(false);
+                                }}
+                                style={{
+                                  padding: "9px 14px",
+                                  cursor: "pointer",
+                                  fontSize: "13px",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.target.style.background = "#f4f5f7")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.target.style.background = "#fff")
+                                }
+                              >
+                                {d}
+                              </div>
+                            ))}
+                        </div>
+                      )}
                   </div>
                   <div className="field">
                     <label>
