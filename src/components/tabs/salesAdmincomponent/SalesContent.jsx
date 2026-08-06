@@ -70,6 +70,22 @@ const fmtWon = (n) => fmt(n) + "원";
 const pad2 = (n) => String(n).padStart(2, "0");
 const TYPES = ["업무", "주유", "휴가"];
 const TODAY = new Date().toISOString().split("T")[0];
+const getThisWeekMonday = () => {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toLocaleDateString("en-CA");
+};
+const getThisWeekSunday = () => {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? 0 : 7 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toLocaleDateString("en-CA");
+};
+const THIS_WEEK_MONDAY = getThisWeekMonday();
+const THIS_WEEK_SUNDAY = getThisWeekSunday();
 const getKoreaTime = () =>
   new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Seoul",
@@ -714,44 +730,70 @@ export default function SalesContent() {
       .map(
         (r) => `
       <tr>
-        <td>${r.date}</td>
+        <td style="text-align:center">${r.date ? r.date.slice(5) : ""}</td>
         <td>${r.content || ""}</td>
         <td>${r.category || ""}</td>
-        <td style="text-align:right">${fmt(r.totalAmount)}원</td>
-        <td style="text-align:right">${fmt(r.supplyAmount)}원</td>
-        <td style="text-align:right">${fmt(r.vat)}원</td>
+        <td style="text-align:right">${r.totalAmount ? fmt(r.totalAmount) : ""}</td>
+        <td style="text-align:right">${r.supplyAmount ? fmt(r.supplyAmount) : ""}</td>
+        <td style="text-align:right">${r.vat ? fmt(r.vat) : ""}</td>
         <td>${r.businessNumber || ""}</td>
         <td>${r.companyName || ""}</td>
       </tr>`,
       )
       .join("");
     const emptyRows = Array.from(
-      { length: Math.max(0, 20 - receipts.length) },
-      () => `<tr>${Array(8).fill("<td>&nbsp;</td>").join("")}</tr>`,
+      { length: Math.max(0, 22 - receipts.length) },
+      () =>
+        `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`,
     ).join("");
-    const total = `<tr style="font-weight:bold;border-top:2px solid #000">
-      <td colspan="3" style="text-align:center">합 계</td>
-      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.totalAmount || 0), 0))}원</td>
-      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0))}원</td>
-      <td style="text-align:right">${fmt(receipts.reduce((s, r) => s + (r.vat || 0), 0))}원</td>
-      <td colspan="2"></td></tr>`;
+    const totalAmt = receipts.reduce((s, r) => s + (r.totalAmount || 0), 0);
+    const totalSupply = receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0);
+    const totalVat = receipts.reduce((s, r) => s + (r.vat || 0), 0);
+    const total = `<tr style="font-weight:bold">
+      <td colspan="3" style="text-align:center;border-top:2px solid #000">합 계</td>
+      <td style="text-align:right;border-top:2px solid #000">${fmt(totalAmt)}</td>
+      <td style="text-align:right;border-top:2px solid #000">${fmt(totalSupply)}</td>
+      <td style="text-align:right;border-top:2px solid #000">${fmt(totalVat)}</td>
+      <td style="border-top:2px solid #000"></td>
+      <td style="border-top:2px solid #000"></td>
+    </tr>`;
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <style>
-        body { font-family: 맑은고딕, sans-serif; margin: 10mm; }
-        h2 { text-align: center; font-size: 16pt; margin-bottom: 4px; }
-        .info { font-size: 10pt; margin-bottom: 8px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: '맑은 고딕', sans-serif; padding: 8mm; }
+        h2 { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 6px; letter-spacing: 1px; }
+        .info { font-size: 10pt; margin-bottom: 6px; display: flex; gap: 30px; }
         table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-        th, td { border: 1px solid #000; padding: 4px 6px; }
-        th { background: #f0f0f0; text-align: center; font-weight: bold; }
-        @media print { @page { size: A4 landscape; margin: 10mm; } }
+        th { border: 1.5px solid #000; padding: 5px 4px; text-align: center; font-weight: bold; background: #fff; }
+        td { border: 1px solid #000; padding: 4px; height: 22px; }
+        th:nth-child(1), td:nth-child(1) { width: 7%; }
+        th:nth-child(2), td:nth-child(2) { width: 18%; }
+        th:nth-child(3), td:nth-child(3) { width: 12%; }
+        th:nth-child(4), td:nth-child(4) { width: 11%; }
+        th:nth-child(5), td:nth-child(5) { width: 11%; }
+        th:nth-child(6), td:nth-child(6) { width: 8%; }
+        th:nth-child(7), td:nth-child(7) { width: 14%; }
+        th:nth-child(8), td:nth-child(8) { width: 14%; }
+        @media print {
+          @page { size: A4 landscape; margin: 8mm; }
+          body { padding: 0; }
+        }
       </style></head><body>
       <h2>신용카드 매출전표 등 수취금액 합계표</h2>
-      <div class="info">20&nbsp;&nbsp;년&nbsp;&nbsp;${month}&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;작성자: ${username}</div>
+      <div class="info">
+        <span>20&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;${month}&nbsp;&nbsp;&nbsp;월</span>
+        <span>작성자: ${username}</span>
+      </div>
       <table>
         <thead><tr>
-          <th>날 짜</th><th>신용카드 카드번호</th><th>내 용</th>
-          <th>총 금액</th><th>공급가액</th><th>VAT</th>
-          <th>사업자등록번호</th><th>상호</th>
+          <th>날 짜</th>
+          <th>신용카드 카드번호</th>
+          <th>내&nbsp;&nbsp;용</th>
+          <th>총 금액</th>
+          <th>공급가액</th>
+          <th>VAT</th>
+          <th>사업자등록번호</th>
+          <th>상호</th>
         </tr></thead>
         <tbody>${rows}${emptyRows}${total}</tbody>
       </table>
@@ -1017,10 +1059,25 @@ export default function SalesContent() {
                 const day = parseInt(d.split("-")[2]);
                 const hasEntry = enteredDates.has(d);
                 const isT = d === TODAY;
+                // 이번 주 날짜인지 체크
+                const wNum = getWeekNumForDate(d);
+                const isCurrentWeek =
+                  wNum === todayWeekNum &&
+                  year === now.getFullYear() &&
+                  month === now.getMonth() + 1;
+                const wLocked = weekLocks[wNum] === true;
+                const disabled = wLocked || !isCurrentWeek;
                 return (
-                  <option key={d} value={d}>
+                  <option
+                    key={d}
+                    value={d}
+                    disabled={disabled}
+                    style={{ color: disabled ? "#ccc" : "inherit" }}
+                  >
                     {month}월 {day}일{isT ? " (오늘)" : ""}
                     {hasEntry ? " ●" : ""}
+                    {disabled && !wLocked ? " (이번 주 아님)" : ""}
+                    {wLocked ? " 🔒" : ""}
                   </option>
                 );
               })}
@@ -1983,7 +2040,8 @@ export default function SalesContent() {
                   <input
                     type="date"
                     value={drivingForm.startDate || ""}
-                    min={TODAY}
+                    min={THIS_WEEK_MONDAY}
+                    max={THIS_WEEK_SUNDAY}
                     onChange={(e) =>
                       setDrivingForm((f) => ({
                         ...f,
@@ -2008,6 +2066,8 @@ export default function SalesContent() {
                       <input
                         type="date"
                         value={drivingForm.startDate || ""}
+                        min={THIS_WEEK_MONDAY}
+                        max={THIS_WEEK_SUNDAY}
                         onChange={(e) =>
                           setDrivingForm((f) => ({
                             ...f,

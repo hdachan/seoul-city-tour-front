@@ -40,6 +40,15 @@ const api = {
       ...authHeader(),
       params: { salesUsername: u, year: y, month: m },
     }),
+  getDestinations: () =>
+    axios.get(`${BASE_URL}/sales-admin/destinations`, authHeader()),
+  getPurposes: () =>
+    axios.get(`${BASE_URL}/sales-admin/purposes`, authHeader()),
+  getPrevMeter: (u, date) =>
+    axios.get(`${BASE_URL}/sales-admin/driving/prev-meter`, {
+      ...authHeader(),
+      params: { salesUsername: u, date },
+    }),
   getDrivingDate: (u, date) =>
     axios.get(`${BASE_URL}/sales-admin/driving/date`, {
       ...authHeader(),
@@ -124,11 +133,21 @@ export default function SalesAdminContent() {
     now.toISOString().split("T")[0],
   );
   const [prevMeter, setPrevMeter] = useState(0);
+  const prevMeterRef = useRef(0);
   const [lastMeter, setLastMeter] = useState(0);
+  const lastMeterRef = useRef(0);
 
   const [newCatName, setNewCatName] = useState("");
 
   const [showDrivingModal, setShowDrivingModal] = useState(false);
+  const [destinations, setDestinations] = useState([]);
+  const [purposes, setPurposes] = useState([]);
+  const [destSearch, setDestSearch] = useState("");
+  const [showDestDrop, setShowDestDrop] = useState(false);
+  const [purposeSearch, setPurposeSearch] = useState("");
+  const [showPurposeDrop, setShowPurposeDrop] = useState(false);
+  const destRef = useRef(null);
+  const purposeRef = useRef(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [drivingForm, setDrivingForm] = useState({});
@@ -163,6 +182,15 @@ export default function SalesAdminContent() {
   const vatPreview = receiptBase ? receiptBase - supplyPreview : 0;
   const daysInMonth = new Date(year, month, 0).getDate();
   const enteredDates = new Set(monthDriving.map((d) => d.date));
+
+  const distPreview =
+    drivingForm.meterReading && lastMeter
+      ? parseInt(drivingForm.meterReading) - lastMeter
+      : null;
+  const meterTooLow =
+    drivingForm.meterReading &&
+    lastMeter > 0 &&
+    parseInt(drivingForm.meterReading) < lastMeter;
   const dateOptions = Array.from(
     { length: daysInMonth },
     (_, i) => `${year}-${pad2(month)}-${pad2(i + 1)}`,
@@ -241,14 +269,23 @@ export default function SalesAdminContent() {
 
   const loadDay = async () => {
     try {
-      const res = await api.getDrivingDate(selectedUser.username, selectedDate);
-      setDayDriving(res.data);
-      const todayMeters = res.data
+      const [dayRes, prevRes] = await Promise.all([
+        api.getDrivingDate(selectedUser.username, selectedDate),
+        api.getPrevMeter(selectedUser.username, selectedDate),
+      ]);
+      setDayDriving(dayRes.data);
+      const pm = prevRes.data.prevMeter || 0;
+      setPrevMeter(pm);
+      prevMeterRef.current = pm;
+      const todayMeters = dayRes.data
         .map((d) => d.meterReading)
         .filter((m) => m > 0);
-      setLastMeter(
-        todayMeters.length > 0 ? Math.max(...todayMeters) : prevMeter,
-      );
+      const newLM =
+        todayMeters.length > 0
+          ? Math.max(...todayMeters)
+          : prevRes.data.prevMeter || 0;
+      setLastMeter(newLM);
+      lastMeterRef.current = newLM;
     } catch {}
   };
 
@@ -301,12 +338,20 @@ export default function SalesAdminContent() {
         todayMeters.length > 0 ? Math.max(...todayMeters) : prevMeter,
       );
     } catch {}
+    const koreaTime = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Seoul",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
     setDrivingForm({
-      date: selectedDate,
+      startDate: selectedDate,
+      endDate: "",
       type: "업무",
       destination: "",
-      arrivalTime: "",
+      arrivalTime: koreaTime,
       meterReading: "",
+      purpose: "",
       fuelAmount: "",
       fuelCost: "",
       fuelUnitPrice: "",
@@ -318,11 +363,13 @@ export default function SalesAdminContent() {
     setEditTarget(row);
     setOpenMenu(null);
     setDrivingForm({
-      date: row.date,
+      startDate: row.date,
+      endDate: "",
       type: row.type,
-      destination: row.destination,
-      arrivalTime: row.arrivalTime,
+      destination: row.destination || "",
+      arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
+      purpose: row.purpose || "",
       fuelAmount: row.fuelAmount || "",
       fuelCost: row.fuelCost || "",
       fuelUnitPrice: row.fuelUnitPrice || "",
@@ -333,7 +380,11 @@ export default function SalesAdminContent() {
     e.preventDefault();
     setError("");
     try {
-      const payload = { ...drivingForm, salesUsername: selectedUser.username };
+      const payload = {
+        ...drivingForm,
+        date: drivingForm.startDate,
+        salesUsername: selectedUser.username,
+      };
       if (editTarget) await api.updateDriving(editTarget.id, payload);
       else await api.addDriving(payload);
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
@@ -760,11 +811,9 @@ export default function SalesAdminContent() {
               }}
             ></div>
           </div>
-
           {isLocked && (
             <div className="locked-banner">✅ 정산 완료된 달입니다.</div>
           )}
-
           {/* 서브 탭 */}
           <div
             style={{
@@ -813,7 +862,6 @@ export default function SalesAdminContent() {
               )}
             </div>
           </div>
-
           {/* ── 운행일지 탭 ── */}
           {activeTab === "driving" && (
             <div style={{ marginTop: "4px" }}>
@@ -849,7 +897,10 @@ export default function SalesAdminContent() {
               {/* 당일 누계 */}
               {dayDriving.length > 0 &&
                 (() => {
-                  const calc = recalcDriving(dayDriving, prevMeter);
+                  const calc = recalcDriving(
+                    dayDriving,
+                    prevMeterRef.current || prevMeter,
+                  );
                   const meters = calc
                     .map((d) => d.meterReading)
                     .filter((m) => m > 0);
@@ -878,7 +929,10 @@ export default function SalesAdminContent() {
                         {[
                           {
                             label: "전일누계",
-                            value: prevMeter > 0 ? `${fmt(prevMeter)}km` : "-",
+                            value:
+                              (prevMeterRef.current || prevMeter) > 0
+                                ? `${fmt(prevMeterRef.current || prevMeter)}km`
+                                : "-",
                             color: "#555",
                           },
                           {
@@ -960,7 +1014,10 @@ export default function SalesAdminContent() {
                     </thead>
                     <tbody>
                       {(() => {
-                        const calc = recalcDriving(dayDriving, prevMeter);
+                        const calc = recalcDriving(
+                          dayDriving,
+                          prevMeterRef.current || prevMeter,
+                        );
                         return calc.map((d) => {
                           const ts = TYPE_STYLE[d.type] || {
                             bg: "#f3f4f6",
@@ -1061,7 +1118,6 @@ export default function SalesAdminContent() {
               )}
             </div>
           )}
-
           {/* ── 법인카드 탭 ── */}
           {activeTab === "receipt" && (
             <div
@@ -1232,7 +1288,6 @@ export default function SalesAdminContent() {
               </table>
             </div>
           )}
-
           {/* ── 통계 탭 ── */}
           {activeTab === "stats" && (
             <div style={{ marginTop: "4px" }}>
@@ -1244,7 +1299,6 @@ export default function SalesAdminContent() {
               />
             </div>
           )}
-
           {/* ── 카테고리 탭 ── */}
           {activeTab === "category" && (
             <div style={{ marginTop: "4px" }}>
@@ -1340,13 +1394,16 @@ export default function SalesAdminContent() {
               </div>
             </div>
           )}
-
           {/* 운행일지 모달 */}
           {showDrivingModal && (
             <div className="modal-bg" style={{ alignItems: "center" }}>
               <div
                 className="modal"
-                style={{ width: "480px", borderRadius: "14px" }}
+                style={{
+                  width: "480px",
+                  borderRadius: "14px",
+                  maxHeight: "90vh",
+                }}
               >
                 <div className="modal-header">
                   <h3 className="modal-title" style={{ margin: 0 }}>
@@ -1360,19 +1417,576 @@ export default function SalesAdminContent() {
                   </button>
                 </div>
                 <form onSubmit={handleSubmitDriving} className="modal-form">
-                  <div className="field">
-                    <label>날짜 *</label>
-                    <input
-                      type="date"
-                      value={drivingForm.date || ""}
-                      onChange={(e) =>
-                        setDrivingForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                      required
-                    />
-                  </div>
+                  {/* 날짜 - 업무/주유 단일, 휴가 범위 */}
+                  {drivingForm.type !== "휴가" ? (
+                    <div className="field">
+                      <label>날짜 *</label>
+                      <input
+                        type="date"
+                        value={drivingForm.startDate || ""}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            startDate: e.target.value,
+                            endDate: "",
+                          }))
+                        }
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px",
+                        }}
+                      >
+                        <div className="field">
+                          <label>시작 날짜 *</label>
+                          <input
+                            type="date"
+                            value={drivingForm.startDate || ""}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                startDate: e.target.value,
+                              }))
+                            }
+                            required
+                          />
+                        </div>
+                        <div className="field">
+                          <label>
+                            종료 날짜{" "}
+                            <span
+                              style={{
+                                color: "#aaa",
+                                fontSize: "11px",
+                                fontWeight: 400,
+                              }}
+                            >
+                              (당일이면 생략)
+                            </span>
+                          </label>
+                          <input
+                            type="date"
+                            value={drivingForm.endDate || ""}
+                            min={drivingForm.startDate || ""}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                endDate: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      {drivingForm.startDate &&
+                        drivingForm.endDate &&
+                        drivingForm.endDate > drivingForm.startDate && (
+                          <div
+                            style={{
+                              background: "#fce7f3",
+                              borderRadius: "8px",
+                              padding: "8px 12px",
+                              fontSize: "12px",
+                              color: "#9d174d",
+                              fontWeight: 600,
+                            }}
+                          >
+                            🏖 {drivingForm.startDate} ~ {drivingForm.endDate}{" "}
+                            기간으로 저장됩니다.
+                          </div>
+                        )}
+                    </>
+                  )}
 
-                  {/* 구분 */}
+                  {/* 업무 */}
+                  {drivingForm.type === "업무" && (
+                    <>
+                      <div className="field">
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            color: "#1557b0",
+                          }}
+                        >
+                          🕐 도착 시간 *
+                        </label>
+                        <input
+                          type="time"
+                          value={drivingForm.arrivalTime || ""}
+                          onChange={(e) =>
+                            setDrivingForm((f) => ({
+                              ...f,
+                              arrivalTime: e.target.value,
+                            }))
+                          }
+                          required
+                          style={{
+                            fontSize: "16px",
+                            padding: "12px",
+                            letterSpacing: "1px",
+                          }}
+                        />
+                      </div>
+                      <div
+                        className="field"
+                        style={{ position: "relative" }}
+                        ref={destRef}
+                      >
+                        <label>도착지 *</label>
+                        <input
+                          type="text"
+                          placeholder="경복궁"
+                          value={drivingForm.destination || ""}
+                          autoComplete="off"
+                          required
+                          onChange={(e) => {
+                            setDrivingForm((f) => ({
+                              ...f,
+                              destination: e.target.value,
+                            }));
+                            setDestSearch(e.target.value);
+                            setShowDestDrop(true);
+                          }}
+                          onFocus={() => setShowDestDrop(true)}
+                        />
+                        {showDestDrop &&
+                          destinations.filter((d) =>
+                            d
+                              .toLowerCase()
+                              .includes((destSearch || "").toLowerCase()),
+                          ).length > 0 && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "100%",
+                                left: 0,
+                                right: 0,
+                                background: "#fff",
+                                border: "1px solid #e8eaed",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                zIndex: 100,
+                                maxHeight: "90px",
+                                overflowY: "auto",
+                              }}
+                            >
+                              {destinations
+                                .filter((d) =>
+                                  d
+                                    .toLowerCase()
+                                    .includes((destSearch || "").toLowerCase()),
+                                )
+                                .slice(0, 3)
+                                .map((d) => (
+                                  <div
+                                    key={d}
+                                    onClick={() => {
+                                      setDrivingForm((f) => ({
+                                        ...f,
+                                        destination: d,
+                                      }));
+                                      setShowDestDrop(false);
+                                    }}
+                                    style={{
+                                      padding: "9px 14px",
+                                      cursor: "pointer",
+                                      fontSize: "13px",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.target.style.background = "#f4f5f7")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.target.style.background = "#fff")
+                                    }
+                                  >
+                                    {d}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                      </div>
+                      <div className="field">
+                        <label>
+                          미터기 (km) *
+                          {lastMeter > 0 && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "#1557b0",
+                                fontWeight: 400,
+                                marginLeft: "6px",
+                              }}
+                            >
+                              기준: {Number(lastMeter).toLocaleString()}km 이상
+                            </span>
+                          )}
+                        </label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="계량기 숫자"
+                            value={drivingForm.meterReading || ""}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                meterReading: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "40px" }}
+                            required
+                          />
+                          <span style={unitSfx}>km</span>
+                        </div>
+                        {distPreview !== null && distPreview >= 0 && (
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#1557b0",
+                              marginTop: "4px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            운행거리: {Number(distPreview).toLocaleString()}km
+                          </p>
+                        )}
+                        {meterTooLow && (
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#dc2626",
+                              marginTop: "4px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ⚠ 이전 미터기({Number(lastMeter).toLocaleString()}
+                            km)보다 낮습니다!
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        className="field"
+                        style={{ position: "relative" }}
+                        ref={purposeRef}
+                      >
+                        <label>용무</label>
+                        <input
+                          type="text"
+                          placeholder="용무 입력"
+                          value={drivingForm.purpose || ""}
+                          autoComplete="off"
+                          onChange={(e) => {
+                            setDrivingForm((f) => ({
+                              ...f,
+                              purpose: e.target.value,
+                            }));
+                            setPurposeSearch(e.target.value);
+                            setShowPurposeDrop(true);
+                          }}
+                          onFocus={() => setShowPurposeDrop(true)}
+                        />
+                        {showPurposeDrop &&
+                          purposes.filter((p) =>
+                            p
+                              .toLowerCase()
+                              .includes((purposeSearch || "").toLowerCase()),
+                          ).length > 0 && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "100%",
+                                left: 0,
+                                right: 0,
+                                background: "#fff",
+                                border: "1px solid #e8eaed",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                zIndex: 100,
+                                maxHeight: "90px",
+                                overflowY: "auto",
+                              }}
+                            >
+                              {purposes
+                                .filter((p) =>
+                                  p
+                                    .toLowerCase()
+                                    .includes(
+                                      (purposeSearch || "").toLowerCase(),
+                                    ),
+                                )
+                                .slice(0, 3)
+                                .map((p) => (
+                                  <div
+                                    key={p}
+                                    onClick={() => {
+                                      setDrivingForm((f) => ({
+                                        ...f,
+                                        purpose: p,
+                                      }));
+                                      setShowPurposeDrop(false);
+                                    }}
+                                    style={{
+                                      padding: "9px 14px",
+                                      cursor: "pointer",
+                                      fontSize: "13px",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.target.style.background = "#f4f5f7")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.target.style.background = "#fff")
+                                    }
+                                  >
+                                    {p}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* 주유 */}
+                  {drivingForm.type === "주유" && (
+                    <div
+                      style={{
+                        background: "#fef3c7",
+                        borderRadius: "8px",
+                        padding: "12px",
+                        border: "1px solid #fde68a",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "#92400e",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        ⛽ 주유 정보
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr",
+                          gap: "8px",
+                        }}
+                      >
+                        <div className="field">
+                          <label>주유량 *</label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="48.13"
+                              value={drivingForm.fuelAmount || ""}
+                              onChange={(e) =>
+                                setDrivingForm((f) => ({
+                                  ...f,
+                                  fuelAmount: e.target.value,
+                                }))
+                              }
+                              style={{ width: "100%", paddingRight: "24px" }}
+                              required
+                            />
+                            <span style={{ ...unitSfx, fontSize: "11px" }}>
+                              L
+                            </span>
+                          </div>
+                        </div>
+                        <div className="field">
+                          <label>주유금액 *</label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              type="number"
+                              placeholder="52000"
+                              value={drivingForm.fuelCost || ""}
+                              onChange={(e) =>
+                                setDrivingForm((f) => ({
+                                  ...f,
+                                  fuelCost: e.target.value,
+                                }))
+                              }
+                              style={{ width: "100%", paddingRight: "24px" }}
+                              required
+                            />
+                            <span style={{ ...unitSfx, fontSize: "11px" }}>
+                              원
+                            </span>
+                          </div>
+                        </div>
+                        <div className="field">
+                          <label>단가 *</label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              type="number"
+                              placeholder="1615"
+                              value={drivingForm.fuelUnitPrice || ""}
+                              onChange={(e) =>
+                                setDrivingForm((f) => ({
+                                  ...f,
+                                  fuelUnitPrice: e.target.value,
+                                }))
+                              }
+                              style={{ width: "100%", paddingRight: "24px" }}
+                              required
+                            />
+                            <span style={{ ...unitSfx, fontSize: "11px" }}>
+                              원
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 휴가 */}
+                  {drivingForm.type === "휴가" && (
+                    <>
+                      <div className="field">
+                        <label>
+                          미터기 (km) *
+                          {lastMeter > 0 && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "#1557b0",
+                                fontWeight: 400,
+                                marginLeft: "6px",
+                              }}
+                            >
+                              기준: {Number(lastMeter).toLocaleString()}km 이상
+                            </span>
+                          )}
+                        </label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="number"
+                            placeholder="계량기 숫자"
+                            value={drivingForm.meterReading || ""}
+                            onChange={(e) =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                meterReading: e.target.value,
+                              }))
+                            }
+                            style={{ width: "100%", paddingRight: "40px" }}
+                            required
+                          />
+                          <span style={unitSfx}>km</span>
+                        </div>
+                        {meterTooLow && (
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#dc2626",
+                              marginTop: "4px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ⚠ 이전 미터기({Number(lastMeter).toLocaleString()}
+                            km)보다 낮습니다!
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          background: "#fce7f3",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          border: "1px solid #f9a8d4",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#9d174d",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          ⛽ 개인 주유 (선택)
+                        </p>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr 1fr",
+                            gap: "8px",
+                          }}
+                        >
+                          <div className="field">
+                            <label>주유량</label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="48.13"
+                                value={drivingForm.fuelAmount || ""}
+                                onChange={(e) =>
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    fuelAmount: e.target.value,
+                                  }))
+                                }
+                                style={{ width: "100%", paddingRight: "24px" }}
+                              />
+                              <span style={{ ...unitSfx, fontSize: "11px" }}>
+                                L
+                              </span>
+                            </div>
+                          </div>
+                          <div className="field">
+                            <label>주유금액</label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type="number"
+                                placeholder="52000"
+                                value={drivingForm.fuelCost || ""}
+                                onChange={(e) =>
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    fuelCost: e.target.value,
+                                  }))
+                                }
+                                style={{ width: "100%", paddingRight: "24px" }}
+                              />
+                              <span style={{ ...unitSfx, fontSize: "11px" }}>
+                                원
+                              </span>
+                            </div>
+                          </div>
+                          <div className="field">
+                            <label>단가</label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type="number"
+                                placeholder="1615"
+                                value={drivingForm.fuelUnitPrice || ""}
+                                onChange={(e) =>
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    fuelUnitPrice: e.target.value,
+                                  }))
+                                }
+                                style={{ width: "100%", paddingRight: "24px" }}
+                              />
+                              <span style={{ ...unitSfx, fontSize: "11px" }}>
+                                원
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 구분 - 맨 아래 */}
                   <div className="field">
                     <label>구분 *</label>
                     <div style={{ display: "flex", gap: "6px" }}>
@@ -1418,210 +2032,6 @@ export default function SalesAdminContent() {
                     </div>
                   </div>
 
-                  {drivingForm.type === "업무" && (
-                    <>
-                      <div className="field">
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            color: "#1557b0",
-                          }}
-                        >
-                          🕐 도착 시간 *
-                        </label>
-                        <input
-                          type="time"
-                          value={drivingForm.arrivalTime || ""}
-                          onChange={(e) =>
-                            setDrivingForm((f) => ({
-                              ...f,
-                              arrivalTime: e.target.value,
-                            }))
-                          }
-                          required
-                          style={{
-                            fontSize: "16px",
-                            padding: "12px",
-                            letterSpacing: "1px",
-                          }}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>도착지 *</label>
-                        <input
-                          type="text"
-                          placeholder="경복궁"
-                          value={drivingForm.destination || ""}
-                          onChange={(e) =>
-                            setDrivingForm((f) => ({
-                              ...f,
-                              destination: e.target.value,
-                            }))
-                          }
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {drivingForm.type !== "휴가" && (
-                    <div className="field">
-                      <label>
-                        미터기 (km)
-                        {drivingForm.type === "업무" ? " *" : " (선택)"}
-                      </label>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="number"
-                          placeholder="계량기 숫자"
-                          value={drivingForm.meterReading || ""}
-                          onChange={(e) =>
-                            setDrivingForm((f) => ({
-                              ...f,
-                              meterReading: e.target.value,
-                            }))
-                          }
-                          style={{ width: "100%", paddingRight: "40px" }}
-                          required={drivingForm.type === "업무"}
-                        />
-                        <span style={unitSfx}>km</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {drivingForm.type === "휴가" && (
-                    <div className="field">
-                      <label>미터기 (km) *</label>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="number"
-                          placeholder="계량기 숫자"
-                          value={drivingForm.meterReading || ""}
-                          onChange={(e) =>
-                            setDrivingForm((f) => ({
-                              ...f,
-                              meterReading: e.target.value,
-                            }))
-                          }
-                          style={{ width: "100%", paddingRight: "40px" }}
-                          required
-                        />
-                        <span style={unitSfx}>km</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {(drivingForm.type === "주유" ||
-                    drivingForm.type === "휴가") && (
-                    <div
-                      style={{
-                        background:
-                          drivingForm.type === "휴가" ? "#fce7f3" : "#fef3c7",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        border: `1px solid ${drivingForm.type === "휴가" ? "#f9a8d4" : "#fde68a"}`,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          color:
-                            drivingForm.type === "휴가" ? "#9d174d" : "#92400e",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        ⛽{" "}
-                        {drivingForm.type === "휴가"
-                          ? "개인 주유 (선택)"
-                          : "주유 정보"}
-                      </p>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr 1fr",
-                          gap: "8px",
-                        }}
-                      >
-                        <div className="field">
-                          <label>
-                            {drivingForm.type === "주유"
-                              ? "주유량 *"
-                              : "주유량"}
-                          </label>
-                          <div style={{ position: "relative" }}>
-                            <input
-                              type="number"
-                              step="0.01"
-                              placeholder="48.13"
-                              value={drivingForm.fuelAmount || ""}
-                              onChange={(e) =>
-                                setDrivingForm((f) => ({
-                                  ...f,
-                                  fuelAmount: e.target.value,
-                                }))
-                              }
-                              style={{ width: "100%", paddingRight: "24px" }}
-                              required={drivingForm.type === "주유"}
-                            />
-                            <span style={{ ...unitSfx, fontSize: "11px" }}>
-                              L
-                            </span>
-                          </div>
-                        </div>
-                        <div className="field">
-                          <label>
-                            {drivingForm.type === "주유"
-                              ? "주유금액 *"
-                              : "주유금액"}
-                          </label>
-                          <div style={{ position: "relative" }}>
-                            <input
-                              type="number"
-                              placeholder="52000"
-                              value={drivingForm.fuelCost || ""}
-                              onChange={(e) =>
-                                setDrivingForm((f) => ({
-                                  ...f,
-                                  fuelCost: e.target.value,
-                                }))
-                              }
-                              style={{ width: "100%", paddingRight: "24px" }}
-                              required={drivingForm.type === "주유"}
-                            />
-                            <span style={{ ...unitSfx, fontSize: "11px" }}>
-                              원
-                            </span>
-                          </div>
-                        </div>
-                        <div className="field">
-                          <label>
-                            {drivingForm.type === "주유" ? "단가 *" : "단가"}
-                          </label>
-                          <div style={{ position: "relative" }}>
-                            <input
-                              type="number"
-                              placeholder="1615"
-                              value={drivingForm.fuelUnitPrice || ""}
-                              onChange={(e) =>
-                                setDrivingForm((f) => ({
-                                  ...f,
-                                  fuelUnitPrice: e.target.value,
-                                }))
-                              }
-                              style={{ width: "100%", paddingRight: "24px" }}
-                              required={drivingForm.type === "주유"}
-                            />
-                            <span style={{ ...unitSfx, fontSize: "11px" }}>
-                              원
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {error && <p className="field-error">⚠ {error}</p>}
                   <div className="modal-btns">
                     <button
@@ -1639,8 +2049,7 @@ export default function SalesAdminContent() {
               </div>
             </div>
           )}
-
-          {/* 법인카드 모달 */}
+          {/* 법인카드 모달 */} {/* 법인카드 모달 */}
           {showReceiptModal && (
             <div className="modal-bg" style={{ alignItems: "center" }}>
               <div
