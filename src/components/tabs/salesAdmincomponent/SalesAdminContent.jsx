@@ -5,7 +5,7 @@ import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
@@ -121,6 +121,7 @@ export default function SalesAdminContent() {
   const [mainTab, setMainTab] = useState("list");
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("driving");
+  const pendingTabRef = useRef(null); // 로드 후 이동할 탭
 
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -176,7 +177,7 @@ export default function SalesAdminContent() {
     return -1;
   })();
 
-  const activeCats = categories.filter((c) => c.active);
+  const activeCats = categories; // active 컬럼 제거됨
   const receiptBase = Number(receiptForm.amount || 0);
   const supplyPreview = receiptBase ? Math.round(receiptBase / 1.1) : 0;
   const vatPreview = receiptBase ? receiptBase - supplyPreview : 0;
@@ -262,6 +263,11 @@ export default function SalesAdminContent() {
       setWeekLocks(lock.data.weekLocks || {});
       setMonthDriving(drv.data);
       setReceipts(rec.data);
+      // pendingTab 처리
+      if (pendingTabRef.current) {
+        setActiveTab(pendingTabRef.current);
+        pendingTabRef.current = null;
+      }
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
@@ -506,6 +512,15 @@ export default function SalesAdminContent() {
         >
           📈 전체 통계
         </button>
+        <button
+          className={`gf-tab ${mainTab === "category" ? "active" : ""}`}
+          onClick={() => {
+            setMainTab("category");
+            setSelectedUser(null);
+          }}
+        >
+          🏷 카테고리
+        </button>
       </div>
 
       {error && (
@@ -529,7 +544,108 @@ export default function SalesAdminContent() {
           months={months}
           onYearChange={setYear}
           onMonthChange={setMonth}
+          onUserClick={(u) => {
+            pendingTabRef.current = "stats";
+            setSelectedUser(u);
+            setMainTab("list");
+          }}
         />
+      )}
+
+      {/* ──── 카테고리 (메인 탭) ──── */}
+      {mainTab === "category" && (
+        <div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "10px",
+              border: "1px solid #e8eaed",
+              padding: "16px",
+              marginBottom: "12px",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                marginBottom: "12px",
+              }}
+            >
+              카테고리 추가
+            </h3>
+            <form
+              onSubmit={handleAddCategory}
+              style={{ display: "flex", gap: "8px", alignItems: "center" }}
+            >
+              <input
+                type="text"
+                placeholder="카테고리 이름"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "9px 12px",
+                  border: "1.5px solid #d8dce3",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  outline: "none",
+                }}
+              />
+              <button type="submit" className="btn-primary">
+                추가
+              </button>
+            </form>
+          </div>
+          <div className="sac-table-wrap">
+            <table className="sac-table">
+              <thead>
+                <tr>
+                  <th>카테고리명</th>
+                  <th style={{ width: "70px" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      style={{
+                        textAlign: "center",
+                        padding: "2rem",
+                        color: "#bbb",
+                      }}
+                    >
+                      없음
+                    </td>
+                  </tr>
+                ) : (
+                  categories.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 500 }}>{c.name}</td>
+                      <td>
+                        <button
+                          className="delete-btn"
+                          onClick={() => {
+                            if (window.confirm("삭제?"))
+                              api
+                                .deleteCategory(c.id)
+                                .then(() =>
+                                  api
+                                    .getCategories()
+                                    .then((r) => setCategories(r.data)),
+                                );
+                          }}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* ──── 카드뷰 ──── */}
@@ -836,12 +952,7 @@ export default function SalesAdminContent() {
               >
                 💳 법인카드
               </button>
-              <button
-                className={`gf-tab ${activeTab === "category" ? "active" : ""}`}
-                onClick={() => setActiveTab("category")}
-              >
-                🏷 카테고리
-              </button>
+
               <button
                 className={`gf-tab ${activeTab === "stats" ? "active" : ""}`}
                 onClick={() => setActiveTab("stats")}

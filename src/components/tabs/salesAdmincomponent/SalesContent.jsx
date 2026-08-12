@@ -3,7 +3,7 @@ import "./SalesContent.css"; // 수정
 import axios from "axios";
 import * as XLSX from "xlsx";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
