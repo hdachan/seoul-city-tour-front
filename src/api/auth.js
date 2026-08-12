@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 // 토큰을 헤더에 담는 함수
 const authHeader = () => ({

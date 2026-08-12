@@ -18,7 +18,7 @@ import DevContent from "./tabs/DevContent";
 import axios from "axios";
 import "./AppLayout.css";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
 });
