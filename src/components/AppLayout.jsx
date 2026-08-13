@@ -11,10 +11,9 @@ import GinsengContent from "./tabs/GinsengContent";
 import GuideAdminContent from "./tabs/GuideAdminContent";
 import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
 import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
-
 import GuideFormContent from "./tabs/GuideFormContent";
-
 import DevContent from "./tabs/DevContent";
+import DmzContent from "./tabs/DmzContent";
 import axios from "axios";
 import "./AppLayout.css";
 
@@ -32,6 +31,7 @@ const ALL_TABS = [
   { id: "sales-admin", icon: "📊", label: "영업 정산관리" },
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
   { id: "sales", icon: "💼", label: "영업 정산" },
+  { id: "dmz", icon: "🗺", label: "DMZ 예약 정보" },
   { id: "dev", icon: "⚙️", label: "개발" },
 ];
 
@@ -50,7 +50,7 @@ export default function AppLayout() {
   const [allowedTabIds, setAllowedTabIds] = useState([]);
   const [active, setActive] = useState("");
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false); // 모바일 더보기 메뉴
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadPermissions = useCallback(async () => {
     try {
@@ -128,8 +128,6 @@ export default function AppLayout() {
   const visibleTabs = ALL_TABS.filter((t) => allowedTabIds.includes(t.id));
   const currentItem = ALL_TABS.find((n) => n.id === active);
   const roleLabel = ROLE_LABEL[role] || role?.replace("ROLE_", "") || "";
-
-  // 모바일 바텀 네비: 최대 4개 + 더보기
   const bottomTabs = visibleTabs.slice(0, 4);
   const extraTabs = visibleTabs.slice(4);
 
@@ -157,6 +155,8 @@ export default function AppLayout() {
         return <GuideFormContent />;
       case "sales":
         return <SalesContent />;
+      case "dmz":
+        return <DmzContent />;
       case "dev":
         return <DevContent />;
       default:
@@ -223,7 +223,7 @@ export default function AppLayout() {
         </main>
       </div>
 
-      {/* 모바일 바텀 네비게이션 */}
+      {/* 모바일 바텀 네비 */}
       <nav className="al-bottom-nav">
         <div className="al-bottom-nav-inner">
           {bottomTabs.map((item) => (
@@ -246,7 +246,6 @@ export default function AppLayout() {
             </button>
           )}
         </div>
-        {/* 더보기 메뉴 */}
         {menuOpen && (
           <div
             style={{
