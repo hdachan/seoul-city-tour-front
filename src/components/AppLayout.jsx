@@ -14,6 +14,7 @@ import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
 import GuideFormContent from "./tabs/GuideFormContent";
 import DevContent from "./tabs/DevContent";
 import DmzContent from "./tabs/DmzContent";
+import WebAnalyticsContent from "./tabs/WebAnalyticsContent";
 import axios from "axios";
 import "./AppLayout.css";
 
@@ -32,6 +33,7 @@ const ALL_TABS = [
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
   { id: "sales", icon: "💼", label: "영업 정산" },
   { id: "dmz", icon: "🗺", label: "DMZ 예약 정보" },
+  { id: "web-analytics", icon: "🌐", label: "홈페이지 정보" },
   { id: "dev", icon: "⚙️", label: "개발" },
 ];
 
@@ -157,6 +159,8 @@ export default function AppLayout() {
         return <SalesContent />;
       case "dmz":
         return <DmzContent />;
+      case "web-analytics":
+        return <WebAnalyticsContent />;
       case "dev":
         return <DevContent />;
       default:
