@@ -60,6 +60,12 @@ const api = {
     axios.put(`${BASE_URL}/sales-admin/driving/${id}`, data, authHeader()),
   deleteDriving: (id) =>
     axios.delete(`${BASE_URL}/sales-admin/driving/${id}`, authHeader()),
+  saveDrivingNotes: (drivingId, contents) =>
+    axios.post(
+      `${BASE_URL}/sales-admin/driving/${drivingId}/notes`,
+      contents,
+      authHeader(),
+    ),
   getReceipts: (u, y, m) =>
     axios.get(`${BASE_URL}/sales-admin/receipt`, {
       ...authHeader(),
@@ -358,6 +364,7 @@ export default function SalesAdminContent() {
       arrivalTime: koreaTime,
       meterReading: "",
       purpose: "",
+      notes: [""],
       fuelAmount: "",
       fuelCost: "",
       fuelUnitPrice: "",
@@ -376,6 +383,12 @@ export default function SalesAdminContent() {
       arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
       purpose: row.purpose || "",
+      notes:
+        row.notes && row.notes.length > 0
+          ? row.notes.map((n) => n.content)
+          : row.purpose
+            ? [row.purpose]
+            : [""],
       fuelAmount: row.fuelAmount || "",
       fuelCost: row.fuelCost || "",
       fuelUnitPrice: row.fuelUnitPrice || "",
@@ -391,8 +404,23 @@ export default function SalesAdminContent() {
         date: drivingForm.startDate,
         salesUsername: selectedUser.username,
       };
-      if (editTarget) await api.updateDriving(editTarget.id, payload);
-      else await api.addDriving(payload);
+      let res;
+      if (editTarget) res = await api.updateDriving(editTarget.id, payload);
+      else res = await api.addDriving(payload);
+
+      // 비고 저장
+      const savedId = res?.data?.id || editTarget?.id;
+      if (
+        savedId &&
+        drivingForm.notes &&
+        drivingForm.notes.some((n) => n.trim())
+      ) {
+        await api.saveDrivingNotes(
+          savedId,
+          drivingForm.notes.filter((n) => n.trim()),
+        );
+      }
+
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
       setShowDrivingModal(false);
       loadDetail();
@@ -1116,6 +1144,7 @@ export default function SalesAdminContent() {
                         <th>도착지</th>
                         <th style={{ textAlign: "right" }}>미터기</th>
                         <th style={{ textAlign: "right" }}>운행거리</th>
+                        <th>비고</th>
                         <th style={{ textAlign: "right" }}>주유량</th>
                         <th style={{ textAlign: "right" }}>주유금액</th>
                         <th style={{ textAlign: "right" }}>단가</th>
@@ -1176,6 +1205,15 @@ export default function SalesAdminContent() {
                                 }}
                               >
                                 {d.calcDist > 0 ? `${fmt(d.calcDist)}km` : "-"}
+                              </td>
+                              <td style={{ fontSize: "12px", color: "#555" }}>
+                                {d.notes && d.notes.length > 0 ? (
+                                  d.notes.map((n, i) => (
+                                    <div key={i}>{n.content}</div>
+                                  ))
+                                ) : (
+                                  <span style={{ color: "#ccc" }}>-</span>
+                                )}
                               </td>
                               <td
                                 style={{ textAlign: "right", color: "#92400e" }}
@@ -1780,84 +1818,88 @@ export default function SalesAdminContent() {
                           </p>
                         )}
                       </div>
-                      <div
-                        className="field"
-                        style={{ position: "relative" }}
-                        ref={purposeRef}
-                      >
-                        <label>용무</label>
-                        <input
-                          type="text"
-                          placeholder="용무 입력"
-                          value={drivingForm.purpose || ""}
-                          autoComplete="off"
-                          onChange={(e) => {
-                            setDrivingForm((f) => ({
-                              ...f,
-                              purpose: e.target.value,
-                            }));
-                            setPurposeSearch(e.target.value);
-                            setShowPurposeDrop(true);
+                      <div className="field">
+                        <label
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
                           }}
-                          onFocus={() => setShowPurposeDrop(true)}
-                        />
-                        {showPurposeDrop &&
-                          purposes.filter((p) =>
-                            p
-                              .toLowerCase()
-                              .includes((purposeSearch || "").toLowerCase()),
-                          ).length > 0 && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                background: "#fff",
-                                border: "1px solid #e8eaed",
-                                borderRadius: "8px",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                zIndex: 100,
-                                maxHeight: "90px",
-                                overflowY: "auto",
+                        >
+                          <span>비고</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDrivingForm((f) => ({
+                                ...f,
+                                notes: [...(f.notes || [""]), ""],
+                              }))
+                            }
+                            style={{
+                              fontSize: "11px",
+                              color: "#1557b0",
+                              background: "none",
+                              border: "1px solid #1557b0",
+                              borderRadius: "6px",
+                              padding: "2px 8px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ＋ 추가
+                          </button>
+                        </label>
+                        {(drivingForm.notes || [""]).map((note, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: "flex",
+                              gap: "6px",
+                              marginBottom: "6px",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              placeholder={`비고 ${i + 1}`}
+                              value={note}
+                              onChange={(e) => {
+                                const newNotes = [
+                                  ...(drivingForm.notes || [""]),
+                                ];
+                                newNotes[i] = e.target.value;
+                                setDrivingForm((f) => ({
+                                  ...f,
+                                  notes: newNotes,
+                                }));
                               }}
-                            >
-                              {purposes
-                                .filter((p) =>
-                                  p
-                                    .toLowerCase()
-                                    .includes(
-                                      (purposeSearch || "").toLowerCase(),
-                                    ),
-                                )
-                                .slice(0, 3)
-                                .map((p) => (
-                                  <div
-                                    key={p}
-                                    onClick={() => {
-                                      setDrivingForm((f) => ({
-                                        ...f,
-                                        purpose: p,
-                                      }));
-                                      setShowPurposeDrop(false);
-                                    }}
-                                    style={{
-                                      padding: "9px 14px",
-                                      cursor: "pointer",
-                                      fontSize: "13px",
-                                    }}
-                                    onMouseEnter={(e) =>
-                                      (e.target.style.background = "#f4f5f7")
-                                    }
-                                    onMouseLeave={(e) =>
-                                      (e.target.style.background = "#fff")
-                                    }
-                                  >
-                                    {p}
-                                  </div>
-                                ))}
-                            </div>
-                          )}
+                              style={{ flex: 1 }}
+                            />
+                            {(drivingForm.notes || [""]).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newNotes = (
+                                    drivingForm.notes || [""]
+                                  ).filter((_, idx) => idx !== i);
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    notes: newNotes,
+                                  }));
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "1px solid #e0e0e0",
+                                  borderRadius: "6px",
+                                  padding: "4px 8px",
+                                  cursor: "pointer",
+                                  color: "#888",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </>
                   )}

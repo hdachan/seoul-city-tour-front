@@ -18,6 +18,17 @@ const api = {
   getCategories: () =>
     axios.get(`${BASE_URL}/sales-form/categories`, authHeader()),
   getPurposes: () => axios.get(`${BASE_URL}/sales-form/purposes`, authHeader()),
+  getDrivingNotes: (drivingId) =>
+    axios.get(
+      `${BASE_URL}/sales-form/driving/${drivingId}/notes`,
+      authHeader(),
+    ),
+  saveDrivingNotes: (drivingId, contents) =>
+    axios.post(
+      `${BASE_URL}/sales-form/driving/${drivingId}/notes`,
+      contents,
+      authHeader(),
+    ),
   getDestinations: () =>
     axios.get(`${BASE_URL}/sales-form/destinations`, authHeader()),
   getDriving: (y, m) =>
@@ -112,6 +123,8 @@ export default function SalesContent() {
   const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
   const [purposes, setPurposes] = useState([]);
+  const [noteInputs, setNoteInputs] = useState([""]); // 비고 입력 칸들
+  const [noteEditingId, setNoteEditingId] = useState(null); // 현재 비고 편집 중인 drivingId
   const [destinations, setDestinations] = useState([]);
   const [destSearch, setDestSearch] = useState("");
   const [showDestDrop, setShowDestDrop] = useState(false);
@@ -143,6 +156,7 @@ export default function SalesContent() {
     arrivalTime: getKoreaTime(),
     meterReading: "",
     purpose: "",
+    notes: [""],
     fuelAmount: "",
     fuelCost: "",
     fuelUnitPrice: "",
@@ -365,6 +379,12 @@ export default function SalesContent() {
     setError("");
     setEditTarget(row);
     setOpenMenu(null);
+    const notes =
+      row.notes && row.notes.length > 0
+        ? row.notes.map((n) => n.content)
+        : row.purpose
+          ? [row.purpose]
+          : [""];
     setDrivingForm({
       startDate: row.date,
       endDate: "",
@@ -373,6 +393,7 @@ export default function SalesContent() {
       arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
       purpose: row.purpose || "",
+      notes,
       fuelAmount: row.fuelAmount || "",
       fuelCost: row.fuelCost || "",
       fuelUnitPrice: row.fuelUnitPrice || "",
@@ -388,8 +409,23 @@ export default function SalesContent() {
     }
     try {
       const payload = { ...drivingForm, date: drivingForm.startDate };
-      if (editTarget) await api.updateDriving(editTarget.id, payload);
-      else await api.addDriving(payload);
+      let res;
+      if (editTarget) res = await api.updateDriving(editTarget.id, payload);
+      else res = await api.addDriving(payload);
+
+      // 비고 저장
+      const savedId = res?.data?.id || editTarget?.id;
+      if (
+        savedId &&
+        drivingForm.notes &&
+        drivingForm.notes.some((n) => n.trim())
+      ) {
+        await api.saveDrivingNotes(
+          savedId,
+          drivingForm.notes.filter((n) => n.trim()),
+        );
+      }
+
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
       setShowModal(false);
       loadMonth();
@@ -501,7 +537,7 @@ export default function SalesContent() {
         "도착지",
         "미터기(km)",
         "운행거리(km)",
-        "용무",
+        "비고",
         "주유량(L)",
         "주유금액(원)",
         "단가(원/L)",
@@ -617,7 +653,7 @@ export default function SalesContent() {
       <table>
         <thead><tr>
           <th>날짜</th><th>구분</th><th>시간</th><th>도착지</th>
-          <th>미터기(km)</th><th>운행거리(km)</th><th>용무</th>
+          <th>미터기(km)</th><th>운행거리(km)</th><th>비고</th>
           <th>주유량</th><th>주유금액</th><th>단가</th>
         </tr></thead>
         <tbody>
@@ -1176,7 +1212,7 @@ export default function SalesContent() {
                         <th style={thS}>도착지</th>
                         <th style={{ ...thS, textAlign: "right" }}>미터기</th>
                         <th style={{ ...thS, textAlign: "right" }}>운행거리</th>
-                        <th style={thS}>용무</th>
+                        <th style={thS}>비고</th>
                         <th style={{ ...thS, textAlign: "right" }}>주유량</th>
                         <th style={{ ...thS, textAlign: "right" }}>주유금액</th>
                         <th style={{ ...thS, textAlign: "right" }}>단가</th>
@@ -1239,7 +1275,9 @@ export default function SalesContent() {
                               {d.distance > 0 ? `${fmt(d.distance)}km` : "-"}
                             </td>
                             <td style={{ ...tdS, color: "#555" }}>
-                              {d.purpose || "-"}
+                              {d.notes && d.notes.length > 0
+                                ? d.notes.map((n) => n.content).join(", ")
+                                : d.purpose || "-"}
                             </td>
                             <td
                               style={{
@@ -1399,7 +1437,7 @@ export default function SalesContent() {
                             color="#1557b0"
                           />
                         )}
-                        {d.purpose && <Row label="용무" value={d.purpose} />}
+                        {d.purpose && <Row label="비고" value={d.purpose} />}
                         {d.fuelAmount > 0 && (
                           <Row
                             label="주유량"
@@ -2285,78 +2323,83 @@ export default function SalesContent() {
                       </p>
                     )}
                   </div>
-                  <div
-                    className="field"
-                    style={{ position: "relative" }}
-                    ref={purposeRef}
-                  >
-                    <label>용무</label>
-                    <input
-                      type="text"
-                      placeholder="용무 입력"
-                      value={drivingForm.purpose}
-                      autoComplete="off"
-                      onChange={(e) => {
-                        setDrivingForm((f) => ({
-                          ...f,
-                          purpose: e.target.value,
-                        }));
-                        setPurposeSearch(e.target.value);
-                        setShowPurposeDrop(true);
+                  <div className="field">
+                    <label
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
-                      onFocus={() => setShowPurposeDrop(true)}
-                    />
-                    {showPurposeDrop &&
-                      purposes.filter((p) =>
-                        p
-                          .toLowerCase()
-                          .includes((purposeSearch || "").toLowerCase()),
-                      ).length > 0 && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "100%",
-                            left: 0,
-                            right: 0,
-                            background: "#fff",
-                            border: "1px solid #e8eaed",
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                            zIndex: 100,
-                            maxHeight: "140px",
-                            overflowY: "auto",
+                    >
+                      <span>비고</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            notes: [...(f.notes || [""]), ""],
+                          }))
+                        }
+                        style={{
+                          fontSize: "11px",
+                          color: "#1557b0",
+                          background: "none",
+                          border: "1px solid #1557b0",
+                          borderRadius: "6px",
+                          padding: "2px 8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ＋ 추가
+                      </button>
+                    </label>
+                    {(drivingForm.notes || [""]).map((note, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: "6px",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          placeholder={`비고 ${i + 1}`}
+                          value={note}
+                          onChange={(e) => {
+                            const newNotes = [...(drivingForm.notes || [""])];
+                            newNotes[i] = e.target.value;
+                            setDrivingForm((f) => ({ ...f, notes: newNotes }));
                           }}
-                        >
-                          {purposes
-                            .filter((p) =>
-                              p
-                                .toLowerCase()
-                                .includes((purposeSearch || "").toLowerCase()),
-                            )
-                            .map((p) => (
-                              <div
-                                key={p}
-                                onClick={() => {
-                                  setDrivingForm((f) => ({ ...f, purpose: p }));
-                                  setShowPurposeDrop(false);
-                                }}
-                                style={{
-                                  padding: "9px 14px",
-                                  cursor: "pointer",
-                                  fontSize: "13px",
-                                }}
-                                onMouseEnter={(e) =>
-                                  (e.target.style.background = "#f4f5f7")
-                                }
-                                onMouseLeave={(e) =>
-                                  (e.target.style.background = "#fff")
-                                }
-                              >
-                                {p}
-                              </div>
-                            ))}
-                        </div>
-                      )}
+                          style={{ flex: 1 }}
+                        />
+                        {(drivingForm.notes || [""]).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newNotes = (
+                                drivingForm.notes || [""]
+                              ).filter((_, idx) => idx !== i);
+                              setDrivingForm((f) => ({
+                                ...f,
+                                notes: newNotes,
+                              }));
+                            }}
+                            style={{
+                              background: "none",
+                              border: "1px solid #e0e0e0",
+                              borderRadius: "6px",
+                              padding: "4px 8px",
+                              cursor: "pointer",
+                              color: "#888",
+                              fontSize: "12px",
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </>
               )}
