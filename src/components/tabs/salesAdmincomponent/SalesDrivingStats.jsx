@@ -431,10 +431,53 @@ export default function SalesDrivingStats({ username, name, year, month }) {
                             {fmt(r.calcDist)}km
                           </span>
                         )}
-                        {r.purpose && (
+                        {r.purpose && !(r.notes && r.notes.length > 0) && (
                           <span style={{ fontSize: "11px", color: "#888" }}>
                             {r.purpose}
                           </span>
+                        )}
+                        {r.notes && r.notes.length > 0 && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "3px",
+                              marginTop: "2px",
+                              width: "100%",
+                            }}
+                          >
+                            {r.notes.map((n, ni) => (
+                              <div
+                                key={ni}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                }}
+                              >
+                                {n.time && (
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#1557b0",
+                                      fontWeight: 700,
+                                      background: "#e8f0fe",
+                                      padding: "1px 6px",
+                                      borderRadius: "4px",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {n.time}
+                                  </span>
+                                )}
+                                <span
+                                  style={{ fontSize: "11px", color: "#555" }}
+                                >
+                                  {n.content}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         )}
                         {toNum(r.fuelAmount) > 0 && (
                           <span style={{ fontSize: "11px", color: "#92400e" }}>

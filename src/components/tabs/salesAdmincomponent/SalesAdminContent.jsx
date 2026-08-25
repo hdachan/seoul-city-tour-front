@@ -364,7 +364,7 @@ export default function SalesAdminContent() {
       arrivalTime: koreaTime,
       meterReading: "",
       purpose: "",
-      notes: [""],
+      notes: [{ content: "", time: "" }],
       fuelAmount: "",
       fuelCost: "",
       fuelUnitPrice: "",
@@ -385,10 +385,13 @@ export default function SalesAdminContent() {
       purpose: row.purpose || "",
       notes:
         row.notes && row.notes.length > 0
-          ? row.notes.map((n) => n.content)
+          ? row.notes.map((n) => ({
+              content: n.content || "",
+              time: n.time || "",
+            }))
           : row.purpose
-            ? [row.purpose]
-            : [""],
+            ? [{ content: row.purpose, time: "" }]
+            : [{ content: "", time: "" }],
       fuelAmount: row.fuelAmount || "",
       fuelCost: row.fuelCost || "",
       fuelUnitPrice: row.fuelUnitPrice || "",
@@ -413,11 +416,11 @@ export default function SalesAdminContent() {
       if (
         savedId &&
         drivingForm.notes &&
-        drivingForm.notes.some((n) => n.trim())
+        drivingForm.notes.some((n) => n.content && n.content.trim())
       ) {
         await api.saveDrivingNotes(
           savedId,
-          drivingForm.notes.filter((n) => n.trim()),
+          drivingForm.notes.filter((n) => n.content && n.content.trim()),
         );
       }
 
@@ -1209,7 +1212,39 @@ export default function SalesAdminContent() {
                               <td style={{ fontSize: "12px", color: "#555" }}>
                                 {d.notes && d.notes.length > 0 ? (
                                   d.notes.map((n, i) => (
-                                    <div key={i}>{n.content}</div>
+                                    <div
+                                      key={i}
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "5px",
+                                        marginBottom: "2px",
+                                      }}
+                                    >
+                                      {n.time && (
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#1557b0",
+                                            fontWeight: 700,
+                                            background: "#e8f0fe",
+                                            padding: "1px 6px",
+                                            borderRadius: "4px",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {n.time}
+                                        </span>
+                                      )}
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#374151",
+                                        }}
+                                      >
+                                        {n.content}
+                                      </span>
+                                    </div>
                                   ))
                                 ) : (
                                   <span style={{ color: "#ccc" }}>-</span>
@@ -1832,7 +1867,10 @@ export default function SalesAdminContent() {
                             onClick={() =>
                               setDrivingForm((f) => ({
                                 ...f,
-                                notes: [...(f.notes || [""]), ""],
+                                notes: [
+                                  ...(f.notes || []),
+                                  { content: "", time: "" },
+                                ],
                               }))
                             }
                             style={{
@@ -1848,58 +1886,82 @@ export default function SalesAdminContent() {
                             ＋ 추가
                           </button>
                         </label>
-                        {(drivingForm.notes || [""]).map((note, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              display: "flex",
-                              gap: "6px",
-                              marginBottom: "6px",
-                            }}
-                          >
-                            <input
-                              type="text"
-                              placeholder={`비고 ${i + 1}`}
-                              value={note}
-                              onChange={(e) => {
-                                const newNotes = [
-                                  ...(drivingForm.notes || [""]),
-                                ];
-                                newNotes[i] = e.target.value;
-                                setDrivingForm((f) => ({
-                                  ...f,
-                                  notes: newNotes,
-                                }));
+                        {(drivingForm.notes || [{ content: "", time: "" }]).map(
+                          (note, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: "flex",
+                                gap: "6px",
+                                marginBottom: "6px",
+                                alignItems: "center",
                               }}
-                              style={{ flex: 1 }}
-                            />
-                            {(drivingForm.notes || [""]).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newNotes = (
-                                    drivingForm.notes || [""]
-                                  ).filter((_, idx) => idx !== i);
+                            >
+                              <input
+                                type="time"
+                                value={note.time || ""}
+                                onChange={(e) => {
+                                  const newNotes = [
+                                    ...(drivingForm.notes || []),
+                                  ];
+                                  newNotes[i] = {
+                                    ...newNotes[i],
+                                    time: e.target.value,
+                                  };
                                   setDrivingForm((f) => ({
                                     ...f,
                                     notes: newNotes,
                                   }));
                                 }}
-                                style={{
-                                  background: "none",
-                                  border: "1px solid #e0e0e0",
-                                  borderRadius: "6px",
-                                  padding: "4px 8px",
-                                  cursor: "pointer",
-                                  color: "#888",
-                                  fontSize: "12px",
+                                style={{ width: "110px" }}
+                              />
+                              <input
+                                type="text"
+                                placeholder={`비고 ${i + 1}`}
+                                value={note.content || ""}
+                                onChange={(e) => {
+                                  const newNotes = [
+                                    ...(drivingForm.notes || []),
+                                  ];
+                                  newNotes[i] = {
+                                    ...newNotes[i],
+                                    content: e.target.value,
+                                  };
+                                  setDrivingForm((f) => ({
+                                    ...f,
+                                    notes: newNotes,
+                                  }));
                                 }}
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                                style={{ flex: 1 }}
+                              />
+                              {(drivingForm.notes || []).length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newNotes = (
+                                      drivingForm.notes || []
+                                    ).filter((_, idx) => idx !== i);
+                                    setDrivingForm((f) => ({
+                                      ...f,
+                                      notes: newNotes,
+                                    }));
+                                  }}
+                                  style={{
+                                    background: "none",
+                                    border: "1px solid #e0e0e0",
+                                    borderRadius: "6px",
+                                    padding: "4px 8px",
+                                    cursor: "pointer",
+                                    color: "#888",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ),
+                        )}
                       </div>
                     </>
                   )}

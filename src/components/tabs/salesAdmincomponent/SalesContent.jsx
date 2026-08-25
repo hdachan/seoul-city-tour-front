@@ -124,6 +124,7 @@ export default function SalesContent() {
   const [categories, setCategories] = useState([]);
   const [purposes, setPurposes] = useState([]);
   const [noteInputs, setNoteInputs] = useState([""]); // 비고 입력 칸들
+  const [expandedNotes, setExpandedNotes] = useState({}); // 모바일 비고 펼치기
   const [noteEditingId, setNoteEditingId] = useState(null); // 현재 비고 편집 중인 drivingId
   const [destinations, setDestinations] = useState([]);
   const [destSearch, setDestSearch] = useState("");
@@ -156,7 +157,7 @@ export default function SalesContent() {
     arrivalTime: getKoreaTime(),
     meterReading: "",
     purpose: "",
-    notes: [""],
+    notes: [{ content: "", time: "" }],
     fuelAmount: "",
     fuelCost: "",
     fuelUnitPrice: "",
@@ -381,10 +382,13 @@ export default function SalesContent() {
     setOpenMenu(null);
     const notes =
       row.notes && row.notes.length > 0
-        ? row.notes.map((n) => n.content)
+        ? row.notes.map((n) => ({
+            content: n.content || "",
+            time: n.time || "",
+          }))
         : row.purpose
-          ? [row.purpose]
-          : [""];
+          ? [{ content: row.purpose, time: "" }]
+          : [{ content: "", time: "" }];
     setDrivingForm({
       startDate: row.date,
       endDate: "",
@@ -418,11 +422,11 @@ export default function SalesContent() {
       if (
         savedId &&
         drivingForm.notes &&
-        drivingForm.notes.some((n) => n.trim())
+        drivingForm.notes.some((n) => n.content && n.content.trim())
       ) {
         await api.saveDrivingNotes(
           savedId,
-          drivingForm.notes.filter((n) => n.trim()),
+          drivingForm.notes.filter((n) => n.content && n.content.trim()),
         );
       }
 
@@ -1274,10 +1278,59 @@ export default function SalesContent() {
                             >
                               {d.distance > 0 ? `${fmt(d.distance)}km` : "-"}
                             </td>
-                            <td style={{ ...tdS, color: "#555" }}>
-                              {d.notes && d.notes.length > 0
-                                ? d.notes.map((n) => n.content).join(", ")
-                                : d.purpose || "-"}
+                            <td style={{ ...tdS }}>
+                              {d.notes && d.notes.length > 0 ? (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "3px",
+                                  }}
+                                >
+                                  {d.notes.map((n, ni) => (
+                                    <div
+                                      key={ni}
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "5px",
+                                      }}
+                                    >
+                                      {n.time && (
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#1557b0",
+                                            fontWeight: 700,
+                                            background: "#e8f0fe",
+                                            padding: "1px 6px",
+                                            borderRadius: "4px",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {n.time}
+                                        </span>
+                                      )}
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#374151",
+                                        }}
+                                      >
+                                        {n.content}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : d.purpose ? (
+                                <span
+                                  style={{ fontSize: "12px", color: "#374151" }}
+                                >
+                                  {d.purpose}
+                                </span>
+                              ) : (
+                                <span style={{ color: "#ccc" }}>-</span>
+                              )}
                             </td>
                             <td
                               style={{
@@ -1437,7 +1490,116 @@ export default function SalesContent() {
                             color="#1557b0"
                           />
                         )}
-                        {d.purpose && <Row label="비고" value={d.purpose} />}
+                        {((d.notes && d.notes.length > 0) || d.purpose) && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedNotes((prev) => ({
+                                  ...prev,
+                                  [d.id]: !prev[d.id],
+                                }))
+                              }
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                background: "none",
+                                border: "none",
+                                padding: "4px 0",
+                                cursor: "pointer",
+                                width: "100%",
+                                textAlign: "left",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#aaa",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                📝 비고
+                              </span>
+                              <span style={{ fontSize: "11px", color: "#aaa" }}>
+                                {d.notes && d.notes.length > 0
+                                  ? `(${d.notes.length}개)`
+                                  : ""}
+                              </span>
+                              <span
+                                style={{
+                                  marginLeft: "auto",
+                                  fontSize: "12px",
+                                  color: "#aaa",
+                                }}
+                              >
+                                {expandedNotes[d.id] ? "▲" : "▼"}
+                              </span>
+                            </button>
+                            {expandedNotes[d.id] && (
+                              <div
+                                style={{
+                                  marginTop: "4px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                }}
+                              >
+                                {d.notes && d.notes.length > 0 ? (
+                                  d.notes.map((n, ni) => (
+                                    <div
+                                      key={ni}
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        padding: "4px 8px",
+                                        background: "#f8f9fb",
+                                        borderRadius: "6px",
+                                      }}
+                                    >
+                                      {n.time && (
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            color: "#1557b0",
+                                            fontWeight: 700,
+                                            background: "#e8f0fe",
+                                            padding: "1px 6px",
+                                            borderRadius: "4px",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {n.time}
+                                        </span>
+                                      )}
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#374151",
+                                        }}
+                                      >
+                                        {n.content}
+                                      </span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#374151",
+                                      padding: "4px 8px",
+                                      background: "#f8f9fb",
+                                      borderRadius: "6px",
+                                    }}
+                                  >
+                                    {d.purpose}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {d.fuelAmount > 0 && (
                           <Row
                             label="주유량"
@@ -2337,7 +2499,10 @@ export default function SalesContent() {
                         onClick={() =>
                           setDrivingForm((f) => ({
                             ...f,
-                            notes: [...(f.notes || [""]), ""],
+                            notes: [
+                              ...(f.notes || []),
+                              { content: "", time: "" },
+                            ],
                           }))
                         }
                         style={{
@@ -2353,53 +2518,78 @@ export default function SalesContent() {
                         ＋ 추가
                       </button>
                     </label>
-                    {(drivingForm.notes || [""]).map((note, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          placeholder={`비고 ${i + 1}`}
-                          value={note}
-                          onChange={(e) => {
-                            const newNotes = [...(drivingForm.notes || [""])];
-                            newNotes[i] = e.target.value;
-                            setDrivingForm((f) => ({ ...f, notes: newNotes }));
+                    {(drivingForm.notes || [{ content: "", time: "" }]).map(
+                      (note, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: "flex",
+                            gap: "6px",
+                            marginBottom: "6px",
+                            alignItems: "center",
                           }}
-                          style={{ flex: 1 }}
-                        />
-                        {(drivingForm.notes || [""]).length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newNotes = (
-                                drivingForm.notes || [""]
-                              ).filter((_, idx) => idx !== i);
+                        >
+                          <input
+                            type="time"
+                            value={note.time || ""}
+                            onChange={(e) => {
+                              const newNotes = [...(drivingForm.notes || [])];
+                              newNotes[i] = {
+                                ...newNotes[i],
+                                time: e.target.value,
+                              };
                               setDrivingForm((f) => ({
                                 ...f,
                                 notes: newNotes,
                               }));
                             }}
-                            style={{
-                              background: "none",
-                              border: "1px solid #e0e0e0",
-                              borderRadius: "6px",
-                              padding: "4px 8px",
-                              cursor: "pointer",
-                              color: "#888",
-                              fontSize: "12px",
+                            style={{ width: "110px" }}
+                          />
+                          <input
+                            type="text"
+                            placeholder={`비고 ${i + 1}`}
+                            value={note.content || ""}
+                            onChange={(e) => {
+                              const newNotes = [...(drivingForm.notes || [])];
+                              newNotes[i] = {
+                                ...newNotes[i],
+                                content: e.target.value,
+                              };
+                              setDrivingForm((f) => ({
+                                ...f,
+                                notes: newNotes,
+                              }));
                             }}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                            style={{ flex: 1 }}
+                          />
+                          {(drivingForm.notes || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newNotes = (
+                                  drivingForm.notes || []
+                                ).filter((_, idx) => idx !== i);
+                                setDrivingForm((f) => ({
+                                  ...f,
+                                  notes: newNotes,
+                                }));
+                              }}
+                              style={{
+                                background: "none",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: "6px",
+                                padding: "4px 8px",
+                                cursor: "pointer",
+                                color: "#888",
+                                fontSize: "12px",
+                              }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ),
+                    )}
                   </div>
                 </>
               )}
