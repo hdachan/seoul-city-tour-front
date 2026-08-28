@@ -4,6 +4,8 @@ import {
   fetchAdminLockStatus,
   toggleMonthLock,
   fetchTourNames,
+  addTourName,
+  deleteTourName,
   fetchAdminGuideIncome,
   addAdminIncome,
   updateAdminIncome,
@@ -32,6 +34,8 @@ export default function GuideAdminContent() {
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
   const [tourNames, setTourNames] = useState([]);
+  const [newTourName, setNewTourName] = useState("");
+  const [activeMainTab, setActiveMainTab] = useState("list");
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
@@ -276,6 +280,7 @@ export default function GuideAdminContent() {
       현금: { background: "#d1fae5", color: "#065f46" },
       카드: { background: "#dbeafe", color: "#1e40af" },
       그외: { background: "#f3f4f6", color: "#555" },
+      완불: { background: "#fef9c3", color: "#854d0e" },
     })[type] || { background: "#f3f4f6", color: "#555" };
   const expTypeBadge = (type) =>
     type === "북한관수수료"
@@ -517,347 +522,115 @@ export default function GuideAdminContent() {
   // ── 상세 뷰 ──
   return (
     <div>
-      <FilterBar />
-      {error && (
-        <div className="alert alert-error" onClick={() => setError("")}>
-          ⚠ {error}
-        </div>
-      )}
-      {success && (
-        <div className="alert alert-success" onClick={() => setSuccess("")}>
-          {success}
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          marginBottom: "1rem",
-          padding: "10px 16px",
-          background: isLocked ? "#f0fff4" : "#fffbeb",
-          border: `1px solid ${isLocked ? "#c6f6d5" : "#fde68a"}`,
-          borderRadius: "8px",
-          fontSize: "13px",
-        }}
-      >
-        <span
-          style={{ fontWeight: 600, color: isLocked ? "#276749" : "#92400e" }}
+      {/* 메인 탭 */}
+      <div className="gf-tab-bar" style={{ marginBottom: "16px" }}>
+        <button
+          className={`gf-tab ${activeMainTab === "list" ? "active" : ""}`}
+          onClick={() => setActiveMainTab("list")}
         >
-          {isLocked ? "✅ 정산 완료된 달입니다." : "⏳ 정산 진행 중입니다."}
-        </span>
+          📋 정산 목록
+        </button>
+        <button
+          className={`gf-tab ${activeMainTab === "category" ? "active" : ""}`}
+          onClick={() => setActiveMainTab("category")}
+        >
+          🏷 투어 카테고리
+        </button>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
-          gap: "12px",
-          marginBottom: "1.2rem",
-        }}
-      >
-        <div style={cardStyle("#e0e7ff")}>
-          <div style={labelStyle}>현금 수입합계</div>
-          <div style={{ ...valueStyle, color: "#059669" }}>
-            {fmt(cashTotal)}
-          </div>
-        </div>
-        <div style={cardStyle("#fde8e8")}>
-          <div style={labelStyle}>지출합계 (현금)</div>
-          <div style={{ ...valueStyle, color: "#e53e3e" }}>
-            {fmt(expCashTotal)}
-          </div>
-        </div>
-        <div style={cardStyle(netTotal >= 0 ? "#ecfdf5" : "#fff0f0")}>
-          <div style={labelStyle}>토탈</div>
+      {/* 카테고리 탭 */}
+      {activeMainTab === "category" && (
+        <div>
           <div
             style={{
-              ...valueStyle,
-              color: netTotal >= 0 ? "#059669" : "#e53e3e",
+              background: "#fff",
+              borderRadius: "10px",
+              border: "1px solid #e8eaed",
+              padding: "16px",
+              marginBottom: "12px",
             }}
           >
-            {netTotal >= 0 ? "+" : ""}
-            {fmt(netTotal)}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "0",
-        }}
-      >
-        <div className="gf-tab-bar" style={{ marginBottom: 0, flex: 1 }}>
-          <button
-            className={`gf-tab ${activeTab === "income" ? "active" : ""}`}
-            onClick={() => setActiveTab("income")}
-          >
-            수입 ({incomes.length}건)
-          </button>
-          <button
-            className={`gf-tab ${activeTab === "expense" ? "active" : ""}`}
-            onClick={() => setActiveTab("expense")}
-          >
-            지출 ({expenses.length}건)
-          </button>
-          <button
-            className={`gf-tab ${activeTab === "dailyfee" ? "active" : ""}`}
-            onClick={() => setActiveTab("dailyfee")}
-          >
-            일비 ({dailyFees.length}건)
-          </button>
-        </div>
-        <div style={{ paddingLeft: "12px" }}>
-          {activeTab === "income" && (
-            <button className="btn-primary" onClick={openIncomeAdd}>
-              ＋수입추가
-            </button>
-          )}
-          {activeTab === "expense" && (
-            <button className="btn-primary" onClick={openExpenseAdd}>
-              ＋ 지출추가
-            </button>
-          )}
-          {activeTab === "dailyfee" && (
-            <button className="btn-primary" onClick={openFeeAdd}>
-              ＋ 일비추가
-            </button>
-          )}
-        </div>
-      </div>
-
-      {activeTab === "income" && (
-        <div className="gf-table-wrap">
-          <table className="gf-table">
-            <thead>
-              <tr>
-                <th>날짜</th>
-                <th>투어이름</th>
-                <th>대표자</th>
-                <th>결제</th>
-                <th>금액(1인)</th>
-                <th>인원</th>
-                <th>합계</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {incomes.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="empty">
-                    수입 내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                incomes.map((i) => (
-                  <tr key={i.id}>
-                    <td style={{ color: "#888", fontSize: "12px" }}>
-                      {i.date}
-                    </td>
-                    <td>{i.tourName}</td>
-                    <td>{i.representativeName || "-"}</td>
-                    <td>
-                      <span
-                        className="pay-badge"
-                        style={payBadge(i.paymentType)}
-                      >
-                        {i.paymentType}
-                      </span>
-                    </td>
-                    <td className="td-right">
-                      {i.amount ? fmt(i.amount) : "-"}
-                    </td>
-                    <td className="td-center">
-                      {i.headcount ? `${i.headcount}명` : "-"}
-                    </td>
-                    <td className="td-right total-cell">
-                      {i.totalAmount ? fmt(i.totalAmount) : "-"}
-                    </td>
-                    <td style={{ display: "flex", gap: "4px" }}>
-                      <button
-                        onClick={() => openIncomeEdit(i)}
-                        style={editBtnStyle}
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDeleteIncome(i.id)}
-                        className="delete-btn"
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {activeTab === "expense" && (
-        <div className="gf-table-wrap">
-          <table className="gf-table">
-            <thead>
-              <tr>
-                <th>날짜</th>
-                <th>항목</th>
-                <th>결제</th>
-                <th>금액(1인)</th>
-                <th>인원</th>
-                <th>합계</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenses.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="empty">
-                    지출 내역이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                expenses.map((e) => (
-                  <tr key={e.id}>
-                    <td style={{ color: "#888", fontSize: "12px" }}>
-                      {e.date}
-                    </td>
-                    <td>
-                      <span
-                        className="pay-badge"
-                        style={expTypeBadge(e.expenseType)}
-                      >
-                        {e.expenseType}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className="pay-badge"
-                        style={payBadge(e.paymentType)}
-                      >
-                        {e.paymentType}
-                      </span>
-                    </td>
-                    <td className="td-right">{fmt(e.amount)}</td>
-                    <td className="td-center">
-                      {e.headcount ? `${e.headcount}명` : "-"}
-                    </td>
-                    <td className="td-right total-cell">
-                      {e.totalAmount ? fmt(e.totalAmount) : "-"}
-                    </td>
-                    <td style={{ display: "flex", gap: "4px" }}>
-                      <button
-                        onClick={() => openExpenseEdit(e)}
-                        style={editBtnStyle}
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDeleteExpense(e.id)}
-                        className="delete-btn"
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {activeTab === "dailyfee" && (
-        <div>
-          {totalDailyFee > 0 && (
-            <div
+            <h3
               style={{
-                background: "#fffbeb",
-                border: "1px solid #fde68a",
-                borderRadius: "12px",
-                padding: "1rem 1.2rem",
-                marginBottom: "1rem",
-                marginTop: "1rem",
+                fontSize: "14px",
+                fontWeight: 600,
+                marginBottom: "12px",
               }}
             >
-              <p
+              투어 카테고리 추가
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newTourName.trim()) return;
+                addTourName(newTourName.trim())
+                  .then(() => {
+                    setNewTourName("");
+                    fetchTourNames().then((r) => setTourNames(r.data));
+                    setSuccess("추가되었습니다.");
+                  })
+                  .catch((err) =>
+                    setError(err.response?.data?.error || "추가 실패"),
+                  );
+              }}
+              style={{ display: "flex", gap: "8px", alignItems: "center" }}
+            >
+              <input
+                type="text"
+                placeholder="투어 이름"
+                value={newTourName}
+                onChange={(e) => setNewTourName(e.target.value)}
                 style={{
+                  flex: 1,
+                  padding: "9px 12px",
+                  border: "1.5px solid #d8dce3",
+                  borderRadius: "8px",
                   fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#92400e",
-                  marginBottom: "10px",
+                  outline: "none",
                 }}
-              >
-                💰 일비 정산 (3.3%)
-              </p>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3,1fr)",
-                  gap: "12px",
-                }}
-              >
-                <div>
-                  <div style={labelStyle}>총 일비</div>
-                  <div style={valueStyle}>{fmt(totalDailyFee)}</div>
-                </div>
-                <div>
-                  <div style={labelStyle}>신고액</div>
-                  <div style={{ ...valueStyle, color: "#e53e3e" }}>
-                    - {fmt(taxAmount)}
-                  </div>
-                </div>
-                <div>
-                  <div style={labelStyle}>실수령액</div>
-                  <div style={{ ...valueStyle, color: "#059669" }}>
-                    {fmt(actualDailyFee)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+              />
+              <button type="submit" className="btn-primary">
+                추가
+              </button>
+            </form>
+          </div>
           <div className="gf-table-wrap">
             <table className="gf-table">
               <thead>
                 <tr>
-                  <th>날짜</th>
-                  <th>일비 금액</th>
-                  <th></th>
+                  <th>투어명</th>
+                  <th style={{ width: "70px" }}></th>
                 </tr>
               </thead>
               <tbody>
-                {dailyFees.length === 0 ? (
+                {tourNames.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="empty">
-                      일비 내역이 없습니다.
+                    <td colSpan={2} className="empty">
+                      없음
                     </td>
                   </tr>
                 ) : (
-                  dailyFees.map((d) => (
-                    <tr key={d.id}>
-                      <td style={{ color: "#888", fontSize: "12px" }}>
-                        {d.date}
-                      </td>
-                      <td
-                        className="td-right"
-                        style={{ fontWeight: 600, color: "#1d4ed8" }}
-                      >
-                        {fmt(d.amount)}
-                      </td>
-                      <td style={{ display: "flex", gap: "4px" }}>
+                  tourNames.map((t) => (
+                    <tr key={t.id}>
+                      <td style={{ fontWeight: 500 }}>{t.name}</td>
+                      <td>
                         <button
-                          onClick={() => openFeeEdit(d)}
-                          style={editBtnStyle}
-                        >
-                          수정
-                        </button>
-                        <button
-                          onClick={() => handleDeleteFee(d.id)}
                           className="delete-btn"
+                          onClick={() => {
+                            if (window.confirm("삭제할까요?"))
+                              deleteTourName(t.id)
+                                .then(() => {
+                                  fetchTourNames().then((r) =>
+                                    setTourNames(r.data),
+                                  );
+                                  setSuccess("삭제되었습니다.");
+                                })
+                                .catch((err) =>
+                                  setError(
+                                    err.response?.data?.error || "삭제 실패",
+                                  ),
+                                );
+                          }}
                         >
                           삭제
                         </button>
@@ -871,240 +644,674 @@ export default function GuideAdminContent() {
         </div>
       )}
 
-      {/* 수입 모달 */}
-      {incomeModal.mode && (
-        <div
-          className="modal-bg"
-          onClick={() => setIncomeModal({ mode: null })}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">
-              수입 {incomeModal.mode === "add" ? "추가" : "수정"}
-            </h3>
-            <form onSubmit={handleSubmitIncome} className="modal-form">
-              <div className="field">
-                <label>투어이름</label>
-                <select
-                  value={incomeForm.tourName || ""}
-                  onChange={(e) =>
-                    setIncomeForm({ ...incomeForm, tourName: e.target.value })
-                  }
-                >
-                  <option value="">선택하세요</option>
-                  {tourNames.map((t) => (
-                    <option key={t.id} value={t.name}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+      {/* 정산 목록 탭 */}
+      {activeMainTab === "list" && (
+        <div>
+          <FilterBar />
+          {error && (
+            <div className="alert alert-error" onClick={() => setError("")}>
+              ⚠ {error}
+            </div>
+          )}
+          {success && (
+            <div className="alert alert-success" onClick={() => setSuccess("")}>
+              {success}
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "1rem",
+              padding: "10px 16px",
+              background: isLocked ? "#f0fff4" : "#fffbeb",
+              border: `1px solid ${isLocked ? "#c6f6d5" : "#fde68a"}`,
+              borderRadius: "8px",
+              fontSize: "13px",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 600,
+                color: isLocked ? "#276749" : "#92400e",
+              }}
+            >
+              {isLocked ? "✅ 정산 완료된 달입니다." : "⏳ 정산 진행 중입니다."}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3,1fr)",
+              gap: "12px",
+              marginBottom: "1.2rem",
+            }}
+          >
+            <div style={cardStyle("#e0e7ff")}>
+              <div style={labelStyle}>현금 수입합계</div>
+              <div style={{ ...valueStyle, color: "#059669" }}>
+                {fmt(cashTotal)}
               </div>
-              <div className="field">
-                <label>대표자이름</label>
-                <input
-                  type="text"
-                  value={incomeForm.representativeName || ""}
-                  onChange={(e) =>
-                    setIncomeForm({
-                      ...incomeForm,
-                      representativeName: e.target.value,
-                    })
-                  }
-                />
+            </div>
+            <div style={cardStyle("#fde8e8")}>
+              <div style={labelStyle}>지출합계 (현금)</div>
+              <div style={{ ...valueStyle, color: "#e53e3e" }}>
+                {fmt(expCashTotal)}
               </div>
-              <div className="field">
-                <label>결제유형</label>
-                <SelectBtn
-                  options={["현금", "카드", "그외"]}
-                  value={incomeForm.paymentType || "현금"}
-                  onChange={(v) =>
-                    setIncomeForm({
-                      ...incomeForm,
-                      paymentType: v,
-                      amount: "",
-                      headcount: "",
-                    })
-                  }
-                />
+            </div>
+            <div style={cardStyle(netTotal >= 0 ? "#ecfdf5" : "#fff0f0")}>
+              <div style={labelStyle}>토탈</div>
+              <div
+                style={{
+                  ...valueStyle,
+                  color: netTotal >= 0 ? "#059669" : "#e53e3e",
+                }}
+              >
+                {netTotal >= 0 ? "+" : ""}
+                {fmt(netTotal)}
               </div>
-              {(incomeForm.paymentType === "현금" ||
-                incomeForm.paymentType === "카드") && (
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0",
+            }}
+          >
+            <div className="gf-tab-bar" style={{ marginBottom: 0, flex: 1 }}>
+              <button
+                className={`gf-tab ${activeTab === "income" ? "active" : ""}`}
+                onClick={() => setActiveTab("income")}
+              >
+                수입 ({incomes.length}건)
+              </button>
+              <button
+                className={`gf-tab ${activeTab === "expense" ? "active" : ""}`}
+                onClick={() => setActiveTab("expense")}
+              >
+                지출 ({expenses.length}건)
+              </button>
+              <button
+                className={`gf-tab ${activeTab === "dailyfee" ? "active" : ""}`}
+                onClick={() => setActiveTab("dailyfee")}
+              >
+                일비 ({dailyFees.length}건)
+              </button>
+            </div>
+            <div style={{ paddingLeft: "12px" }}>
+              {activeTab === "income" && (
+                <button className="btn-primary" onClick={openIncomeAdd}>
+                  ＋수입추가
+                </button>
+              )}
+              {activeTab === "expense" && (
+                <button className="btn-primary" onClick={openExpenseAdd}>
+                  ＋ 지출추가
+                </button>
+              )}
+              {activeTab === "dailyfee" && (
+                <button className="btn-primary" onClick={openFeeAdd}>
+                  ＋ 일비추가
+                </button>
+              )}
+            </div>
+          </div>
+
+          {activeTab === "income" && (
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>투어이름</th>
+                    <th>대표자</th>
+                    <th>결제</th>
+                    <th>금액(1인)</th>
+                    <th>인원</th>
+                    <th>합계</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incomes.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="empty">
+                        수입 내역이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    incomes.map((i) => (
+                      <tr key={i.id}>
+                        <td style={{ color: "#888", fontSize: "12px" }}>
+                          {i.date}
+                        </td>
+                        <td>{i.tourName}</td>
+                        <td>{i.representativeName || "-"}</td>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={payBadge(i.paymentType)}
+                          >
+                            {i.paymentType}
+                          </span>
+                        </td>
+                        <td className="td-right">
+                          {i.amount ? fmt(i.amount) : "-"}
+                        </td>
+                        <td className="td-center">
+                          {i.headcount ? `${i.headcount}명` : "-"}
+                        </td>
+                        <td className="td-right total-cell">
+                          {i.totalAmount ? fmt(i.totalAmount) : "-"}
+                        </td>
+                        <td style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            onClick={() => openIncomeEdit(i)}
+                            style={editBtnStyle}
+                          >
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDeleteIncome(i.id)}
+                            className="delete-btn"
+                          >
+                            삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "expense" && (
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>항목</th>
+                    <th>결제</th>
+                    <th>금액(1인)</th>
+                    <th>인원</th>
+                    <th>합계</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty">
+                        지출 내역이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    expenses.map((e) => (
+                      <tr key={e.id}>
+                        <td style={{ color: "#888", fontSize: "12px" }}>
+                          {e.date}
+                        </td>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={expTypeBadge(e.expenseType)}
+                          >
+                            {e.expenseType}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={payBadge(e.paymentType)}
+                          >
+                            {e.paymentType}
+                          </span>
+                        </td>
+                        <td className="td-right">{fmt(e.amount)}</td>
+                        <td className="td-center">
+                          {e.headcount ? `${e.headcount}명` : "-"}
+                        </td>
+                        <td className="td-right total-cell">
+                          {e.totalAmount ? fmt(e.totalAmount) : "-"}
+                        </td>
+                        <td style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            onClick={() => openExpenseEdit(e)}
+                            style={editBtnStyle}
+                          >
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(e.id)}
+                            className="delete-btn"
+                          >
+                            삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "dailyfee" && (
+            <div>
+              {totalDailyFee > 0 && (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "10px",
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    borderRadius: "12px",
+                    padding: "1rem 1.2rem",
+                    marginBottom: "1rem",
+                    marginTop: "1rem",
                   }}
                 >
-                  <div className="field">
-                    <label>금액 (1인)</label>
-                    <input
-                      type="number"
-                      value={incomeForm.amount || ""}
-                      onChange={(e) =>
-                        setIncomeForm({ ...incomeForm, amount: e.target.value })
-                      }
-                    />
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#92400e",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    💰 일비 정산 (3.3%)
+                  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3,1fr)",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <div style={labelStyle}>총 일비</div>
+                      <div style={valueStyle}>{fmt(totalDailyFee)}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>신고액</div>
+                      <div style={{ ...valueStyle, color: "#e53e3e" }}>
+                        - {fmt(taxAmount)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>실수령액</div>
+                      <div style={{ ...valueStyle, color: "#059669" }}>
+                        {fmt(actualDailyFee)}
+                      </div>
+                    </div>
                   </div>
+                </div>
+              )}
+              <div className="gf-table-wrap">
+                <table className="gf-table">
+                  <thead>
+                    <tr>
+                      <th>날짜</th>
+                      <th>일비 금액</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyFees.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="empty">
+                          일비 내역이 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      dailyFees.map((d) => (
+                        <tr key={d.id}>
+                          <td style={{ color: "#888", fontSize: "12px" }}>
+                            {d.date}
+                          </td>
+                          <td
+                            className="td-right"
+                            style={{ fontWeight: 600, color: "#1d4ed8" }}
+                          >
+                            {fmt(d.amount)}
+                          </td>
+                          <td style={{ display: "flex", gap: "4px" }}>
+                            <button
+                              onClick={() => openFeeEdit(d)}
+                              style={editBtnStyle}
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteFee(d.id)}
+                              className="delete-btn"
+                            >
+                              삭제
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 수입 모달 */}
+          {incomeModal.mode && (
+            <div
+              className="modal-bg"
+              onClick={() => setIncomeModal({ mode: null })}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="modal-title">
+                  수입 {incomeModal.mode === "add" ? "추가" : "수정"}
+                </h3>
+                <form onSubmit={handleSubmitIncome} className="modal-form">
                   <div className="field">
-                    <label>인원</label>
-                    <input
-                      type="number"
-                      value={incomeForm.headcount || ""}
+                    <label>투어이름</label>
+                    <select
+                      value={incomeForm.tourName || ""}
                       onChange={(e) =>
                         setIncomeForm({
                           ...incomeForm,
-                          headcount: e.target.value,
+                          tourName: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">선택하세요</option>
+                      {tourNames.map((t) => (
+                        <option key={t.id} value={t.name}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>대표자이름</label>
+                    <input
+                      type="text"
+                      value={incomeForm.representativeName || ""}
+                      onChange={(e) =>
+                        setIncomeForm({
+                          ...incomeForm,
+                          representativeName: e.target.value,
                         })
                       }
                     />
                   </div>
-                </div>
-              )}
-              {error && <p className="field-error">⚠ {error}</p>}
-              <div className="modal-btns">
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() => setIncomeModal({ mode: null })}
-                >
-                  취소
-                </button>
-                <button type="submit" className="btn-primary">
-                  {incomeModal.mode === "add" ? "추가" : "수정"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <div className="field">
+                    <label>결제유형</label>
+                    <SelectBtn
+                      options={["현금", "카드", "그외", "완불"]}
+                      value={incomeForm.paymentType || "현금"}
+                      onChange={(v) =>
+                        setIncomeForm({
+                          ...incomeForm,
+                          paymentType: v,
+                          amount: "",
+                          headcount: "",
+                        })
+                      }
+                    />
+                  </div>
+                  {/* 완불 - 인원만 */}
+                  {incomeForm.paymentType === "완불" && (
+                    <div className="field">
+                      <label>인원</label>
+                      <input
+                        type="number"
+                        value={incomeForm.headcount || ""}
+                        onChange={(e) =>
+                          setIncomeForm({
+                            ...incomeForm,
+                            headcount: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
 
-      {/* 지출 모달 */}
-      {expenseModal.mode && (
-        <div
-          className="modal-bg"
-          onClick={() => setExpenseModal({ mode: null })}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">
-              지출 {expenseModal.mode === "add" ? "추가" : "수정"}
-            </h3>
-            <form onSubmit={handleSubmitExpense} className="modal-form">
-              <div className="field">
-                <label>항목</label>
-                <SelectBtn
-                  options={["북한관수수료", "가이드입장료"]}
-                  value={expenseForm.expenseType || "북한관수수료"}
-                  onChange={(v) =>
-                    setExpenseForm({ ...expenseForm, expenseType: v })
-                  }
-                  badgeFn={expTypeBadge}
-                />
-              </div>
-              <div className="field">
-                <label>결제유형</label>
-                <SelectBtn
-                  options={["현금", "카드"]}
-                  value={expenseForm.paymentType || "현금"}
-                  onChange={(v) =>
-                    setExpenseForm({ ...expenseForm, paymentType: v })
-                  }
-                />
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                }}
-              >
-                <div className="field">
-                  <label>금액 (1인)</label>
-                  <input
-                    type="number"
-                    value={expenseForm.amount || ""}
-                    onChange={(e) =>
-                      setExpenseForm({ ...expenseForm, amount: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>인원</label>
-                  <input
-                    type="number"
-                    value={expenseForm.headcount || ""}
-                    onChange={(e) =>
-                      setExpenseForm({
-                        ...expenseForm,
-                        headcount: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              {error && <p className="field-error">⚠ {error}</p>}
-              <div className="modal-btns">
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() => setExpenseModal({ mode: null })}
-                >
-                  취소
-                </button>
-                <button type="submit" className="btn-primary">
-                  {expenseModal.mode === "add" ? "추가" : "수정"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  {/* 현금/카드만 - 금액 + 인원 */}
+                  {(incomeForm.paymentType === "현금" ||
+                    incomeForm.paymentType === "카드") && (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "10px",
+                      }}
+                    >
+                      <div className="field">
+                        <label>금액 (1인)</label>
+                        <input
+                          type="number"
+                          value={incomeForm.amount || ""}
+                          onChange={(e) =>
+                            setIncomeForm({
+                              ...incomeForm,
+                              amount: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label>인원</label>
+                        <input
+                          type="number"
+                          value={incomeForm.headcount || ""}
+                          onChange={(e) =>
+                            setIncomeForm({
+                              ...incomeForm,
+                              headcount: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
 
-      {/* 일비 모달 */}
-      {dailyFeeModal.mode && (
-        <div
-          className="modal-bg"
-          onClick={() => setDailyFeeModal({ mode: null })}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">
-              일비 {dailyFeeModal.mode === "add" ? "추가" : "수정"}
-            </h3>
-            <form onSubmit={handleSubmitFee} className="modal-form">
-              <div className="field">
-                <label>날짜</label>
-                <input
-                  type="date"
-                  value={dailyFeeForm.date || today()}
-                  onChange={(e) =>
-                    setDailyFeeForm({ ...dailyFeeForm, date: e.target.value })
-                  }
-                />
+                  {/* 미리보기 */}
+                  {(incomeForm.paymentType === "현금" ||
+                    incomeForm.paymentType === "카드") &&
+                    incomeForm.amount &&
+                    incomeForm.headcount && (
+                      <div
+                        style={{
+                          background: "#f0fdf4",
+                          border: "1px solid #86efac",
+                          borderRadius: "8px",
+                          padding: "10px 14px",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ color: "#555" }}>
+                            {Number(incomeForm.amount).toLocaleString()}원 ×{" "}
+                            {incomeForm.headcount}명
+                          </span>
+                          <strong
+                            style={{ color: "#059669", fontSize: "15px" }}
+                          >
+                            ={" "}
+                            {(
+                              Number(incomeForm.amount) *
+                              Number(incomeForm.headcount)
+                            ).toLocaleString()}
+                            원
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+                  {error && <p className="field-error">⚠ {error}</p>}
+                  <div className="modal-btns">
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => setIncomeModal({ mode: null })}
+                    >
+                      취소
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      {incomeModal.mode === "add" ? "추가" : "수정"}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div className="field">
-                <label>금액</label>
-                <input
-                  type="number"
-                  value={dailyFeeForm.amount || ""}
-                  onChange={(e) =>
-                    setDailyFeeForm({ ...dailyFeeForm, amount: e.target.value })
-                  }
-                />
+            </div>
+          )}
+
+          {/* 지출 모달 */}
+          {expenseModal.mode && (
+            <div
+              className="modal-bg"
+              onClick={() => setExpenseModal({ mode: null })}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="modal-title">
+                  지출 {expenseModal.mode === "add" ? "추가" : "수정"}
+                </h3>
+                <form onSubmit={handleSubmitExpense} className="modal-form">
+                  <div className="field">
+                    <label>항목</label>
+                    <SelectBtn
+                      options={["북한관수수료", "가이드입장료"]}
+                      value={expenseForm.expenseType || "북한관수수료"}
+                      onChange={(v) =>
+                        setExpenseForm({ ...expenseForm, expenseType: v })
+                      }
+                      badgeFn={expTypeBadge}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>결제유형</label>
+                    <SelectBtn
+                      options={["현금", "카드"]}
+                      value={expenseForm.paymentType || "현금"}
+                      onChange={(v) =>
+                        setExpenseForm({ ...expenseForm, paymentType: v })
+                      }
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "10px",
+                    }}
+                  >
+                    <div className="field">
+                      <label>금액 (1인)</label>
+                      <input
+                        type="number"
+                        value={expenseForm.amount || ""}
+                        onChange={(e) =>
+                          setExpenseForm({
+                            ...expenseForm,
+                            amount: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>인원</label>
+                      <input
+                        type="number"
+                        value={expenseForm.headcount || ""}
+                        onChange={(e) =>
+                          setExpenseForm({
+                            ...expenseForm,
+                            headcount: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  {error && <p className="field-error">⚠ {error}</p>}
+                  <div className="modal-btns">
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => setExpenseModal({ mode: null })}
+                    >
+                      취소
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      {expenseModal.mode === "add" ? "추가" : "수정"}
+                    </button>
+                  </div>
+                </form>
               </div>
-              {error && <p className="field-error">⚠ {error}</p>}
-              <div className="modal-btns">
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() => setDailyFeeModal({ mode: null })}
-                >
-                  취소
-                </button>
-                <button type="submit" className="btn-primary">
-                  {dailyFeeModal.mode === "add" ? "추가" : "수정"}
-                </button>
+            </div>
+          )}
+
+          {/* 일비 모달 */}
+          {dailyFeeModal.mode && (
+            <div
+              className="modal-bg"
+              onClick={() => setDailyFeeModal({ mode: null })}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="modal-title">
+                  일비 {dailyFeeModal.mode === "add" ? "추가" : "수정"}
+                </h3>
+                <form onSubmit={handleSubmitFee} className="modal-form">
+                  <div className="field">
+                    <label>날짜</label>
+                    <input
+                      type="date"
+                      value={dailyFeeForm.date || today()}
+                      onChange={(e) =>
+                        setDailyFeeForm({
+                          ...dailyFeeForm,
+                          date: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>금액</label>
+                    <input
+                      type="number"
+                      value={dailyFeeForm.amount || ""}
+                      onChange={(e) =>
+                        setDailyFeeForm({
+                          ...dailyFeeForm,
+                          amount: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  {error && <p className="field-error">⚠ {error}</p>}
+                  <div className="modal-btns">
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => setDailyFeeModal({ mode: null })}
+                    >
+                      취소
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      {dailyFeeModal.mode === "add" ? "추가" : "수정"}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

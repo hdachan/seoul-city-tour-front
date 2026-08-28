@@ -51,7 +51,6 @@ export const removeCategory = (id) =>
 // 업체별 정산
 export const fetchPlatforms = () =>
   axios.get(`${BASE_URL}/settlement/platforms`, authHeader());
-// 업체 추가 (region, memo 포함)
 export const addPlatform = (name, region, memo) =>
   axios.post(
     `${BASE_URL}/settlement/platforms`,
@@ -65,7 +64,6 @@ export const fetchMonthlySettlement = (year, month) =>
     ...authHeader(),
     params: { year, month },
   });
-// 정산 저장 (upsert - region 제거, memo 추가)
 export const saveSettlement = (platformId, year, month, amount, memo) =>
   axios.post(
     `${BASE_URL}/settlement/save`,
@@ -111,9 +109,9 @@ export const deleteGinsengRecord = (id) =>
 export const fetchTourNames = () =>
   axios.get(`${BASE_URL}/guide-form/tour-names`, authHeader());
 export const addTourName = (name) =>
-  axios.post(`${BASE_URL}/guide-form/tour-names`, { name }, authHeader());
+  axios.post(`${BASE_URL}/guide-admin/tour-names`, { name }, authHeader());
 export const deleteTourName = (id) =>
-  axios.delete(`${BASE_URL}/guide-form/tour-names/${id}`, authHeader());
+  axios.delete(`${BASE_URL}/guide-admin/tour-names/${id}`, authHeader());
 export const fetchGuideLockStatus = () =>
   axios.get(`${BASE_URL}/guide-form/lock-status`, authHeader());
 export const fetchGuideRecords = () =>
@@ -205,8 +203,6 @@ export const updateAdminDailyFee = (id, amount, date) =>
   );
 export const deleteAdminDailyFee = (id) =>
   axios.delete(`${BASE_URL}/guide-admin/daily-fee/${id}`, authHeader());
-
-// ── 기존 auth.js 맨 아래에 추가 ──
 
 // 영업 정산폼 (영업용)
 export const fetchSalesLockStatus = () =>
