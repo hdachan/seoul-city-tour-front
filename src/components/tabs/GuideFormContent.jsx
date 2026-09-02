@@ -20,6 +20,38 @@ import "./GuideFormContent.css";
 const TAX_RATE = 0.033;
 const today = () => new Date().toISOString().split("T")[0];
 
+const SelectBtn = ({ options, value, onChange, badgeFn }) => (
+  <div style={{ display: "flex", gap: "8px" }}>
+    {options.map((opt) => (
+      <button
+        key={opt}
+        type="button"
+        onClick={() => onChange(opt)}
+        style={{
+          flex: 1,
+          padding: "9px",
+          border: "1.5px solid",
+          borderRadius: "8px",
+          fontSize: "13px",
+          cursor: "pointer",
+          fontWeight: value === opt ? 600 : 400,
+          ...(value === opt
+            ? badgeFn
+              ? badgeFn(opt)
+              : {
+                  background: "#e8f0fe",
+                  color: "#1557b0",
+                  borderColor: "#1557b0",
+                }
+            : { background: "#fff", color: "#555", borderColor: "#e0e0e0" }),
+        }}
+      >
+        {opt}
+      </button>
+    ))}
+  </div>
+);
+
 export default function GuideFormContent() {
   const now = new Date();
   const username = sessionStorage.getItem("username");
@@ -27,12 +59,14 @@ export default function GuideFormContent() {
   const month = now.getMonth() + 1;
 
   const [isLocked, setIsLocked] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [tourNames, setTourNames] = useState([]);
   const [records, setRecords] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
   const [activeTab, setActiveTab] = useState("records");
   const [error, setError] = useState("");
+  const [incomeError, setIncomeError] = useState("");
   const [success, setSuccess] = useState("");
 
   // 모달 상태 (mode: null | 'add' | 'edit')
@@ -51,7 +85,7 @@ export default function GuideFormContent() {
     headcount: "",
   };
   const emptyExpense = {
-    expenseType: "북한관수수료",
+    expenseType: "북한관 입장료",
     amount: "",
     headcount: "",
     paymentType: "현금",
@@ -80,6 +114,12 @@ export default function GuideFormContent() {
       setError("데이터를 불러오지 못했습니다.");
     }
   };
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     load();
@@ -111,25 +151,44 @@ export default function GuideFormContent() {
 
   const handleSubmitIncome = async (e) => {
     e.preventDefault();
-    setError("");
+    setIncomeError("");
     setSuccess("");
     if (checkLocked()) return;
-    if (!incomeForm.tourName) {
-      setError("투어이름을 선택해주세요.");
+    if (!incomeForm.tourName || incomeForm.tourName === "선택하세요") {
+      setIncomeError("투어이름을 선택해주세요.");
+      return;
+    }
+    if (
+      incomeForm.paymentType !== "완불" &&
+      incomeForm.paymentType !== "그외" &&
+      (!incomeForm.amount || !incomeForm.headcount)
+    ) {
+      setIncomeError("금액과 인원을 입력해주세요.");
       return;
     }
     try {
       if (incomeModal.mode === "add") {
-        await addGuideRecord({ ...incomeForm });
+        const noteVal =
+          incomeForm.note === "기타"
+            ? incomeForm.noteCustom || "기타"
+            : incomeForm.note || "";
+        await addGuideRecord({ ...incomeForm, note: noteVal });
         setSuccess("수입이 추가되었습니다.");
       } else {
-        await updateGuideRecord(incomeModal.data.id, { ...incomeForm });
+        const noteVal =
+          incomeForm.note === "기타"
+            ? incomeForm.noteCustom || "기타"
+            : incomeForm.note || "";
+        await updateGuideRecord(incomeModal.data.id, {
+          ...incomeForm,
+          note: noteVal,
+        });
         setSuccess("수입이 수정되었습니다.");
       }
       setIncomeModal({ mode: null });
       load();
     } catch (err) {
-      setError(err.response?.data?.error || "처리 실패");
+      setIncomeError(err.response?.data?.error || "처리 실패");
     }
   };
 
@@ -255,6 +314,10 @@ export default function GuideFormContent() {
     .filter((e) => e.paymentType === "현금")
     .reduce((s, e) => s + (e.totalAmount || 0), 0);
   const netTotal = cashTotal - expCashTotal;
+  const totalHeadcount = records.reduce(
+    (s, r) => s + (Number(r.headcount) || 0),
+    0,
+  );
   const totalDailyFee = dailyFees.reduce((s, d) => s + d.amount, 0);
   const taxAmount = Math.round(totalDailyFee * TAX_RATE);
   const actualDailyFee = totalDailyFee - taxAmount;
@@ -268,37 +331,9 @@ export default function GuideFormContent() {
       완불: { background: "#fef9c3", color: "#854d0e" },
     })[type] || { background: "#f3f4f6", color: "#555" };
   const expTypeBadge = (type) =>
-    type === "북한관수수료"
+    type === "북한관 입장료" || type === "북한책"
       ? { background: "#fef3c7", color: "#92400e" }
       : { background: "#ede9fe", color: "#5b21b6" };
-
-  const SelectBtn = ({ options, value, onChange, badgeFn }) => (
-    <div style={{ display: "flex", gap: "8px" }}>
-      {options.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => onChange(opt)}
-          style={{
-            flex: 1,
-            padding: "9px",
-            border: "1.5px solid",
-            borderRadius: "8px",
-            fontSize: "13px",
-            cursor: "pointer",
-            fontWeight: value === opt ? 600 : 400,
-            ...(value === opt
-              ? badgeFn
-                ? badgeFn(opt)
-                : payBadge(opt)
-              : { background: "#fff", color: "#555", borderColor: "#e0e0e0" }),
-          }}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  );
 
   const ActionBtns = ({ onEdit, onDelete, locked }) => (
     <div style={{ display: "flex", gap: "4px" }}>
@@ -380,6 +415,12 @@ export default function GuideFormContent() {
 
       <div className="summary-grid">
         <div className="summary-card">
+          <div className="summary-label">총 인원수</div>
+          <div className="summary-value" style={{ color: "#1557b0" }}>
+            {totalHeadcount}명
+          </div>
+        </div>
+        <div className="summary-card">
           <div className="summary-label">현금 수입합계</div>
           <div className="summary-value cash">{fmt(cashTotal)}</div>
         </div>
@@ -420,122 +461,378 @@ export default function GuideFormContent() {
       </div>
 
       {activeTab === "records" && (
-        <div className="gf-table-wrap">
-          <table className="gf-table">
-            <thead>
-              <tr>
-                <th>투어이름</th>
-                <th>대표자</th>
-                <th>결제</th>
-                <th>금액(1인)</th>
-                <th>인원</th>
-                <th>합계</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+        <>
+          {isMobile ? (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            >
               {records.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="empty">
-                    수입 내역이 없습니다.
-                  </td>
-                </tr>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    color: "#bbb",
+                    fontSize: "13px",
+                  }}
+                >
+                  수입 내역이 없습니다.
+                </div>
               ) : (
                 records.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.tourName}</td>
-                    <td>{r.representativeName || "-"}</td>
-                    <td>
+                  <div
+                    key={r.id}
+                    style={{
+                      background: "#fff",
+                      borderRadius: "12px",
+                      border: "1px solid #e8eaed",
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "14px" }}>
+                          {r.tourName}
+                        </div>
+                        {r.representativeName && (
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#888",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {r.representativeName}
+                          </div>
+                        )}
+                      </div>
                       <span
                         className="pay-badge"
                         style={payBadge(r.paymentType)}
                       >
                         {r.paymentType}
                       </span>
-                    </td>
-                    <td className="td-right">
-                      {r.amount ? fmt(r.amount) : "-"}
-                    </td>
-                    <td className="td-center">
-                      {r.headcount ? `${r.headcount}명` : "-"}
-                    </td>
-                    <td className="td-right total-cell">
-                      {r.totalAmount ? fmt(r.totalAmount) : "-"}
-                    </td>
-                    <td>
-                      <ActionBtns
-                        locked={isLocked}
-                        onEdit={() => openIncomeEdit(r)}
-                        onDelete={() => handleDeleteRecord(r.id)}
-                      />
-                    </td>
-                  </tr>
+                    </div>
+                    {r.note && (
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "#1557b0",
+                          background: "#e8f0fe",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          display: "inline-block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {r.note}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: "12px", color: "#888" }}>
+                        {r.amount ? fmt(r.amount) + "원" : ""}
+                        {r.amount && r.headcount ? " × " : ""}
+                        {r.headcount ? r.headcount + "명" : ""}
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "15px",
+                          color: "#059669",
+                        }}
+                      >
+                        {r.totalAmount ? fmt(r.totalAmount) + "원" : "-"}
+                      </div>
+                    </div>
+                    {!isLocked && (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "6px",
+                          marginTop: "10px",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          onClick={() => openIncomeEdit(r)}
+                          style={{
+                            padding: "5px 12px",
+                            background: "#eff6ff",
+                            color: "#1557b0",
+                            border: "1px solid #bfdbfe",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRecord(r.id)}
+                          style={{
+                            padding: "5px 12px",
+                            background: "#fff0f0",
+                            color: "#dc2626",
+                            border: "1px solid #fca5a5",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          ) : (
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>투어이름</th>
+                    <th>대표자</th>
+                    <th>결제</th>
+                    <th>금액(1인)</th>
+                    <th>인원</th>
+                    <th>합계</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty">
+                        수입 내역이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    records.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.tourName}</td>
+                        <td>{r.representativeName || "-"}</td>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={payBadge(r.paymentType)}
+                          >
+                            {r.paymentType}
+                          </span>
+                        </td>
+                        <td className="td-right">
+                          {r.amount ? fmt(r.amount) : "-"}
+                        </td>
+                        <td className="td-center">
+                          {r.headcount ? `${r.headcount}명` : "-"}
+                        </td>
+                        <td className="td-right total-cell">
+                          {r.totalAmount ? fmt(r.totalAmount) : "-"}
+                        </td>
+                        <td>
+                          <ActionBtns
+                            locked={isLocked}
+                            onEdit={() => openIncomeEdit(r)}
+                            onDelete={() => handleDeleteRecord(r.id)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === "expense" && (
-        <div className="gf-table-wrap">
-          <table className="gf-table">
-            <thead>
-              <tr>
-                <th>항목</th>
-                <th>결제</th>
-                <th>금액(1인)</th>
-                <th>인원</th>
-                <th>합계</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+        <>
+          {isMobile ? (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            >
               {expenses.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="empty">
-                    지출 내역이 없습니다.
-                  </td>
-                </tr>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    color: "#bbb",
+                    fontSize: "13px",
+                  }}
+                >
+                  지출 내역이 없습니다.
+                </div>
               ) : (
                 expenses.map((e) => (
-                  <tr key={e.id}>
-                    <td>
+                  <div
+                    key={e.id}
+                    style={{
+                      background: "#fff",
+                      borderRadius: "12px",
+                      border: "1px solid #e8eaed",
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
                       <span
                         className="pay-badge"
                         style={expTypeBadge(e.expenseType)}
                       >
                         {e.expenseType}
                       </span>
-                    </td>
-                    <td>
                       <span
                         className="pay-badge"
                         style={payBadge(e.paymentType)}
                       >
                         {e.paymentType}
                       </span>
-                    </td>
-                    <td className="td-right">{fmt(e.amount)}</td>
-                    <td className="td-center">
-                      {e.headcount ? `${e.headcount}명` : "-"}
-                    </td>
-                    <td className="td-right total-cell">
-                      {e.totalAmount ? fmt(e.totalAmount) : "-"}
-                    </td>
-                    <td>
-                      <ActionBtns
-                        locked={isLocked}
-                        onEdit={() => openExpenseEdit(e)}
-                        onDelete={() => handleDeleteExpense(e.id)}
-                      />
-                    </td>
-                  </tr>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: "12px", color: "#888" }}>
+                        {fmt(e.amount)}원
+                        {e.headcount ? " × " + e.headcount + "명" : ""}
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "15px",
+                          color: "#dc2626",
+                        }}
+                      >
+                        {e.totalAmount ? fmt(e.totalAmount) + "원" : "-"}
+                      </div>
+                    </div>
+                    {!isLocked && (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "6px",
+                          marginTop: "10px",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          onClick={() => openExpenseEdit(e)}
+                          style={{
+                            padding: "5px 12px",
+                            background: "#eff6ff",
+                            color: "#1557b0",
+                            border: "1px solid #bfdbfe",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExpense(e.id)}
+                          style={{
+                            padding: "5px 12px",
+                            background: "#fff0f0",
+                            color: "#dc2626",
+                            border: "1px solid #fca5a5",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          ) : (
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>항목</th>
+                    <th>결제</th>
+                    <th>금액(1인)</th>
+                    <th>인원</th>
+                    <th>합계</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="empty">
+                        지출 내역이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    expenses.map((e) => (
+                      <tr key={e.id}>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={expTypeBadge(e.expenseType)}
+                          >
+                            {e.expenseType}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className="pay-badge"
+                            style={payBadge(e.paymentType)}
+                          >
+                            {e.paymentType}
+                          </span>
+                        </td>
+                        <td className="td-right">{fmt(e.amount)}</td>
+                        <td className="td-center">
+                          {e.headcount ? `${e.headcount}명` : "-"}
+                        </td>
+                        <td className="td-right total-cell">
+                          {e.totalAmount ? fmt(e.totalAmount) : "-"}
+                        </td>
+                        <td>
+                          <ActionBtns
+                            locked={isLocked}
+                            onEdit={() => openExpenseEdit(e)}
+                            onDelete={() => handleDeleteExpense(e.id)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === "dailyfee" && (
@@ -609,7 +906,11 @@ export default function GuideFormContent() {
           className="modal-bg"
           onClick={() => setIncomeModal({ mode: null })}
         >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ minWidth: "360px", width: "100%", maxWidth: "480px" }}
+          >
             <h3 className="modal-title">
               {incomeModal.mode === "add" ? "수입 추가" : "수입 수정"}
             </h3>
@@ -653,8 +954,6 @@ export default function GuideFormContent() {
                     setIncomeForm({
                       ...incomeForm,
                       paymentType: v,
-                      amount: "",
-                      headcount: "",
                     })
                   }
                 />
@@ -677,8 +976,7 @@ export default function GuideFormContent() {
                 </div>
               )}
               {/* 현금/카드 - 금액 + 인원 + 미리보기 */}
-              {(incomeForm.paymentType === "현금" ||
-                incomeForm.paymentType === "카드") && (
+              {incomeForm.paymentType !== "완불" && (
                 <>
                   <div
                     style={{
@@ -745,12 +1043,90 @@ export default function GuideFormContent() {
                   )}
                 </>
               )}
-              {error && <p className="field-error">⚠ {error}</p>}
+              {/* note 필드 - 그외 + DMZ/출렁다리 */}
+              {incomeForm.paymentType === "그외" &&
+                (incomeForm.tourName || "").match(/DMZ|출렁다리/i) && (
+                  <div className="field">
+                    <label>항목 선택</label>
+                    <div
+                      style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}
+                    >
+                      {["북한관 입장료", "가이드입장료", "기타"].map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() =>
+                            setIncomeForm((f) => ({
+                              ...f,
+                              note: f.note === opt ? "" : opt,
+                            }))
+                          }
+                          style={{
+                            padding: "8px 14px",
+                            border: "1.5px solid",
+                            borderRadius: "8px",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                            fontWeight: incomeForm.note === opt ? 700 : 400,
+                            background:
+                              incomeForm.note === opt ? "#e8f0fe" : "#fff",
+                            color: incomeForm.note === opt ? "#1557b0" : "#888",
+                            borderColor:
+                              incomeForm.note === opt ? "#1557b0" : "#e0e0e0",
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                    {incomeForm.note === "기타" && (
+                      <input
+                        type="text"
+                        placeholder="직접 입력"
+                        value={incomeForm.noteCustom || ""}
+                        onChange={(e) =>
+                          setIncomeForm((f) => ({
+                            ...f,
+                            noteCustom: e.target.value,
+                          }))
+                        }
+                        style={{
+                          marginTop: "8px",
+                          width: "100%",
+                          padding: "9px 12px",
+                          border: "1.5px solid #d8dce3",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          outline: "none",
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+              {/* note 필드 - 그외 + 모닝/오후/투어 */}
+              {incomeForm.paymentType === "그외" &&
+                (incomeForm.tourName || "").match(/모닝|오후|투어/i) && (
+                  <div className="field">
+                    <label>기타</label>
+                    <input
+                      type="text"
+                      placeholder="내용 입력"
+                      value={incomeForm.note || ""}
+                      onChange={(e) =>
+                        setIncomeForm((f) => ({ ...f, note: e.target.value }))
+                      }
+                    />
+                  </div>
+                )}
+              {incomeError && <p className="field-error">⚠ {incomeError}</p>}
               <div className="modal-btns">
                 <button
                   type="button"
                   className="btn-outline"
-                  onClick={() => setIncomeModal({ mode: null })}
+                  onClick={() => {
+                    setIncomeModal({ mode: null });
+                    setIncomeError("");
+                  }}
                 >
                   취소
                 </button>
@@ -769,7 +1145,11 @@ export default function GuideFormContent() {
           className="modal-bg"
           onClick={() => setExpenseModal({ mode: null })}
         >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ minWidth: "360px", width: "100%", maxWidth: "480px" }}
+          >
             <h3 className="modal-title">
               {expenseModal.mode === "add" ? "지출 추가" : "지출 수정"}
             </h3>
@@ -777,7 +1157,7 @@ export default function GuideFormContent() {
               <div className="field">
                 <label>항목 *</label>
                 <SelectBtn
-                  options={["북한관수수료", "가이드입장료"]}
+                  options={["북한관 입장료", "가이드입장료", "북한책"]}
                   value={expenseForm.expenseType}
                   onChange={(v) =>
                     setExpenseForm({ ...expenseForm, expenseType: v })
@@ -857,7 +1237,11 @@ export default function GuideFormContent() {
           className="modal-bg"
           onClick={() => setDailyFeeModal({ mode: null })}
         >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ minWidth: "360px", width: "100%", maxWidth: "480px" }}
+          >
             <h3 className="modal-title">
               {dailyFeeModal.mode === "add" ? "일비 추가" : "일비 수정"}
             </h3>
