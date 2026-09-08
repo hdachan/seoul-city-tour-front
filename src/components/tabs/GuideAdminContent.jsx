@@ -6,6 +6,9 @@ import {
   fetchTourNames,
   addTourName,
   deleteTourName,
+  fetchExpenseCategories,
+  addExpenseCategory,
+  deleteExpenseCategory,
   fetchAdminGuideIncome,
   addAdminIncome,
   updateAdminIncome,
@@ -83,6 +86,9 @@ export default function GuideAdminContent() {
   const [tourNames, setTourNames] = useState([]);
   const [newTourName, setNewTourName] = useState("");
   const [activeMainTab, setActiveMainTab] = useState("list");
+  const [expenseCategories, setExpenseCategories] = useState([]);
+  const [newExpenseCategory, setNewExpenseCategory] = useState("");
+  const [catSubTab, setCatSubTab] = useState("tour");
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
@@ -112,6 +118,7 @@ export default function GuideAdminContent() {
         setTourNames(t.data);
       })
       .catch(() => setError("데이터를 불러오지 못했습니다."));
+    loadExpenseCategories();
   }, []);
 
   // 카드뷰 요약 로드
@@ -125,6 +132,12 @@ export default function GuideAdminContent() {
     if (!selectedGuide) return;
     loadDetail();
   }, [selectedGuide, year, month]);
+
+  const loadExpenseCategories = () => {
+    fetchExpenseCategories()
+      .then((r) => setExpenseCategories(r.data))
+      .catch(() => {});
+  };
 
   const loadDetail = async () => {
     try {
@@ -596,6 +609,15 @@ export default function GuideAdminContent() {
         >
           🏷 투어 카테고리
         </button>
+        <button
+          className={`gf-tab ${activeMainTab === "expense-category" ? "active" : ""}`}
+          onClick={() => {
+            setActiveMainTab("expense-category");
+            loadExpenseCategories();
+          }}
+        >
+          💸 지출 카테고리
+        </button>
       </div>
 
       {/* 카테고리 탭 */}
@@ -704,7 +726,109 @@ export default function GuideAdminContent() {
         </div>
       )}
 
-      {/* 정산 목록 탭 */}
+      {activeMainTab === "expense-category" && (
+        <div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "10px",
+              border: "1px solid #e8eaed",
+              padding: "16px",
+              marginBottom: "12px",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                marginBottom: "12px",
+              }}
+            >
+              지출 카테고리 추가
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newExpenseCategory.trim()) return;
+                addExpenseCategory(newExpenseCategory.trim())
+                  .then(() => {
+                    setNewExpenseCategory("");
+                    loadExpenseCategories();
+                    setSuccess("추가되었습니다.");
+                  })
+                  .catch((err) =>
+                    setError(err.response?.data?.error || "추가 실패"),
+                  );
+              }}
+              style={{ display: "flex", gap: "8px", alignItems: "center" }}
+            >
+              <input
+                type="text"
+                placeholder="카테고리 이름"
+                value={newExpenseCategory}
+                onChange={(e) => setNewExpenseCategory(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "9px 12px",
+                  border: "1.5px solid #d8dce3",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  outline: "none",
+                }}
+              />
+              <button type="submit" className="btn-primary">
+                추가
+              </button>
+            </form>
+          </div>
+          <div className="gf-table-wrap">
+            <table className="gf-table">
+              <thead>
+                <tr>
+                  <th>카테고리명</th>
+                  <th style={{ width: "70px" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenseCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="empty">
+                      없음
+                    </td>
+                  </tr>
+                ) : (
+                  expenseCategories.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 500 }}>{c.name}</td>
+                      <td>
+                        <button
+                          className="delete-btn"
+                          onClick={() => {
+                            if (window.confirm("삭제할까요?"))
+                              deleteExpenseCategory(c.id)
+                                .then(() => {
+                                  loadExpenseCategories();
+                                  setSuccess("삭제되었습니다.");
+                                })
+                                .catch((err) =>
+                                  setError(
+                                    err.response?.data?.error || "삭제 실패",
+                                  ),
+                                );
+                          }}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {activeMainTab === "list" && (
         <div>
           <FilterBar />
@@ -1665,7 +1789,11 @@ export default function GuideAdminContent() {
                   <div className="field">
                     <label>항목</label>
                     <SelectBtn
-                      options={["북한관 입장료", "가이드입장료", "북한책"]}
+                      options={
+                        expenseCategories.length > 0
+                          ? expenseCategories.map((c) => c.name)
+                          : ["북한관 입장료", "가이드입장료", "북한책"]
+                      }
                       value={expenseForm.expenseType || "북한관 입장료"}
                       onChange={(v) =>
                         setExpenseForm({ ...expenseForm, expenseType: v })

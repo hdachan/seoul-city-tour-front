@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   fetchTourNames,
+  fetchExpenseCategories,
   fetchGuideLockStatus,
   fetchGuideRecords,
   addGuideRecord,
@@ -73,6 +74,7 @@ export default function GuideFormContent() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [selectedDate, setSelectedDate] = useState(today());
   const [tourNames, setTourNames] = useState([]);
+  const [expenseCategories, setExpenseCategories] = useState([]);
   const [records, setRecords] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
@@ -104,7 +106,7 @@ export default function GuideFormContent() {
     date: today(),
   };
   const emptyExpense = {
-    expenseType: "북한관 입장료",
+    expenseType: "",
     amount: "",
     headcount: "",
     adult: "",
@@ -120,15 +122,17 @@ export default function GuideFormContent() {
 
   const load = async () => {
     try {
-      const [lock, t, r, e, d] = await Promise.all([
+      const [lock, t, r, e, d, ec] = await Promise.all([
         fetchGuideLockStatus(),
         fetchTourNames(),
         fetchGuideRecords(),
         fetchGuideExpense(),
         fetchGuideDailyFee(),
+        fetchExpenseCategories(),
       ]);
       setIsLocked(lock.data.locked);
       setTourNames(t.data);
+      setExpenseCategories(ec.data);
       setRecords(r.data);
       setExpenses(e.data);
       setDailyFees(d.data);
@@ -1416,7 +1420,10 @@ export default function GuideFormContent() {
                     <div
                       style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}
                     >
-                      {["북한관 입장료", "가이드입장료", "기타"].map((opt) => (
+                      {(expenseCategories.length > 0
+                        ? [...expenseCategories.map((c) => c.name), "기타"]
+                        : ["북한관 입장료", "가이드입장료", "기타"]
+                      ).map((opt) => (
                         <button
                           key={opt}
                           type="button"
@@ -1535,7 +1542,11 @@ export default function GuideFormContent() {
               <div className="field">
                 <label>항목 *</label>
                 <SelectBtn
-                  options={["북한관 입장료", "가이드입장료", "북한책"]}
+                  options={
+                    expenseCategories.length > 0
+                      ? expenseCategories.map((c) => c.name)
+                      : ["북한관 입장료", "가이드입장료", "북한책"]
+                  }
                   value={expenseForm.expenseType}
                   onChange={(v) =>
                     setExpenseForm({ ...expenseForm, expenseType: v })
