@@ -12,6 +12,7 @@ import GuideAdminContent from "./tabs/GuideAdminContent";
 import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
 import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
 import GuideFormContent from "./tabs/GuideFormContent";
+import GuideStatsContent from "./tabs/GuideStatsContent";
 import DevContent from "./tabs/DevContent";
 import DmzContent from "./tabs/DmzContent";
 import WebAnalyticsContent from "./tabs/WebAnalyticsContent";
@@ -31,6 +32,7 @@ const ALL_TABS = [
   { id: "guide-admin", icon: "📂", label: "가이드 정산관리" },
   { id: "sales-admin", icon: "📊", label: "영업 정산관리" },
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
+  { id: "guide-stats", icon: "📊", label: "내 통계" },
   { id: "sales", icon: "💼", label: "영업 정산" },
   { id: "dmz", icon: "🗺", label: "DMZ 예약 정보" },
   { id: "web-analytics", icon: "🌐", label: "홈페이지 정보" },
@@ -96,7 +98,7 @@ export default function AppLayout() {
           "dev",
         ],
         ROLE_SALES: ["sales"],
-        ROLE_GUIDE: ["guide-form"],
+        ROLE_GUIDE: ["guide-form", "guide-stats"],
       };
       const tabs = fallback[role] || [];
       setAllowedTabIds(tabs);
@@ -155,6 +157,8 @@ export default function AppLayout() {
         return <SalesAdminContent />;
       case "guide-form":
         return <GuideFormContent />;
+      case "guide-stats":
+        return <GuideStatsContent />;
       case "sales":
         return <SalesContent />;
       case "dmz":
