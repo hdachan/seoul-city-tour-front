@@ -925,6 +925,7 @@ export default function GuideFormContent() {
               <table className="gf-table">
                 <thead>
                   <tr>
+                    <th>투어</th>
                     <th>항목</th>
                     <th>결제</th>
                     <th>금액(1인)</th>
@@ -936,13 +937,16 @@ export default function GuideFormContent() {
                 <tbody>
                   {filteredExpenses.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="empty">
+                      <td colSpan={7} className="empty">
                         지출 내역이 없습니다.
                       </td>
                     </tr>
                   ) : (
                     filteredExpenses.map((e) => (
                       <tr key={e.id}>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {e.tourName || "-"}
+                        </td>
                         <td>
                           <span
                             className="pay-badge"
