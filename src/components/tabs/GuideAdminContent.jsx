@@ -7,6 +7,7 @@ import {
   addTourName,
   deleteTourName,
   fetchExpenseCategories,
+  fetchAdminExpenseCategories,
   addExpenseCategory,
   deleteExpenseCategory,
   fetchAdminGuideIncome,
@@ -88,6 +89,7 @@ export default function GuideAdminContent() {
   const [activeMainTab, setActiveMainTab] = useState("list");
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [newExpenseCategory, setNewExpenseCategory] = useState("");
+  const [selectedTourForExpense, setSelectedTourForExpense] = useState("");
   const [catSubTab, setCatSubTab] = useState("tour");
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -250,7 +252,9 @@ export default function GuideAdminContent() {
 
   const openExpenseAdd = () => {
     setExpenseForm({
-      expenseType: "북한관 입장료",
+      tourName: "",
+      expenseType: "",
+      memo: "",
       amount: "",
       headcount: "",
       adult: "",
@@ -264,16 +268,35 @@ export default function GuideAdminContent() {
   };
   const openExpenseEdit = (row) => {
     setExpenseForm({
+      tourName: row.tourName || "",
       expenseType: row.expenseType,
+      memo: row.memo || "",
       amount: row.amount,
       headcount: row.headcount,
       adult: row.adult || "",
       child: row.child || "",
       childAmount: row.childAmount || "",
       infant: row.infant || "",
-      memo: row.memo || "",
       paymentType: row.paymentType,
     });
+    // 투어에 맞는 카테고리 로드
+    if (row.tourName) {
+      const t = tourNames.find((t) => t.name === row.tourName);
+      if (t) {
+        fetchAdminExpenseCategories(t.id)
+          .then((r) => setExpenseCategories(r.data))
+          .catch(() => {});
+      } else {
+        // tourNames 아직 안 로드된 경우 전체 카테고리 로드
+        fetchAdminExpenseCategories()
+          .then((r) =>
+            setExpenseCategories(
+              r.data.filter((c) => c.tourNameId === 0 || !c.tourNameId),
+            ),
+          )
+          .catch(() => {});
+      }
+    }
     setExpenseModal({ mode: "edit", data: row });
   };
   const handleSubmitExpense = async (e) => {
@@ -687,7 +710,7 @@ export default function GuideAdminContent() {
               <tbody>
                 {tourNames.length === 0 ? (
                   <tr>
-                    <td colSpan={2} className="empty">
+                    <td colSpan={3} className="empty">
                       없음
                     </td>
                   </tr>
@@ -746,14 +769,62 @@ export default function GuideAdminContent() {
             >
               지출 카테고리 추가
             </h3>
+            <div style={{ marginBottom: "10px" }}>
+              <label
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#444",
+                  display: "block",
+                  marginBottom: "6px",
+                }}
+              >
+                투어 선택 *
+              </label>
+              <select
+                value={selectedTourForExpense}
+                onChange={(e) => {
+                  setSelectedTourForExpense(e.target.value);
+                  fetchAdminExpenseCategories(
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                    .then((r) => setExpenseCategories(r.data))
+                    .catch(() => {});
+                }}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  border: "1.5px solid #e0e0e0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  outline: "none",
+                }}
+              >
+                <option value="">투어를 선택하세요</option>
+                {tourNames.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!newExpenseCategory.trim()) return;
-                addExpenseCategory(newExpenseCategory.trim())
+                if (!selectedTourForExpense) {
+                  setError("투어를 먼저 선택해주세요.");
+                  return;
+                }
+                addExpenseCategory(
+                  newExpenseCategory.trim(),
+                  Number(selectedTourForExpense),
+                )
                   .then(() => {
                     setNewExpenseCategory("");
-                    loadExpenseCategories();
+                    fetchAdminExpenseCategories(
+                      Number(selectedTourForExpense),
+                    ).then((r) => setExpenseCategories(r.data));
                     setSuccess("추가되었습니다.");
                   })
                   .catch((err) =>
@@ -785,6 +856,7 @@ export default function GuideAdminContent() {
             <table className="gf-table">
               <thead>
                 <tr>
+                  <th>투어</th>
                   <th>카테고리명</th>
                   <th style={{ width: "70px" }}></th>
                 </tr>
@@ -792,7 +864,7 @@ export default function GuideAdminContent() {
               <tbody>
                 {expenseCategories.length === 0 ? (
                   <tr>
-                    <td colSpan={2} className="empty">
+                    <td colSpan={3} className="empty">
                       없음
                     </td>
                   </tr>
@@ -1118,18 +1190,20 @@ export default function GuideAdminContent() {
                 <thead>
                   <tr>
                     <th>날짜</th>
+                    <th>투어</th>
                     <th>항목</th>
                     <th>결제</th>
                     <th>금액(1인)</th>
                     <th>인원</th>
                     <th>합계</th>
+                    <th>비고</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredExpenses.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="empty">
+                      <td colSpan={9} className="empty">
                         지출 내역이 없습니다.
                       </td>
                     </tr>
@@ -1138,6 +1212,9 @@ export default function GuideAdminContent() {
                       <tr key={e.id}>
                         <td style={{ color: "#888", fontSize: "12px" }}>
                           {e.date}
+                        </td>
+                        <td style={{ fontSize: "12px" }}>
+                          {e.tourName || "-"}
                         </td>
                         <td>
                           <span
@@ -1161,6 +1238,9 @@ export default function GuideAdminContent() {
                         </td>
                         <td className="td-right total-cell">
                           {e.totalAmount ? fmt(e.totalAmount) : "-"}
+                        </td>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {e.memo || "-"}
                         </td>
                         <td style={{ display: "flex", gap: "4px" }}>
                           <button
@@ -1787,20 +1867,57 @@ export default function GuideAdminContent() {
                 </h3>
                 <form onSubmit={handleSubmitExpense} className="modal-form">
                   <div className="field">
-                    <label>항목</label>
-                    <SelectBtn
-                      options={
-                        expenseCategories.length > 0
-                          ? expenseCategories.map((c) => c.name)
-                          : ["북한관 입장료", "가이드입장료", "북한책"]
-                      }
-                      value={expenseForm.expenseType || "북한관 입장료"}
-                      onChange={(v) =>
-                        setExpenseForm({ ...expenseForm, expenseType: v })
-                      }
-                      badgeFn={expTypeBadge}
-                    />
+                    <label>투어 선택</label>
+                    <select
+                      value={expenseForm.tourName || ""}
+                      onChange={(e) => {
+                        setExpenseForm((f) => ({
+                          ...f,
+                          tourName: e.target.value,
+                          expenseType: "",
+                        }));
+                        const t = tourNames.find(
+                          (t) => t.name === e.target.value,
+                        );
+                        if (t)
+                          fetchAdminExpenseCategories(t.id)
+                            .then((r) => setExpenseCategories(r.data))
+                            .catch(() => {});
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        border: "1.5px solid #e0e0e0",
+                        borderRadius: "8px",
+                        fontSize: "13px",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="">선택하세요</option>
+                      {tourNames.map((t) => (
+                        <option key={t.id} value={t.name}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                  {expenseForm.tourName && (
+                    <div className="field">
+                      <label>항목</label>
+                      <SelectBtn
+                        options={
+                          expenseCategories.length > 0
+                            ? expenseCategories.map((c) => c.name)
+                            : ["북한관 입장료", "가이드입장료", "북한책"]
+                        }
+                        value={expenseForm.expenseType || ""}
+                        onChange={(v) =>
+                          setExpenseForm((f) => ({ ...f, expenseType: v }))
+                        }
+                        badgeFn={expTypeBadge}
+                      />
+                    </div>
+                  )}
                   <div className="field">
                     <label>결제유형</label>
                     <SelectBtn
@@ -1844,6 +1961,17 @@ export default function GuideAdminContent() {
                         }
                       />
                     </div>
+                  </div>
+                  <div className="field">
+                    <label>비고</label>
+                    <input
+                      type="text"
+                      placeholder="비고 입력 (선택)"
+                      value={expenseForm.memo || ""}
+                      onChange={(e) =>
+                        setExpenseForm((f) => ({ ...f, memo: e.target.value }))
+                      }
+                    />
                   </div>
                   {error && <p className="field-error">⚠ {error}</p>}
                   <div className="modal-btns">

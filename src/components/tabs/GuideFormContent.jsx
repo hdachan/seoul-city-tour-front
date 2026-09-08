@@ -106,6 +106,7 @@ export default function GuideFormContent() {
     date: today(),
   };
   const emptyExpense = {
+    tourName: "",
     expenseType: "",
     amount: "",
     headcount: "",
@@ -244,11 +245,20 @@ export default function GuideFormContent() {
 
   // ── 지출 모달 열기 ──
   const openExpenseAdd = () => {
+    // 선택된 투어에 맞는 지출 카테고리 로드
+    if (incomeForm.tourName) {
+      const selected = tourNames.find((t) => t.name === incomeForm.tourName);
+      if (selected)
+        fetchExpenseCategories(selected.id)
+          .then((r) => setExpenseCategories(r.data))
+          .catch(() => {});
+    }
     setExpenseForm(emptyExpense);
     setExpenseModal({ mode: "add" });
   };
   const openExpenseEdit = (row) => {
     setExpenseForm({
+      tourName: row.tourName || "",
       expenseType: row.expenseType,
       amount: row.amount,
       headcount: row.headcount,
@@ -259,6 +269,13 @@ export default function GuideFormContent() {
       memo: row.memo || "",
       paymentType: row.paymentType,
     });
+    if (row.tourName) {
+      const t = tourNames.find((t) => t.name === row.tourName);
+      if (t)
+        fetchExpenseCategories(t.id)
+          .then((r) => setExpenseCategories(r.data))
+          .catch(() => {});
+    }
     setExpenseModal({ mode: "edit", data: row });
   };
 
@@ -1076,9 +1093,16 @@ export default function GuideFormContent() {
                 <label>투어이름 *</label>
                 <select
                   value={incomeForm.tourName}
-                  onChange={(e) =>
-                    setIncomeForm({ ...incomeForm, tourName: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setIncomeForm({ ...incomeForm, tourName: e.target.value });
+                    const selected = tourNames.find(
+                      (t) => t.name === e.target.value,
+                    );
+                    if (selected)
+                      fetchExpenseCategories(selected.id)
+                        .then((r) => setExpenseCategories(r.data))
+                        .catch(() => {});
+                  }}
                 >
                   <option value="">선택하세요</option>
                   {tourNames.map((t) => (
@@ -1540,20 +1564,51 @@ export default function GuideFormContent() {
             </h3>
             <form onSubmit={handleSubmitExpense} className="modal-form">
               <div className="field">
-                <label>항목 *</label>
-                <SelectBtn
-                  options={
-                    expenseCategories.length > 0
-                      ? expenseCategories.map((c) => c.name)
-                      : ["북한관 입장료", "가이드입장료", "북한책"]
-                  }
-                  value={expenseForm.expenseType}
-                  onChange={(v) =>
-                    setExpenseForm({ ...expenseForm, expenseType: v })
-                  }
-                  badgeFn={expTypeBadge}
-                />
+                <label>투어 선택</label>
+                <select
+                  value={expenseForm.tourName || ""}
+                  onChange={(e) => {
+                    setExpenseForm((f) => ({
+                      ...f,
+                      tourName: e.target.value,
+                      expenseType: "",
+                    }));
+                    const t = tourNames.find((t) => t.name === e.target.value);
+                    if (t)
+                      fetchExpenseCategories(t.id)
+                        .then((r) => setExpenseCategories(r.data))
+                        .catch(() => {});
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1.5px solid #e0e0e0",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    outline: "none",
+                  }}
+                >
+                  <option value="">선택하세요</option>
+                  {tourNames.map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+              {expenseForm.tourName && expenseCategories.length > 0 && (
+                <div className="field">
+                  <label>항목 *</label>
+                  <SelectBtn
+                    options={expenseCategories.map((c) => c.name)}
+                    value={expenseForm.expenseType}
+                    onChange={(v) =>
+                      setExpenseForm({ ...expenseForm, expenseType: v })
+                    }
+                    badgeFn={expTypeBadge}
+                  />
+                </div>
+              )}
               <div className="field">
                 <label>결제유형 *</label>
                 <SelectBtn
@@ -1602,6 +1657,17 @@ export default function GuideFormContent() {
                   합계: <strong>{fmt(previewExpenseTotal())}</strong>
                 </div>
               )}
+              <div className="field">
+                <label>비고</label>
+                <input
+                  type="text"
+                  placeholder="비고 입력 (선택)"
+                  value={expenseForm.memo || ""}
+                  onChange={(e) =>
+                    setExpenseForm((f) => ({ ...f, memo: e.target.value }))
+                  }
+                />
+              </div>
               {error && <p className="field-error">⚠ {error}</p>}
               <div className="modal-btns">
                 <button
