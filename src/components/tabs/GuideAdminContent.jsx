@@ -499,118 +499,416 @@ export default function GuideAdminContent() {
   if (!selectedGuide) {
     return (
       <div>
-        <FilterBar />
-        {error && (
-          <div className="alert alert-error" onClick={() => setError("")}>
-            ⚠ {error}
-          </div>
-        )}
-        {success && (
-          <div className="alert alert-success" onClick={() => setSuccess("")}>
-            {success}
-          </div>
-        )}
+        <div className="gf-tab-bar" style={{ marginBottom: "16px" }}>
+          <button
+            className={`gf-tab ${activeMainTab === "list" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("list")}
+          >
+            📋 정산 목록
+          </button>
+          <button
+            className={`gf-tab ${activeMainTab === "category" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("category")}
+          >
+            🏷 투어 카테고리
+          </button>
+          <button
+            className={`gf-tab ${activeMainTab === "expense-category" ? "active" : ""}`}
+            onClick={() => {
+              setActiveMainTab("expense-category");
+              loadExpenseCategories();
+            }}
+          >
+            💸 지출 카테고리
+          </button>
+        </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))",
-            gap: "14px",
-          }}
-        >
-          {summary.map((g) => (
+        {activeMainTab === "category" && (
+          <div>
             <div
-              key={g.username}
               style={{
                 background: "#fff",
-                borderRadius: "14px",
-                padding: "1.4rem",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-                border: `2px solid ${g.locked ? "#c6f6d5" : g.hasData ? "#bfdbfe" : "#f0f0f0"}`,
-                transition: "all 0.15s",
+                borderRadius: "10px",
+                border: "1px solid #e8eaed",
+                padding: "16px",
+                marginBottom: "12px",
               }}
             >
-              {/* 카드 위쪽 → 클릭하면 상세 이동 */}
-              <div
-                onClick={() =>
-                  setSelectedGuide({ username: g.username, name: g.name })
-                }
-                style={{ cursor: "pointer", marginBottom: "12px" }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-              >
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    color: "#1a1a1a",
-                    marginBottom: "10px",
-                  }}
-                >
-                  {g.name}
-                </div>
-
-                {g.hasData ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "5px",
-                    }}
-                  >
-                    <CountRow
-                      label="수입"
-                      count={g.incomeCount}
-                      color="#059669"
-                    />
-                    <CountRow
-                      label="지출"
-                      count={g.expenseCount}
-                      color="#e53e3e"
-                    />
-                    <CountRow
-                      label="일비"
-                      count={g.dailyFeeCount}
-                      color="#1d4ed8"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      padding: "10px",
-                      background: "#fef3c7",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                      fontSize: "12px",
-                      color: "#92400e",
-                      fontWeight: 600,
-                    }}
-                  >
-                    ✏️ 아직 입력 없음
-                  </div>
-                )}
-              </div>
-
-              {/* 상태 버튼 하나만 - 현재 상태 표시, 클릭하면 토글 */}
-              <button
-                onClick={() => handleToggleLock(g, g.locked)}
+              <h3
                 style={{
-                  width: "100%",
-                  padding: "9px",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  cursor: "pointer",
+                  fontSize: "14px",
                   fontWeight: 600,
-                  background: g.locked ? "#d1fae5" : "#f3f4f6",
-                  color: g.locked ? "#065f46" : "#888",
+                  marginBottom: "12px",
                 }}
               >
-                {g.locked ? "✅ 정산 완료" : "⏳ 진행중"}
-              </button>
+                투어 카테고리 추가
+              </h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newTourName.trim()) return;
+                  addTourName(newTourName.trim())
+                    .then(() => {
+                      setNewTourName("");
+                      fetchTourNames().then((r) => setTourNames(r.data));
+                      setSuccess("추가되었습니다.");
+                    })
+                    .catch((err) =>
+                      setError(err.response?.data?.error || "추가 실패"),
+                    );
+                }}
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
+              >
+                <input
+                  type="text"
+                  placeholder="투어 이름"
+                  value={newTourName}
+                  onChange={(e) => setNewTourName(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 12px",
+                    border: "1.5px solid #d8dce3",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                />
+                <button type="submit" className="btn-primary">
+                  추가
+                </button>
+              </form>
             </div>
-          ))}
-        </div>
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>투어명</th>
+                    <th style={{ width: "70px" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tourNames.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="empty">
+                        없음
+                      </td>
+                    </tr>
+                  ) : (
+                    tourNames.map((t) => (
+                      <tr key={t.id}>
+                        <td style={{ fontWeight: 500 }}>{t.name}</td>
+                        <td>
+                          <button
+                            className="delete-btn"
+                            onClick={() => {
+                              if (window.confirm("삭제할까요?"))
+                                deleteTourName(t.id)
+                                  .then(() => {
+                                    fetchTourNames().then((r) =>
+                                      setTourNames(r.data),
+                                    );
+                                    setSuccess("삭제되었습니다.");
+                                  })
+                                  .catch((err) =>
+                                    setError(
+                                      err.response?.data?.error || "삭제 실패",
+                                    ),
+                                  );
+                            }}
+                          >
+                            삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeMainTab === "expense-category" && (
+          <div>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "10px",
+                border: "1px solid #e8eaed",
+                padding: "16px",
+                marginBottom: "12px",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  marginBottom: "12px",
+                }}
+              >
+                지출 카테고리 추가
+              </h3>
+              <div style={{ marginBottom: "10px" }}>
+                <label
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#444",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
+                  투어 선택 *
+                </label>
+                <select
+                  value={selectedTourForExpense}
+                  onChange={(e) => {
+                    setSelectedTourForExpense(e.target.value);
+                    fetchAdminExpenseCategories(
+                      e.target.value ? Number(e.target.value) : null,
+                    )
+                      .then((r) => setExpenseCategories(r.data))
+                      .catch(() => {});
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    border: "1.5px solid #e0e0e0",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                >
+                  <option value="">투어를 선택하세요</option>
+                  {tourNames.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newExpenseCategory.trim()) return;
+                  if (!selectedTourForExpense) {
+                    setError("투어를 먼저 선택해주세요.");
+                    return;
+                  }
+                  addExpenseCategory(
+                    newExpenseCategory.trim(),
+                    Number(selectedTourForExpense),
+                  )
+                    .then(() => {
+                      setNewExpenseCategory("");
+                      fetchAdminExpenseCategories(
+                        Number(selectedTourForExpense),
+                      ).then((r) => setExpenseCategories(r.data));
+                      setSuccess("추가되었습니다.");
+                    })
+                    .catch((err) =>
+                      setError(err.response?.data?.error || "추가 실패"),
+                    );
+                }}
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
+              >
+                <input
+                  type="text"
+                  placeholder="카테고리 이름"
+                  value={newExpenseCategory}
+                  onChange={(e) => setNewExpenseCategory(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 12px",
+                    border: "1.5px solid #d8dce3",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                />
+                <button type="submit" className="btn-primary">
+                  추가
+                </button>
+              </form>
+            </div>
+            <div className="gf-table-wrap">
+              <table className="gf-table">
+                <thead>
+                  <tr>
+                    <th>투어</th>
+                    <th>카테고리명</th>
+                    <th style={{ width: "70px" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenseCategories.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="empty">
+                        없음
+                      </td>
+                    </tr>
+                  ) : (
+                    expenseCategories.map((c) => (
+                      <tr key={c.id}>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {tourNames.find((t) => t.id === c.tourNameId)?.name ||
+                            "-"}
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{c.name}</td>
+                        <td>
+                          <button
+                            className="delete-btn"
+                            onClick={() => {
+                              if (window.confirm("삭제할까요?"))
+                                deleteExpenseCategory(c.id)
+                                  .then(() => {
+                                    fetchAdminExpenseCategories(
+                                      selectedTourForExpense
+                                        ? Number(selectedTourForExpense)
+                                        : null,
+                                    ).then((r) => setExpenseCategories(r.data));
+                                    setSuccess("삭제되었습니다.");
+                                  })
+                                  .catch((err) =>
+                                    setError(
+                                      err.response?.data?.error || "삭제 실패",
+                                    ),
+                                  );
+                            }}
+                          >
+                            삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeMainTab === "list" && (
+          <div>
+            <FilterBar />
+            {error && (
+              <div className="alert alert-error" onClick={() => setError("")}>
+                ⚠ {error}
+              </div>
+            )}
+            {success && (
+              <div
+                className="alert alert-success"
+                onClick={() => setSuccess("")}
+              >
+                {success}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))",
+                gap: "14px",
+              }}
+            >
+              {summary.map((g) => (
+                <div
+                  key={g.username}
+                  style={{
+                    background: "#fff",
+                    borderRadius: "14px",
+                    padding: "1.4rem",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                    border: `2px solid ${g.locked ? "#c6f6d5" : g.hasData ? "#bfdbfe" : "#f0f0f0"}`,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {/* 카드 위쪽 → 클릭하면 상세 이동 */}
+                  <div
+                    onClick={() =>
+                      setSelectedGuide({ username: g.username, name: g.name })
+                    }
+                    style={{ cursor: "pointer", marginBottom: "12px" }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.opacity = "0.8")
+                    }
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                  >
+                    <div
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: 700,
+                        color: "#1a1a1a",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      {g.name}
+                    </div>
+
+                    {g.hasData ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "5px",
+                        }}
+                      >
+                        <CountRow
+                          label="수입"
+                          count={g.incomeCount}
+                          color="#059669"
+                        />
+                        <CountRow
+                          label="지출"
+                          count={g.expenseCount}
+                          color="#e53e3e"
+                        />
+                        <CountRow
+                          label="일비"
+                          count={g.dailyFeeCount}
+                          color="#1d4ed8"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          padding: "10px",
+                          background: "#fef3c7",
+                          borderRadius: "8px",
+                          textAlign: "center",
+                          fontSize: "12px",
+                          color: "#92400e",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✏️ 아직 입력 없음
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 상태 버튼 하나만 - 현재 상태 표시, 클릭하면 토글 */}
+                  <button
+                    onClick={() => handleToggleLock(g, g.locked)}
+                    style={{
+                      width: "100%",
+                      padding: "9px",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      background: g.locked ? "#d1fae5" : "#f3f4f6",
+                      color: g.locked ? "#065f46" : "#888",
+                    }}
+                  >
+                    {g.locked ? "✅ 정산 완료" : "⏳ 진행중"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
