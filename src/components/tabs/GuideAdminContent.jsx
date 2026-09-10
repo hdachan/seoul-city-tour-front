@@ -125,29 +125,42 @@ export default function GuideAdminContent() {
 
   // 카드뷰 요약 로드
   useEffect(() => {
-    fetchAdminSummary(year, month)
-      .then((res) => setSummary(res.data))
-      .catch(() => {});
-  }, [year, month]);
+    const d = new Date(selectedDate);
+    const y = selectedGuide ? d.getFullYear() : year;
+    const m = selectedGuide ? d.getMonth() + 1 : month;
+    if (!isNaN(y) && !isNaN(m)) {
+      fetchAdminSummary(y, m)
+        .then((res) => setSummary(res.data))
+        .catch(() => {});
+    }
+  }, [selectedDate, year, month]);
 
   useEffect(() => {
     if (!selectedGuide) return;
     loadDetail();
-  }, [selectedGuide, year, month]);
+  }, [selectedGuide, selectedDate]);
 
+  const [allExpenseCategories, setAllExpenseCategories] = useState([]);
   const loadExpenseCategories = () => {
-    fetchExpenseCategories()
-      .then((r) => setExpenseCategories(r.data))
+    fetchAdminExpenseCategories()
+      .then((r) => {
+        setAllExpenseCategories(r.data);
+        setExpenseCategories(r.data);
+      })
       .catch(() => {});
   };
 
   const loadDetail = async () => {
+    const dt = new Date(selectedDate);
+    const curYear = dt.getFullYear();
+    const curMonth = dt.getMonth() + 1;
+    if (isNaN(curYear) || isNaN(curMonth)) return;
     try {
       const [lockRes, i, e, d] = await Promise.all([
-        fetchAdminLockStatus(selectedGuide.username, year, month),
-        fetchAdminGuideIncome(selectedGuide.username, year, month),
-        fetchAdminGuideExpense(selectedGuide.username, year, month),
-        fetchAdminGuideDailyFee(selectedGuide.username, year, month),
+        fetchAdminLockStatus(selectedGuide.username, curYear, curMonth),
+        fetchAdminGuideIncome(selectedGuide.username, curYear, curMonth),
+        fetchAdminGuideExpense(selectedGuide.username, curYear, curMonth),
+        fetchAdminGuideDailyFee(selectedGuide.username, curYear, curMonth),
       ]);
       setIsLocked(lockRes.data.locked);
       setIncomes(i.data);
@@ -410,7 +423,7 @@ export default function GuideAdminContent() {
       ? { background: "#fef3c7", color: "#92400e" }
       : { background: "#ede9fe", color: "#5b21b6" };
 
-  const FilterBar = () => (
+  const filterBarJsx = (
     <div
       style={{
         display: "flex",
@@ -439,28 +452,96 @@ export default function GuideAdminContent() {
           ← 목록
         </button>
       )}
-      <select
-        value={year}
-        onChange={(e) => setYear(Number(e.target.value))}
-        style={selStyle}
-      >
-        {years.map((y) => (
-          <option key={y} value={y}>
-            {y}년
-          </option>
-        ))}
-      </select>
-      <select
-        value={month}
-        onChange={(e) => setMonth(Number(e.target.value))}
-        style={selStyle}
-      >
-        {months.map((m) => (
-          <option key={m} value={m}>
-            {m}월
-          </option>
-        ))}
-      </select>
+      {!selectedGuide && (
+        <>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            style={selStyle}
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}년
+              </option>
+            ))}
+          </select>
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            style={selStyle}
+          >
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {m}월
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+      {selectedGuide && (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() - 1);
+              const nd = d.toISOString().split("T")[0];
+              setSelectedDate(nd);
+              setYear(d.getFullYear());
+              setMonth(d.getMonth() + 1);
+            }}
+            style={{
+              background: "none",
+              border: "1px solid #e0e0e0",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            ‹
+          </button>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const d = new Date(e.target.value);
+              if (isNaN(d.getTime())) return;
+              setSelectedDate(e.target.value);
+              setYear(d.getFullYear());
+              setMonth(d.getMonth() + 1);
+            }}
+            style={{
+              border: "1px solid #e0e0e0",
+              borderRadius: "6px",
+              padding: "4px 8px",
+              fontSize: "13px",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() + 1);
+              const nd = d.toISOString().split("T")[0];
+              setSelectedDate(nd);
+              setYear(d.getFullYear());
+              setMonth(d.getMonth() + 1);
+            }}
+            style={{
+              background: "none",
+              border: "1px solid #e0e0e0",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            ›
+          </button>
+        </div>
+      )}
       {selectedGuide && (
         <span
           style={{
@@ -790,7 +871,7 @@ export default function GuideAdminContent() {
 
         {activeMainTab === "list" && (
           <div>
-            <FilterBar />
+            {filterBarJsx}
             {error && (
               <div className="alert alert-error" onClick={() => setError("")}>
                 ⚠ {error}
@@ -1201,7 +1282,7 @@ export default function GuideAdminContent() {
 
       {activeMainTab === "list" && (
         <div>
-          <FilterBar />
+          {filterBarJsx}
           {error && (
             <div className="alert alert-error" onClick={() => setError("")}>
               ⚠ {error}
@@ -1212,63 +1293,6 @@ export default function GuideAdminContent() {
               {success}
             </div>
           )}
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "12px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() - 1);
-                setSelectedDate(d.toISOString().split("T")[0]);
-              }}
-              style={{
-                background: "none",
-                border: "1px solid #e0e0e0",
-                borderRadius: "6px",
-                padding: "4px 10px",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              ‹
-            </button>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              style={{
-                border: "1px solid #e0e0e0",
-                borderRadius: "6px",
-                padding: "4px 8px",
-                fontSize: "13px",
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() + 1);
-                setSelectedDate(d.toISOString().split("T")[0]);
-              }}
-              style={{
-                background: "none",
-                border: "1px solid #e0e0e0",
-                borderRadius: "6px",
-                padding: "4px 10px",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              ›
-            </button>
-          </div>
 
           <div
             style={{
@@ -1679,9 +1703,13 @@ export default function GuideAdminContent() {
                     <input
                       type="date"
                       value={incomeForm.date || selectedDate}
-                      onChange={(e) =>
-                        setIncomeForm((f) => ({ ...f, date: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        const d = new Date(e.target.value);
+                        setIncomeForm((f) => ({ ...f, date: e.target.value }));
+                        setYear(d.getFullYear());
+                        setMonth(d.getMonth() + 1);
+                        setSelectedDate(e.target.value);
+                      }}
                       style={{
                         width: "100%",
                         padding: "9px 12px",
