@@ -133,26 +133,38 @@ export const addTourName = (name) =>
   axios.post(`${BASE_URL}/guide-admin/tour-names`, { name }, authHeader());
 export const deleteTourName = (id) =>
   axios.delete(`${BASE_URL}/guide-admin/tour-names/${id}`, authHeader());
-export const fetchGuideLockStatus = () =>
-  axios.get(`${BASE_URL}/guide-form/lock-status`, authHeader());
-export const fetchGuideRecords = () =>
-  axios.get(`${BASE_URL}/guide-form/records`, authHeader());
+export const fetchGuideLockStatus = (year, month) =>
+  axios.get(
+    `${BASE_URL}/guide-form/lock-status${year ? `?year=${year}&month=${month}` : ""}`,
+    authHeader(),
+  );
+export const fetchGuideRecords = (year, month) =>
+  axios.get(
+    `${BASE_URL}/guide-form/records${year ? `?year=${year}&month=${month}` : ""}`,
+    authHeader(),
+  );
 export const addGuideRecord = (data) =>
   axios.post(`${BASE_URL}/guide-form/records`, data, authHeader());
 export const updateGuideRecord = (id, data) =>
   axios.put(`${BASE_URL}/guide-form/records/${id}`, data, authHeader());
 export const deleteGuideRecord = (id) =>
   axios.delete(`${BASE_URL}/guide-form/records/${id}`, authHeader());
-export const fetchGuideExpense = () =>
-  axios.get(`${BASE_URL}/guide-form/expense`, authHeader());
+export const fetchGuideExpense = (year, month) =>
+  axios.get(
+    `${BASE_URL}/guide-form/expense${year ? `?year=${year}&month=${month}` : ""}`,
+    authHeader(),
+  );
 export const addGuideExpense = (data) =>
   axios.post(`${BASE_URL}/guide-form/expense`, data, authHeader());
 export const updateGuideExpense = (id, data) =>
   axios.put(`${BASE_URL}/guide-form/expense/${id}`, data, authHeader());
 export const deleteGuideExpense = (id) =>
   axios.delete(`${BASE_URL}/guide-form/expense/${id}`, authHeader());
-export const fetchGuideDailyFee = () =>
-  axios.get(`${BASE_URL}/guide-form/daily-fee`, authHeader());
+export const fetchGuideDailyFee = (year, month) =>
+  axios.get(
+    `${BASE_URL}/guide-form/daily-fee${year ? `?year=${year}&month=${month}` : ""}`,
+    authHeader(),
+  );
 export const addGuideDailyFee = (amount, date) =>
   axios.post(
     `${BASE_URL}/guide-form/daily-fee`,

@@ -27,6 +27,10 @@ const getWeekRange = () => {
   min.setDate(now.getDate() - 6);
   return { min: min.toISOString().split("T")[0], max };
 };
+const isInWeekRange = (date) => {
+  const { min, max } = getWeekRange();
+  return date >= min && date <= max;
+};
 
 const SelectBtn = ({ options, value, onChange, badgeFn }) => (
   <div style={{ display: "flex", gap: "8px" }}>
@@ -67,12 +71,12 @@ const SelectBtn = ({ options, value, onChange, badgeFn }) => (
 export default function GuideFormContent() {
   const now = new Date();
   const username = sessionStorage.getItem("username");
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const [selectedDate, setSelectedDate] = useState(today());
+  const year = new Date(selectedDate).getFullYear();
+  const month = new Date(selectedDate).getMonth() + 1;
 
   const [isLocked, setIsLocked] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [selectedDate, setSelectedDate] = useState(today());
   const [tourNames, setTourNames] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [records, setRecords] = useState([]);
@@ -121,14 +125,14 @@ export default function GuideFormContent() {
   const [expenseForm, setExpenseForm] = useState(emptyExpense);
   const [dailyFeeForm, setDailyFeeForm] = useState(emptyFee);
 
-  const load = async () => {
+  const load = async (y, m) => {
     try {
       const [lock, t, r, e, d, ec] = await Promise.all([
-        fetchGuideLockStatus(),
+        fetchGuideLockStatus(y, m),
         fetchTourNames(),
-        fetchGuideRecords(),
-        fetchGuideExpense(),
-        fetchGuideDailyFee(),
+        fetchGuideRecords(y, m),
+        fetchGuideExpense(y, m),
+        fetchGuideDailyFee(y, m),
         fetchExpenseCategories(),
       ]);
       setIsLocked(lock.data.locked);
@@ -149,8 +153,8 @@ export default function GuideFormContent() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    load(year, month);
+  }, [month]);
 
   const checkLocked = () => {
     if (isLocked) {
@@ -226,7 +230,7 @@ export default function GuideFormContent() {
         setSuccess("수입이 수정되었습니다.");
       }
       setIncomeModal({ mode: null });
-      load();
+      load(year, month);
     } catch (err) {
       setIncomeError(err.response?.data?.error || "처리 실패");
     }
@@ -237,7 +241,7 @@ export default function GuideFormContent() {
     if (!window.confirm("삭제할까요?")) return;
     try {
       await deleteGuideRecord(id);
-      load();
+      load(year, month);
     } catch (err) {
       setError(err.response?.data?.error || "삭제 실패");
     }
@@ -297,7 +301,7 @@ export default function GuideFormContent() {
         setSuccess("지출이 수정되었습니다.");
       }
       setExpenseModal({ mode: null });
-      load();
+      load(year, month);
     } catch (err) {
       setError(err.response?.data?.error || "처리 실패");
     }
@@ -308,7 +312,7 @@ export default function GuideFormContent() {
     if (!window.confirm("삭제할까요?")) return;
     try {
       await deleteGuideExpense(id);
-      load();
+      load(year, month);
     } catch (err) {
       setError(err.response?.data?.error || "삭제 실패");
     }
@@ -346,7 +350,7 @@ export default function GuideFormContent() {
         setSuccess("일비가 수정되었습니다.");
       }
       setDailyFeeModal({ mode: null });
-      load();
+      load(year, month);
     } catch (err) {
       setError(err.response?.data?.error || "처리 실패");
     }
@@ -357,7 +361,7 @@ export default function GuideFormContent() {
     if (!window.confirm("삭제할까요?")) return;
     try {
       await deleteGuideDailyFee(id);
-      load();
+      load(year, month);
     } catch (err) {
       setError(err.response?.data?.error || "삭제 실패");
     }
@@ -377,7 +381,9 @@ export default function GuideFormContent() {
   const moveDate = (dir) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + dir);
-    setSelectedDate(d.toISOString().split("T")[0]);
+    if (d.getFullYear() === new Date(selectedDate).getFullYear()) {
+      setSelectedDate(d.toISOString().split("T")[0]);
+    }
   };
 
   const cashTotal = filteredRecords
@@ -469,9 +475,12 @@ export default function GuideFormContent() {
             <input
               type="date"
               value={selectedDate}
-              min={`${year}-${String(month).padStart(2, "0")}-01`}
-              max={`${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const d = new Date(e.target.value);
+                if (isNaN(d.getTime())) return;
+                setSelectedDate(e.target.value);
+              }}
               style={{
                 border: "1px solid #e0e0e0",
                 borderRadius: "6px",
@@ -495,7 +504,7 @@ export default function GuideFormContent() {
             </button>
           </div>
         </div>
-        {!isLocked && (
+        {!isLocked && isInWeekRange(selectedDate) && (
           <div style={{ display: "flex", gap: "8px" }}>
             <button className="btn-primary" onClick={openIncomeAdd}>
               ＋ 수입 추가
