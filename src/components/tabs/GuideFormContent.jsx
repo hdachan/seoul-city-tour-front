@@ -118,6 +118,7 @@ export default function GuideFormContent() {
     child: "",
     memo: "",
     paymentType: "현금",
+    date: today(),
   };
   const emptyFee = { amount: "", date: today() };
 
@@ -264,6 +265,7 @@ export default function GuideFormContent() {
     setExpenseForm({
       tourName: row.tourName || "",
       expenseType: row.expenseType,
+      date: row.date || today(),
       amount: row.amount,
       headcount: row.headcount,
       adult: row.adult || "",
@@ -1576,6 +1578,32 @@ export default function GuideFormContent() {
               {expenseModal.mode === "add" ? "지출 추가" : "지출 수정"}
             </h3>
             <form onSubmit={handleSubmitExpense} className="modal-form">
+              <div className="field">
+                <label>날짜</label>
+                {(() => {
+                  const { min, max } = getWeekRange();
+                  return (
+                    <input
+                      type="date"
+                      value={expenseForm.date || today()}
+                      min={min}
+                      max={max}
+                      onChange={(e) =>
+                        setExpenseForm((f) => ({ ...f, date: e.target.value }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "1.5px solid #e0e0e0",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  );
+                })()}
+              </div>
               <div className="field">
                 <label>투어 선택</label>
                 <select

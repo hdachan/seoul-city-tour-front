@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import "./GuideStatsContent.css";
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
 const authHeader = () => ({
@@ -18,6 +19,10 @@ export default function GuideStatsContent() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [showDailyFees, setShowDailyFees] = useState(false);
+  const [expandedExpense, setExpandedExpense] = useState(null);
+  const [expandedTour, setExpandedTour] = useState(null);
 
   const loadStats = () => {
     setLoading(true);
@@ -40,7 +45,7 @@ export default function GuideStatsContent() {
   const years = [thisYear - 1, thisYear, thisYear + 1];
 
   return (
-    <div className="gf-wrapper">
+    <div className="stats-wrapper">
       <div className="gf-header">
         <div>
           <h2 className="gf-title">📊 내 통계</h2>
@@ -96,178 +101,196 @@ export default function GuideStatsContent() {
       {stats && !loading && (
         <>
           {/* 요약 카드 */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-              gap: "12px",
-              marginBottom: "20px",
-            }}
-          >
-            <div className="summary-card">
-              <div className="summary-label">총 투어 횟수</div>
-              <div className="summary-value">{stats.totalTours}회</div>
+          <div className="stats-summary-grid">
+            <div className="stats-card">
+              <div className="stats-card-label">총 투어 횟수</div>
+              <div className="stats-card-value">{stats.totalTours}회</div>
             </div>
-            <div className="summary-card">
-              <div className="summary-label">총 인원</div>
-              <div className="summary-value" style={{ fontSize: "14px" }}>
+            <div className="stats-card">
+              <div className="stats-card-label">총 인원</div>
+              <div className="stats-card-value" style={{ fontSize: "16px" }}>
                 어른 {stats.totalAdult}
                 {stats.totalChild > 0 && ` / 아이 ${stats.totalChild}`}
                 {stats.totalInfant > 0 && ` / 유아 ${stats.totalInfant}`}명
               </div>
             </div>
-            <div className="summary-card">
-              <div className="summary-label">총 수입</div>
-              <div className="summary-value cash">
-                {fmt(stats.totalIncome)}원
-              </div>
-            </div>
-            <div className="summary-card">
-              <div className="summary-label">현금 수입</div>
-              <div className="summary-value cash">{fmt(stats.cashTotal)}원</div>
-            </div>
-            <div className="summary-card">
-              <div className="summary-label">카드 수입</div>
-              <div className="summary-value">{fmt(stats.cardTotal)}원</div>
-            </div>
-            <div className="summary-card">
-              <div className="summary-label">총 지출</div>
-              <div className="summary-value expense">
-                {fmt(stats.totalExpense)}원
-              </div>
-            </div>
-            <div
-              className={`summary-card ${stats.netIncome >= 0 ? "positive" : "negative"}`}
-            >
-              <div className="summary-label">순수익</div>
-              <div
-                className={`summary-value ${stats.netIncome >= 0 ? "plus" : "minus"}`}
-              >
-                {stats.netIncome >= 0 ? "+" : ""}
-                {fmt(stats.netIncome)}원
-              </div>
-            </div>
           </div>
 
-          {/* 투어별 통계 */}
-          <h3
-            style={{
-              fontSize: "15px",
-              fontWeight: 600,
-              marginBottom: "10px",
-              color: "#1a1a2e",
-            }}
-          >
+          {/* 일비 - 합계만, 버튼으로 세부내역 */}
+          {stats.dailyFees && stats.dailyFees.length > 0 && (
+            <div style={{ marginBottom: "20px" }}>
+              <div className="stats-section-header">
+                <h3 className="stats-section-title">일비</h3>
+                <button
+                  onClick={() => setShowDailyFees((v) => !v)}
+                  className="stats-toggle-btn"
+                >
+                  {showDailyFees ? "▲ 숨기기" : "▼ 세부내역"}
+                </button>
+              </div>
+              <div className="stats-dailyfee-total">
+                합계: {fmt(stats.dailyFees.reduce((s, d) => s + d.amount, 0))}원
+              </div>
+              {showDailyFees && (
+                <div className="stats-table-wrap">
+                  <table className="stats-table">
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>금액</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.dailyFees.map((d, i) => (
+                        <tr key={i}>
+                          <td style={{ color: "#888", fontSize: "12px" }}>
+                            {d.date}
+                          </td>
+                          <td
+                            className="td-right"
+                            style={{ fontWeight: 600, color: "#1d4ed8" }}
+                          >
+                            {fmt(d.amount)}원
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 지출 내역 - 날짜/항목/인원, 클릭하면 상세 */}
+          {stats.expenseList && stats.expenseList.length > 0 && (
+            <div style={{ marginBottom: "20px" }}>
+              <h3
+                className="stats-section-title"
+                style={{ marginBottom: "10px" }}
+              >
+                지출 내역
+              </h3>
+              <div className="stats-table-wrap">
+                <table className="stats-table">
+                  <colgroup>
+                    <col style={{ width: "130px" }} />
+                    <col />
+                    <col style={{ width: "80px" }} />
+                    <col style={{ width: "40px" }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>날짜</th>
+                      <th>항목</th>
+                      <th style={{ textAlign: "center" }}>인원</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.expenseList.map((e, i) => (
+                      <>
+                        <tr
+                          key={i}
+                          onClick={() =>
+                            setExpandedExpense(expandedExpense === i ? null : i)
+                          }
+                          className="clickable"
+                        >
+                          <td style={{ color: "#888", fontSize: "12px" }}>
+                            {i === 0 || stats.expenseList[i - 1].date !== e.date
+                              ? e.date
+                              : ""}
+                          </td>
+                          <td>{e.expenseType}</td>
+                          <td className="td-center">
+                            {e.headcount > 0 ? `${e.headcount}명` : "-"}
+                          </td>
+                          <td style={{ fontSize: "11px", color: "#aaa" }}>
+                            {expandedExpense === i ? "▲" : "▼"}
+                          </td>
+                        </tr>
+                        {expandedExpense === i && (
+                          <tr key={`${i}-detail`}>
+                            <td colSpan={4} className="stats-detail-td">
+                              <div>투어: {e.tourName || "-"}</div>
+                              <div>결제: {e.paymentType}</div>
+                              <div>
+                                금액: {fmt(e.amount)}원 × {e.headcount}명 ={" "}
+                                {fmt(e.totalAmount)}원
+                              </div>
+                              {e.memo && <div>비고: {e.memo}</div>}
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 투어별 통계 - 투어명/인원, 클릭하면 상세 */}
+          <h3 className="stats-section-title" style={{ marginBottom: "10px" }}>
             투어별 통계
           </h3>
           {stats.tourStats && Array.from(stats.tourStats).length > 0 ? (
-            <div className="gf-table-wrap">
-              <table className="gf-table">
+            <div className="stats-table-wrap">
+              <table className="stats-table">
+                <colgroup>
+                  <col />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "40px" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>투어이름</th>
-                    <th>횟수</th>
-                    <th>어른</th>
-                    <th>아이</th>
-                    <th>유아</th>
-                    <th>수입 합계</th>
+                    <th style={{ textAlign: "center" }}>총 인원</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {Array.from(stats.tourStats).map((t, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 500 }}>{t.tourName}</td>
-                      <td className="td-center">{t.count}회</td>
-                      <td className="td-center">{t.totalAdult}명</td>
-                      <td className="td-center">
-                        {t.totalChild > 0 ? `${t.totalChild}명` : "-"}
-                      </td>
-                      <td className="td-center">
-                        {t.totalInfant > 0 ? `${t.totalInfant}명` : "-"}
-                      </td>
-                      <td className="td-right total-cell">
-                        {fmt(t.totalAmount)}원
-                      </td>
-                    </tr>
+                    <>
+                      <tr
+                        key={i}
+                        onClick={() =>
+                          setExpandedTour(expandedTour === i ? null : i)
+                        }
+                        className="clickable"
+                      >
+                        <td style={{ fontWeight: 500 }}>{t.tourName}</td>
+                        <td className="td-center">
+                          {t.totalAdult + t.totalChild + t.totalInfant}명
+                        </td>
+                        <td style={{ fontSize: "11px", color: "#aaa" }}>
+                          {expandedTour === i ? "▲" : "▼"}
+                        </td>
+                      </tr>
+                      {expandedTour === i && (
+                        <tr key={`${i}-detail`}>
+                          <td colSpan={3} className="stats-detail-td">
+                            <div>횟수: {t.count}회</div>
+                            <div>
+                              어른: {t.totalAdult}명
+                              {t.totalChild > 0
+                                ? ` / 아이: ${t.totalChild}명`
+                                : ""}
+                              {t.totalInfant > 0
+                                ? ` / 유아: ${t.totalInfant}명`
+                                : ""}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "2rem",
-                color: "#bbb",
-                fontSize: "13px",
-              }}
-            >
-              데이터가 없습니다.
-            </div>
+            <div className="stats-empty">데이터가 없습니다.</div>
           )}
-
-          {/* 결제수단별 */}
-          <h3
-            style={{
-              fontSize: "15px",
-              fontWeight: 600,
-              margin: "20px 0 10px",
-              color: "#1a1a2e",
-            }}
-          >
-            결제수단별 수입
-          </h3>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "10px",
-            }}
-          >
-            {[
-              { label: "현금", value: stats.cashTotal, color: "#059669" },
-              { label: "카드", value: stats.cardTotal, color: "#1557b0" },
-              { label: "완불", value: stats.wanbul, color: "#854d0e" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                style={{
-                  background: "#fff",
-                  borderRadius: "10px",
-                  border: "1px solid #e8eaed",
-                  padding: "14px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#888",
-                    marginBottom: "6px",
-                  }}
-                >
-                  {item.label}
-                </div>
-                <div
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    color: item.color,
-                  }}
-                >
-                  {fmt(item.value)}원
-                </div>
-                <div
-                  style={{ fontSize: "11px", color: "#aaa", marginTop: "4px" }}
-                >
-                  {stats.totalIncome > 0
-                    ? Math.round((item.value / stats.totalIncome) * 100)
-                    : 0}
-                  %
-                </div>
-              </div>
-            ))}
-          </div>
         </>
       )}
     </div>
