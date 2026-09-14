@@ -752,14 +752,23 @@ export default function GuideFormContent() {
           ) : (
             <div className="gf-table-wrap">
               <table className="gf-table">
+                <colgroup>
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "17%" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>투어이름</th>
                     <th>대표자</th>
                     <th>결제</th>
-                    <th>금액(1인)</th>
-                    <th>인원</th>
-                    <th>합계</th>
+                    <th className="th-right">금액(1인)</th>
+                    <th className="th-center">인원</th>
+                    <th className="th-right">합계</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -792,11 +801,24 @@ export default function GuideFormContent() {
                           )}
                         </td>
                         <td className="td-center">
-                          {r.adult
-                            ? `어른 ${r.adult}${r.child ? " / 아이 " + r.child : ""}${r.infant ? " / 유아 " + r.infant : ""}명`
-                            : r.headcount
-                              ? r.headcount + "명"
-                              : "-"}
+                          {r.adult ? (
+                            <div style={{ lineHeight: 1.6 }}>
+                              <div>어른 {r.adult}명</div>
+                              {(r.child > 0 || r.infant > 0) && (
+                                <div
+                                  style={{ fontSize: "11px", color: "#888" }}
+                                >
+                                  {r.child > 0 && `아이 ${r.child}`}
+                                  {r.child > 0 && r.infant > 0 && " / "}
+                                  {r.infant > 0 && `유아 ${r.infant}`}명
+                                </div>
+                              )}
+                            </div>
+                          ) : r.headcount ? (
+                            r.headcount + "명"
+                          ) : (
+                            "-"
+                          )}
                         </td>
                         <td className="td-right total-cell">
                           {r.totalAmount ? fmt(r.totalAmount) : "-"}
@@ -934,14 +956,23 @@ export default function GuideFormContent() {
           ) : (
             <div className="gf-table-wrap">
               <table className="gf-table">
+                <colgroup>
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "25%" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>투어</th>
                     <th>항목</th>
                     <th>결제</th>
-                    <th>금액(1인)</th>
-                    <th>인원</th>
-                    <th>합계</th>
+                    <th className="th-right">금액(1인)</th>
+                    <th className="th-center">인원</th>
+                    <th className="th-right">합계</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1026,7 +1057,7 @@ export default function GuideFormContent() {
               <thead>
                 <tr>
                   <th>날짜</th>
-                  <th>일비 금액</th>
+                  <th className="th-right">일비 금액</th>
                   <th></th>
                 </tr>
               </thead>
