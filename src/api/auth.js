@@ -111,6 +111,11 @@ export const fetchExpenseCategories = (tourNameId) =>
     `${BASE_URL}/guide-form/expense-categories${tourNameId ? `?tourNameId=${tourNameId}` : ""}`,
     authHeader(),
   );
+export const fetchAdminStats = (year, month) =>
+  axios.get(`${BASE_URL}/guide-admin/stats`, {
+    params: { year, month },
+    ...authHeader(),
+  });
 export const fetchAdminExpenseCategories = (tourNameId) =>
   axios.get(
     `${BASE_URL}/guide-admin/expense-categories${tourNameId ? `?tourNameId=${tourNameId}` : ""}`,

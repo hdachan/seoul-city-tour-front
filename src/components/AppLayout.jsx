@@ -9,6 +9,7 @@ import RecordContent from "./tabs/RecordContent";
 import SettlementContent from "./tabs/SettlementContent";
 import GinsengContent from "./tabs/GinsengContent";
 import GuideAdminContent from "./tabs/GuideAdminContent";
+import GuideAdminStatsTab from "./tabs/GuidadminecategoryTab/GuideAdminStatsTab";
 import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
 import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
 import GuideFormContent from "./tabs/GuideFormContent";
@@ -30,6 +31,7 @@ const ALL_TABS = [
   { id: "settlement", icon: "💰", label: "업체별 정산" },
   { id: "ginseng", icon: "🌿", label: "인삼 매출" },
   { id: "guide-admin", icon: "📂", label: "가이드 정산관리" },
+  { id: "guide-admin-stats", icon: "📊", label: "가이드 정산 통계" },
   { id: "sales-admin", icon: "📊", label: "영업 정산관리" },
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
   { id: "guide-stats", icon: "📊", label: "내 통계" },
@@ -87,6 +89,7 @@ export default function AppLayout() {
           "settlement",
           "ginseng",
           "guide-admin",
+          "guide-admin-stats",
           "sales-admin",
         ],
         ROLE_DEV: [
@@ -94,6 +97,8 @@ export default function AppLayout() {
           "settlement",
           "ginseng",
           "guide-admin",
+          "guide-admin-stats",
+          "guide-admin-stats",
           "sales-admin",
           "dev",
         ],
@@ -153,6 +158,8 @@ export default function AppLayout() {
         return <GinsengContent />;
       case "guide-admin":
         return <GuideAdminContent />;
+      case "guide-admin-stats":
+        return <GuideAdminStatsTab />;
       case "sales-admin":
         return <SalesAdminContent />;
       case "guide-form":
