@@ -106,9 +106,9 @@ export const deleteGinsengRecord = (id) =>
   axios.delete(`${BASE_URL}/ginseng/${id}`, authHeader());
 
 // 가이드 정산폼
-export const fetchExpenseCategories = (tourNameId) =>
+export const fetchExpenseCategories = (tourNameId, tourName) =>
   axios.get(
-    `${BASE_URL}/guide-form/expense-categories${tourNameId ? `?tourNameId=${tourNameId}` : ""}`,
+    `${BASE_URL}/guide-form/expense-categories${tourNameId ? `?tourNameId=${tourNameId}` : tourName ? `?tourName=${encodeURIComponent(tourName)}` : ""}`,
     authHeader(),
   );
 export const fetchAdminStats = (year, month) =>

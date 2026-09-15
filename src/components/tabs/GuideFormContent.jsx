@@ -250,14 +250,7 @@ export default function GuideFormContent() {
 
   // ── 지출 모달 열기 ──
   const openExpenseAdd = () => {
-    // 선택된 투어에 맞는 지출 카테고리 로드
-    if (incomeForm.tourName) {
-      const selected = tourNames.find((t) => t.name === incomeForm.tourName);
-      if (selected)
-        fetchExpenseCategories(selected.id)
-          .then((r) => setExpenseCategories(r.data))
-          .catch(() => {});
-    }
+    setExpenseCategories([]); // 먼저 초기화
     setExpenseForm(emptyExpense);
     setExpenseModal({ mode: "add" });
   };
@@ -275,14 +268,21 @@ export default function GuideFormContent() {
       memo: row.memo || "",
       paymentType: row.paymentType,
     });
+    setExpenseCategories([]); // 먼저 초기화
     if (row.tourName) {
       const t = tourNames.find((t) => t.name === row.tourName);
-      if (t)
-        fetchExpenseCategories(t.id)
-          .then((r) => setExpenseCategories(r.data))
-          .catch(() => {});
+      fetchExpenseCategories(t?.id, t ? null : row.tourName)
+        .then((r) => {
+          setExpenseCategories(r.data);
+          setExpenseModal({ mode: "edit", data: row }); // 로드 완료 후 모달 열기
+        })
+        .catch(() => {
+          setExpenseCategories([]);
+          setExpenseModal({ mode: "edit", data: row });
+        });
+    } else {
+      setExpenseModal({ mode: "edit", data: row });
     }
-    setExpenseModal({ mode: "edit", data: row });
   };
 
   const handleSubmitExpense = async (e) => {
@@ -1459,71 +1459,6 @@ export default function GuideFormContent() {
                     )}
                 </>
               )}
-              {/* note 필드 - 그외 + DMZ/출렁다리 */}
-              {["그외", "그외-현금", "그외-카드"].includes(
-                incomeForm.paymentType,
-              ) &&
-                (incomeForm.tourName || "").match(/DMZ|출렁다리/i) && (
-                  <div className="field">
-                    <label>항목 선택</label>
-                    <div
-                      style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}
-                    >
-                      {(expenseCategories.length > 0
-                        ? [...expenseCategories.map((c) => c.name), "기타"]
-                        : ["북한관 입장료", "가이드입장료", "기타"]
-                      ).map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              note: f.note === opt ? "" : opt,
-                            }))
-                          }
-                          style={{
-                            padding: "8px 14px",
-                            border: "1.5px solid",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            cursor: "pointer",
-                            fontWeight: incomeForm.note === opt ? 700 : 400,
-                            background:
-                              incomeForm.note === opt ? "#e8f0fe" : "#fff",
-                            color: incomeForm.note === opt ? "#1557b0" : "#888",
-                            borderColor:
-                              incomeForm.note === opt ? "#1557b0" : "#e0e0e0",
-                          }}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                    {incomeForm.note === "기타" && (
-                      <input
-                        type="text"
-                        placeholder="직접 입력"
-                        value={incomeForm.noteCustom || ""}
-                        onChange={(e) =>
-                          setIncomeForm((f) => ({
-                            ...f,
-                            noteCustom: e.target.value,
-                          }))
-                        }
-                        style={{
-                          marginTop: "8px",
-                          width: "100%",
-                          padding: "9px 12px",
-                          border: "1.5px solid #d8dce3",
-                          borderRadius: "8px",
-                          fontSize: "13px",
-                          outline: "none",
-                        }}
-                      />
-                    )}
-                  </div>
-                )}
               {/* note 필드 - 그외 + 모닝/오후/투어 */}
               {["그외", "그외-현금", "그외-카드"].includes(
                 incomeForm.paymentType,
@@ -1625,10 +1560,13 @@ export default function GuideFormContent() {
                       expenseType: "",
                     }));
                     const t = tourNames.find((t) => t.name === e.target.value);
-                    if (t)
+                    if (t) {
                       fetchExpenseCategories(t.id)
                         .then((r) => setExpenseCategories(r.data))
                         .catch(() => {});
+                    } else {
+                      setExpenseCategories([]);
+                    }
                   }}
                   style={{
                     width: "100%",

@@ -265,6 +265,7 @@ export default function GuideAdminContent() {
   };
 
   const openExpenseAdd = () => {
+    setExpenseCategories([]);
     setExpenseForm({
       tourName: "",
       expenseType: "",
@@ -295,25 +296,32 @@ export default function GuideAdminContent() {
       infant: row.infant || "",
       paymentType: row.paymentType,
     });
-    // 투어에 맞는 카테고리 로드
+    setExpenseCategories([]); // 먼저 초기화
     if (row.tourName) {
       const t = tourNames.find((t) => t.name === row.tourName);
-      if (t) {
-        fetchAdminExpenseCategories(t.id)
-          .then((r) => setExpenseCategories(r.data))
-          .catch(() => {});
-      } else {
-        // tourNames 아직 안 로드된 경우 전체 카테고리 로드
-        fetchAdminExpenseCategories()
-          .then((r) =>
-            setExpenseCategories(
-              r.data.filter((c) => c.tourNameId === 0 || !c.tourNameId),
-            ),
-          )
-          .catch(() => {});
-      }
+      fetchAdminExpenseCategories(t?.id)
+        .then((r) => {
+          setExpenseCategories(
+            t
+              ? r.data
+              : r.data.filter(
+                  (c) =>
+                    c.tourNameId &&
+                    tourNames.some(
+                      (tn) =>
+                        tn.name === row.tourName && tn.id === c.tourNameId,
+                    ),
+                ),
+          );
+          setExpenseModal({ mode: "edit", data: row });
+        })
+        .catch(() => {
+          setExpenseCategories([]);
+          setExpenseModal({ mode: "edit", data: row });
+        });
+    } else {
+      setExpenseModal({ mode: "edit", data: row });
     }
-    setExpenseModal({ mode: "edit", data: row });
   };
   const handleSubmitExpense = async (e) => {
     e.preventDefault();
@@ -1336,53 +1344,6 @@ export default function GuideAdminContent() {
 
           {activeTab === "dailyfee" && (
             <div>
-              {totalDailyFee > 0 && (
-                <div
-                  style={{
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
-                    borderRadius: "12px",
-                    padding: "1rem 1.2rem",
-                    marginBottom: "1rem",
-                    marginTop: "1rem",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#92400e",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    💰 일비 정산 (3.3%)
-                  </p>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(4,1fr)",
-                      gap: "12px",
-                    }}
-                  >
-                    <div>
-                      <div style={labelStyle}>총 일비</div>
-                      <div style={valueStyle}>{fmt(totalDailyFee)}</div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>신고액</div>
-                      <div style={{ ...valueStyle, color: "#e53e3e" }}>
-                        - {fmt(taxAmount)}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>실수령액</div>
-                      <div style={{ ...valueStyle, color: "#059669" }}>
-                        {fmt(actualDailyFee)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
               <div className="gf-table-wrap">
                 <table className="gf-table">
                   <thead>
