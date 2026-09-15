@@ -1031,27 +1031,6 @@ export default function GuideFormContent() {
 
       {activeTab === "dailyfee" && (
         <div>
-          {totalDailyFee > 0 && (
-            <div className="daily-fee-card">
-              <div className="daily-fee-title">💰 일비 정산 (3.3%)</div>
-              <div className="daily-fee-grid">
-                <div>
-                  <div className="daily-label">총 일비</div>
-                  <div className="daily-value">{fmt(totalDailyFee)}</div>
-                </div>
-                <div>
-                  <div className="daily-label">신고액</div>
-                  <div className="daily-value tax">- {fmt(taxAmount)}</div>
-                </div>
-                <div>
-                  <div className="daily-label">실수령액</div>
-                  <div className="daily-value actual">
-                    {fmt(actualDailyFee)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           <div className="gf-table-wrap">
             <table className="gf-table">
               <thead>

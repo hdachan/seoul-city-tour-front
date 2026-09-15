@@ -117,49 +117,104 @@ export default function GuideStatsContent() {
           </div>
 
           {/* 일비 - 합계만, 버튼으로 세부내역 */}
-          {stats.dailyFees && stats.dailyFees.length > 0 && (
-            <div style={{ marginBottom: "20px" }}>
-              <div className="stats-section-header">
-                <h3 className="stats-section-title">일비</h3>
-                <button
-                  onClick={() => setShowDailyFees((v) => !v)}
-                  className="stats-toggle-btn"
-                >
-                  {showDailyFees ? "▲ 숨기기" : "▼ 세부내역"}
-                </button>
-              </div>
-              <div className="stats-dailyfee-total">
-                합계: {fmt(stats.dailyFees.reduce((s, d) => s + d.amount, 0))}원
-              </div>
-              {showDailyFees && (
-                <div className="stats-table-wrap">
-                  <table className="stats-table">
-                    <thead>
-                      <tr>
-                        <th>날짜</th>
-                        <th>금액</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.dailyFees.map((d, i) => (
-                        <tr key={i}>
-                          <td style={{ color: "#888", fontSize: "12px" }}>
-                            {d.date}
-                          </td>
-                          <td
-                            className="td-right"
-                            style={{ fontWeight: 600, color: "#1d4ed8" }}
-                          >
-                            {fmt(d.amount)}원
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {stats.dailyFees &&
+            stats.dailyFees.length > 0 &&
+            (() => {
+              const totalFee = stats.dailyFees.reduce(
+                (s, d) => s + d.amount,
+                0,
+              );
+              const tax = Math.round(totalFee * 0.033);
+              const actual = totalFee - tax;
+              return (
+                <div style={{ marginBottom: "20px" }}>
+                  <div className="stats-section-header">
+                    <h3 className="stats-section-title">일비</h3>
+                    <button
+                      onClick={() => setShowDailyFees((v) => !v)}
+                      className="stats-toggle-btn"
+                    >
+                      {showDailyFees ? "▲ 숨기기" : "▼ 세부내역"}
+                    </button>
+                  </div>
+                  <div className="stats-dailyfee-total">
+                    실수령액: {fmt(actual)}원
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#a16207",
+                        marginLeft: "12px",
+                      }}
+                    >
+                      (원래 {fmt(totalFee)}원 - 3.3% {fmt(tax)}원)
+                    </span>
+                  </div>
+                  {showDailyFees && (
+                    <div
+                      className="stats-table-wrap"
+                      style={{ marginTop: "8px" }}
+                    >
+                      <table className="stats-table">
+                        <thead>
+                          <tr>
+                            <th>날짜</th>
+                            <th style={{ textAlign: "right" }}>원래 금액</th>
+                            <th style={{ textAlign: "right" }}>3.3% 신고액</th>
+                            <th style={{ textAlign: "right" }}>실수령액</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.dailyFees.map((d, i) => {
+                            const t = Math.round(d.amount * 0.033);
+                            return (
+                              <tr key={i}>
+                                <td style={{ color: "#888", fontSize: "12px" }}>
+                                  {d.date}
+                                </td>
+                                <td className="td-right">{fmt(d.amount)}원</td>
+                                <td
+                                  className="td-right"
+                                  style={{ color: "#dc2626" }}
+                                >
+                                  - {fmt(t)}원
+                                </td>
+                                <td
+                                  className="td-right"
+                                  style={{ color: "#059669", fontWeight: 600 }}
+                                >
+                                  {fmt(d.amount - t)}원
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          <tr style={{ borderTop: "2px solid #e5e7eb" }}>
+                            <td style={{ fontWeight: 600 }}>합계</td>
+                            <td
+                              className="td-right"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {fmt(totalFee)}원
+                            </td>
+                            <td
+                              className="td-right"
+                              style={{ color: "#dc2626", fontWeight: 600 }}
+                            >
+                              - {fmt(tax)}원
+                            </td>
+                            <td
+                              className="td-right"
+                              style={{ color: "#059669", fontWeight: 700 }}
+                            >
+                              {fmt(actual)}원
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })()}
 
           {/* 지출 내역 - 날짜/항목/인원, 클릭하면 상세 */}
           {stats.expenseList && stats.expenseList.length > 0 && (
