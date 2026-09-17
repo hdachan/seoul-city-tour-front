@@ -1240,6 +1240,9 @@ export default function GuideAdminContent() {
                         <td className="td-right total-cell">
                           {i.totalAmount ? fmt(i.totalAmount) : "-"}
                         </td>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {i.memo || "-"}
+                        </td>
                         <td style={{ display: "flex", gap: "4px" }}>
                           <button
                             onClick={() => openIncomeEdit(i)}
@@ -1535,28 +1538,7 @@ export default function GuideAdminContent() {
                         />
                       </div>
                       {showExtraPersons && (
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr 1fr",
-                            gap: "8px",
-                            marginTop: "8px",
-                          }}
-                        >
-                          <div className="field">
-                            <label>아이 금액(1인)</label>
-                            <input
-                              type="number"
-                              placeholder="금액"
-                              value={incomeForm.childAmount || ""}
-                              onChange={(e) =>
-                                setIncomeForm((f) => ({
-                                  ...f,
-                                  childAmount: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
+                        <div style={{ marginTop: "8px" }}>
                           <div className="field">
                             <label>아이 인원</label>
                             <input
@@ -1571,7 +1553,7 @@ export default function GuideAdminContent() {
                               }
                             />
                           </div>
-                          <div className="field">
+                          <div className="field" style={{ marginTop: "8px" }}>
                             <label>
                               유아{" "}
                               <span style={{ fontSize: "10px", color: "#aaa" }}>
@@ -1659,41 +1641,43 @@ export default function GuideAdminContent() {
                         </div>
                       </div>
                       {showExtraPersons && (
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr 1fr",
-                            gap: "8px",
-                            marginTop: "8px",
-                          }}
-                        >
-                          <div className="field">
-                            <label>아이 금액(1인)</label>
-                            <input
-                              type="number"
-                              placeholder="금액"
-                              value={incomeForm.childAmount || ""}
-                              onChange={(e) =>
-                                setIncomeForm((f) => ({
-                                  ...f,
-                                  childAmount: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="field">
-                            <label>아이 인원</label>
-                            <input
-                              type="number"
-                              placeholder="명"
-                              value={incomeForm.child || ""}
-                              onChange={(e) =>
-                                setIncomeForm((f) => ({
-                                  ...f,
-                                  child: e.target.value,
-                                }))
-                              }
-                            />
+                        <div style={{ marginTop: "8px" }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: "8px",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <div className="field">
+                              <label>아이 금액(1인)</label>
+                              <input
+                                type="number"
+                                placeholder="금액"
+                                value={incomeForm.childAmount || ""}
+                                onChange={(e) =>
+                                  setIncomeForm((f) => ({
+                                    ...f,
+                                    childAmount: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="field">
+                              <label>아이 인원</label>
+                              <input
+                                type="number"
+                                placeholder="명"
+                                value={incomeForm.child || ""}
+                                onChange={(e) =>
+                                  setIncomeForm((f) => ({
+                                    ...f,
+                                    child: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
                           </div>
                           <div className="field">
                             <label>

@@ -695,6 +695,11 @@ export default function GuideFormContent() {
                         ) : r.headcount ? (
                           <div>{r.headcount}명</div>
                         ) : null}
+                        {r.memo && (
+                          <div style={{ marginTop: "4px", color: "#6b7280" }}>
+                            비고: {r.memo}
+                          </div>
+                        )}
                       </div>
                       <div
                         style={{
@@ -769,6 +774,7 @@ export default function GuideFormContent() {
                     <th className="th-right">금액(1인)</th>
                     <th className="th-center">인원</th>
                     <th className="th-right">합계</th>
+                    <th>비고</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -823,6 +829,9 @@ export default function GuideFormContent() {
                         <td className="td-right total-cell">
                           {r.totalAmount ? fmt(r.totalAmount) : "-"}
                         </td>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {r.memo || "-"}
+                        </td>
                         <td>
                           <ActionBtns
                             locked={isLocked}
@@ -873,15 +882,12 @@ export default function GuideFormContent() {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        marginBottom: "8px",
+                        marginBottom: "6px",
                       }}
                     >
-                      <span
-                        className="pay-badge"
-                        style={expTypeBadge(e.expenseType)}
-                      >
-                        {e.expenseType}
-                      </span>
+                      <div style={{ fontWeight: 600, fontSize: "13px" }}>
+                        {e.tourName || "-"}
+                      </div>
                       <span
                         className="pay-badge"
                         style={payBadge(e.paymentType)}
@@ -894,12 +900,15 @@ export default function GuideFormContent() {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        marginBottom: "6px",
                       }}
                     >
-                      <div style={{ fontSize: "12px", color: "#888" }}>
-                        {fmt(e.amount)}원
-                        {e.headcount ? " × " + e.headcount + "명" : ""}
-                      </div>
+                      <span
+                        className="pay-badge"
+                        style={expTypeBadge(e.expenseType)}
+                      >
+                        {e.expenseType}
+                      </span>
                       <div
                         style={{
                           fontWeight: 700,
@@ -907,8 +916,17 @@ export default function GuideFormContent() {
                           color: "#dc2626",
                         }}
                       >
-                        {e.totalAmount ? fmt(e.totalAmount) + "원" : "-"}
+                        {e.totalAmount ? fmt(e.totalAmount) : "-"}
                       </div>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#888" }}>
+                      {fmt(e.amount)}
+                      {e.headcount ? " × " + e.headcount + "명" : ""}
+                      {e.memo && (
+                        <span style={{ marginLeft: "8px" }}>
+                          · 비고: {e.memo}
+                        </span>
+                      )}
                     </div>
                     {!isLocked && (
                       <div
@@ -973,13 +991,14 @@ export default function GuideFormContent() {
                     <th className="th-right">금액(1인)</th>
                     <th className="th-center">인원</th>
                     <th className="th-right">합계</th>
+                    <th>비고</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredExpenses.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="empty">
+                      <td colSpan={8} className="empty">
                         지출 내역이 없습니다.
                       </td>
                     </tr>
@@ -1011,6 +1030,9 @@ export default function GuideFormContent() {
                         </td>
                         <td className="td-right total-cell">
                           {e.totalAmount ? fmt(e.totalAmount) : "-"}
+                        </td>
+                        <td style={{ fontSize: "12px", color: "#888" }}>
+                          {e.memo || "-"}
                         </td>
                         <td>
                           <ActionBtns
@@ -1229,26 +1251,12 @@ export default function GuideFormContent() {
                   {showExtraPersons && (
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
+                        display: "flex",
+                        flexDirection: "column",
                         gap: "10px",
                         marginTop: "8px",
                       }}
                     >
-                      <div className="field">
-                        <label>아이 금액(1인)</label>
-                        <input
-                          type="number"
-                          placeholder="금액"
-                          value={incomeForm.childAmount || ""}
-                          onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              childAmount: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
                       <div className="field">
                         <label>아이 인원</label>
                         <input
@@ -1359,39 +1367,47 @@ export default function GuideFormContent() {
                   {showExtraPersons && (
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
+                        display: "flex",
+                        flexDirection: "column",
                         gap: "10px",
                         marginTop: "8px",
                       }}
                     >
-                      <div className="field">
-                        <label>아이 금액(1인)</label>
-                        <input
-                          type="number"
-                          placeholder="금액"
-                          value={incomeForm.childAmount || ""}
-                          onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              childAmount: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="field">
-                        <label>아이 인원</label>
-                        <input
-                          type="number"
-                          placeholder="명"
-                          value={incomeForm.child || ""}
-                          onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              child: e.target.value,
-                            }))
-                          }
-                        />
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px",
+                        }}
+                      >
+                        <div className="field">
+                          <label>아이 금액(1인)</label>
+                          <input
+                            type="number"
+                            placeholder="금액"
+                            value={incomeForm.childAmount || ""}
+                            onChange={(e) =>
+                              setIncomeForm((f) => ({
+                                ...f,
+                                childAmount: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>아이 인원</label>
+                          <input
+                            type="number"
+                            placeholder="명"
+                            value={incomeForm.child || ""}
+                            onChange={(e) =>
+                              setIncomeForm((f) => ({
+                                ...f,
+                                child: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
                       </div>
                       <div className="field">
                         <label>
