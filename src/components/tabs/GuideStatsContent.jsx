@@ -103,10 +103,6 @@ export default function GuideStatsContent() {
           {/* 요약 카드 */}
           <div className="stats-summary-grid">
             <div className="stats-card">
-              <div className="stats-card-label">총 투어 횟수</div>
-              <div className="stats-card-value">{stats.totalTours}회</div>
-            </div>
-            <div className="stats-card">
               <div className="stats-card-label">총 인원</div>
               <div className="stats-card-value" style={{ fontSize: "16px" }}>
                 어른 {stats.totalAdult}
@@ -325,7 +321,6 @@ export default function GuideStatsContent() {
                       {expandedTour === i && (
                         <tr key={`${i}-detail`}>
                           <td colSpan={3} className="stats-detail-td">
-                            <div>횟수: {t.count}회</div>
                             <div>
                               어른: {t.totalAdult}명
                               {t.totalChild > 0

@@ -1705,6 +1705,19 @@ export default function GuideFormContent() {
             <h3 className="modal-title">
               {dailyFeeModal.mode === "add" ? "일비 추가" : "일비 수정"}
             </h3>
+            <div style={{ marginBottom: "12px", textAlign: "center" }}>
+              <img
+                src="/seoulcitytour_fee.png"
+                alt="일비 기준표"
+                style={{
+                  maxWidth: "100%",
+                  borderRadius: "8px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                  cursor: "pointer",
+                }}
+                onClick={() => window.open("/seoulcitytour_fee.png", "_blank")}
+              />
+            </div>
             <form onSubmit={handleSubmitFee} className="modal-form">
               <div className="field">
                 <label>날짜 *</label>
