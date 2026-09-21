@@ -41,7 +41,13 @@ const SelectBtn = ({ options, value, onChange, badgeFn }) => (
   <div style={{ display: "flex", gap: "8px" }}>
     {options.map((opt) => {
       const label =
-        opt === "그외-현금" ? "현금" : opt === "그외-카드" ? "카드" : opt;
+        opt === "그외-현금"
+          ? "현금"
+          : opt === "그외-카드"
+            ? "카드"
+            : opt === "그외-교차"
+              ? "교차"
+              : opt;
       return (
         <button
           key={opt}
@@ -228,6 +234,8 @@ export default function GuideAdminContent() {
       infant: row.infant || "",
       memo: row.memo || "",
       note: row.note || "",
+      cashAmount: row.cashAmount || "",
+      cardAmount: row.cardAmount || "",
     });
     setIncomeModal({ mode: "edit", data: row });
   };
@@ -404,9 +412,13 @@ export default function GuideAdminContent() {
   const filteredExpenses = expenses.filter((e) => e.date === selectedDate);
   const filteredDailyFees = dailyFees.filter((d) => d.date === selectedDate);
 
-  const cashTotal = filteredIncomes
-    .filter((r) => r.paymentType === "현금")
-    .reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const cashTotal =
+    filteredIncomes
+      .filter((r) => r.paymentType === "현금" || r.paymentType === "그외-현금")
+      .reduce((s, r) => s + (r.totalAmount || 0), 0) +
+    filteredIncomes
+      .filter((r) => r.paymentType === "그외-교차")
+      .reduce((s, r) => s + (r.cashAmount || 0), 0);
   const expCashTotal = filteredExpenses
     .filter((e) => e.paymentType === "현금")
     .reduce((s, e) => s + (e.totalAmount || 0), 0);
@@ -428,6 +440,7 @@ export default function GuideAdminContent() {
       완불: { background: "#fef9c3", color: "#854d0e" },
       "그외-현금": { background: "#f3f4f6", color: "#555" },
       "그외-카드": { background: "#f3f4f6", color: "#555" },
+      "그외-교차": { background: "#f3f4f6", color: "#555" },
     })[type] || { background: "#f3f4f6", color: "#555" };
   const expTypeBadge = (type) =>
     type === "북한관 입장료"
@@ -1163,6 +1176,17 @@ export default function GuideAdminContent() {
           {activeTab === "income" && (
             <div className="gf-table-wrap">
               <table className="gf-table">
+                <colgroup>
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>날짜</th>
@@ -1170,9 +1194,9 @@ export default function GuideAdminContent() {
                     <th>대표자</th>
                     <th>결제</th>
                     <th>비고</th>
-                    <th>금액(1인)</th>
-                    <th>인원</th>
-                    <th>합계</th>
+                    <th className="th-right">금액(1인)</th>
+                    <th className="th-center">인원</th>
+                    <th className="th-right">합계</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1239,6 +1263,18 @@ export default function GuideAdminContent() {
                         </td>
                         <td className="td-right total-cell">
                           {i.totalAmount ? fmt(i.totalAmount) : "-"}
+                          {i.paymentType === "그외-교차" && (
+                            <div
+                              style={{
+                                fontSize: "10px",
+                                color: "#aaa",
+                                marginTop: "2px",
+                              }}
+                            >
+                              현 {fmt(i.cashAmount || 0)} / 카{" "}
+                              {fmt(i.cardAmount || 0)}
+                            </div>
+                          )}
                         </td>
                         <td style={{ fontSize: "12px", color: "#888" }}>
                           {i.memo || "-"}
@@ -1470,7 +1506,7 @@ export default function GuideAdminContent() {
                     <SelectBtn
                       options={["현금", "카드", "그외", "완불"]}
                       value={
-                        ["그외-현금", "그외-카드"].includes(
+                        ["그외-현금", "그외-카드", "그외-교차"].includes(
                           incomeForm.paymentType,
                         )
                           ? "그외"
@@ -1481,18 +1517,111 @@ export default function GuideAdminContent() {
                       }
                     />
                   </div>
-                  {["그외", "그외-현금", "그외-카드"].includes(
+                  {["그외", "그외-현금", "그외-카드", "그외-교차"].includes(
                     incomeForm.paymentType,
                   ) && (
                     <div className="field">
                       <label>그외 결제수단</label>
                       <SelectBtn
-                        options={["그외-현금", "그외-카드"]}
+                        options={["그외-현금", "그외-카드", "그외-교차"]}
                         value={incomeForm.paymentType}
                         onChange={(v) =>
-                          setIncomeForm((f) => ({ ...f, paymentType: v }))
+                          setIncomeForm((f) => ({
+                            ...f,
+                            paymentType: v,
+                            cashAmount: "",
+                            cardAmount: "",
+                          }))
                         }
                       />
+                    </div>
+                  )}
+                  {incomeForm.paymentType === "그외-교차" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px",
+                        }}
+                      >
+                        <div className="field">
+                          <label>현금 총액</label>
+                          <input
+                            type="number"
+                            placeholder="금액"
+                            value={incomeForm.cashAmount || ""}
+                            onChange={(e) =>
+                              setIncomeForm((f) => ({
+                                ...f,
+                                cashAmount: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>카드 총액</label>
+                          <input
+                            type="number"
+                            placeholder="금액"
+                            value={incomeForm.cardAmount || ""}
+                            onChange={(e) =>
+                              setIncomeForm((f) => ({
+                                ...f,
+                                cardAmount: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>어른 (명)</label>
+                        <input
+                          type="number"
+                          placeholder="명"
+                          value={incomeForm.adult || ""}
+                          onChange={(e) =>
+                            setIncomeForm((f) => ({
+                              ...f,
+                              adult: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label>아이 (명)</label>
+                        <input
+                          type="number"
+                          placeholder="명"
+                          value={incomeForm.child || ""}
+                          onChange={(e) =>
+                            setIncomeForm((f) => ({
+                              ...f,
+                              child: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label>유아 (명)</label>
+                        <input
+                          type="number"
+                          placeholder="명"
+                          value={incomeForm.infant || ""}
+                          onChange={(e) =>
+                            setIncomeForm((f) => ({
+                              ...f,
+                              infant: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
                     </div>
                   )}
                   {/* 완불 - 어른 기본 + 아이/유아 토글 */}
@@ -1578,130 +1707,133 @@ export default function GuideAdminContent() {
                   )}
 
                   {/* 현금/카드/그외 - 금액 + 어른 기본 + 아이/유아 토글 */}
-                  {incomeForm.paymentType !== "완불" && (
-                    <div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-end",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setShowExtraPersons((v) => !v)}
+                  {incomeForm.paymentType !== "완불" &&
+                    incomeForm.paymentType !== "그외-교차" && (
+                      <div>
+                        <div
                           style={{
-                            fontSize: "11px",
-                            color: "#1557b0",
-                            background: "none",
-                            border: "1px solid #1557b0",
-                            borderRadius: "6px",
-                            padding: "3px 10px",
-                            cursor: "pointer",
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginBottom: "6px",
                           }}
                         >
-                          {showExtraPersons
-                            ? "▲ 아이/유아 숨기기"
-                            : "＋ 아이/유아 추가"}
-                        </button>
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: "8px",
-                        }}
-                      >
-                        <div className="field">
-                          <label>금액 (1인)</label>
-                          <input
-                            type="number"
-                            value={incomeForm.amount || ""}
-                            onChange={(e) =>
-                              setIncomeForm((f) => ({
-                                ...f,
-                                amount: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="field">
-                          <label>어른</label>
-                          <input
-                            type="number"
-                            placeholder="명"
-                            value={incomeForm.adult || ""}
-                            onChange={(e) =>
-                              setIncomeForm((f) => ({
-                                ...f,
-                                adult: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      {showExtraPersons && (
-                        <div style={{ marginTop: "8px" }}>
-                          <div
+                          <button
+                            type="button"
+                            onClick={() => setShowExtraPersons((v) => !v)}
                             style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
-                              gap: "8px",
-                              marginBottom: "8px",
+                              fontSize: "11px",
+                              color: "#1557b0",
+                              background: "none",
+                              border: "1px solid #1557b0",
+                              borderRadius: "6px",
+                              padding: "3px 10px",
+                              cursor: "pointer",
                             }}
                           >
-                            <div className="field">
-                              <label>아이 금액(1인)</label>
-                              <input
-                                type="number"
-                                placeholder="금액"
-                                value={incomeForm.childAmount || ""}
-                                onChange={(e) =>
-                                  setIncomeForm((f) => ({
-                                    ...f,
-                                    childAmount: e.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div className="field">
-                              <label>아이 인원</label>
-                              <input
-                                type="number"
-                                placeholder="명"
-                                value={incomeForm.child || ""}
-                                onChange={(e) =>
-                                  setIncomeForm((f) => ({
-                                    ...f,
-                                    child: e.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
-                          </div>
+                            {showExtraPersons
+                              ? "▲ 아이/유아 숨기기"
+                              : "＋ 아이/유아 추가"}
+                          </button>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "8px",
+                          }}
+                        >
                           <div className="field">
-                            <label>
-                              유아{" "}
-                              <span style={{ fontSize: "10px", color: "#aaa" }}>
-                                (무료)
-                              </span>
-                            </label>
+                            <label>금액 (1인)</label>
                             <input
                               type="number"
-                              placeholder="명"
-                              value={incomeForm.infant || ""}
+                              value={incomeForm.amount || ""}
                               onChange={(e) =>
                                 setIncomeForm((f) => ({
                                   ...f,
-                                  infant: e.target.value,
+                                  amount: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>어른</label>
+                            <input
+                              type="number"
+                              placeholder="명"
+                              value={incomeForm.adult || ""}
+                              onChange={(e) =>
+                                setIncomeForm((f) => ({
+                                  ...f,
+                                  adult: e.target.value,
                                 }))
                               }
                             />
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        {showExtraPersons && (
+                          <div style={{ marginTop: "8px" }}>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: "8px",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              <div className="field">
+                                <label>아이 금액(1인)</label>
+                                <input
+                                  type="number"
+                                  placeholder="금액"
+                                  value={incomeForm.childAmount || ""}
+                                  onChange={(e) =>
+                                    setIncomeForm((f) => ({
+                                      ...f,
+                                      childAmount: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="field">
+                                <label>아이 인원</label>
+                                <input
+                                  type="number"
+                                  placeholder="명"
+                                  value={incomeForm.child || ""}
+                                  onChange={(e) =>
+                                    setIncomeForm((f) => ({
+                                      ...f,
+                                      child: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="field">
+                              <label>
+                                유아{" "}
+                                <span
+                                  style={{ fontSize: "10px", color: "#aaa" }}
+                                >
+                                  (무료)
+                                </span>
+                              </label>
+                              <input
+                                type="number"
+                                placeholder="명"
+                                value={incomeForm.infant || ""}
+                                onChange={(e) =>
+                                  setIncomeForm((f) => ({
+                                    ...f,
+                                    infant: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {/* 미리보기 */}
                   {incomeForm.paymentType !== "완불" &&
