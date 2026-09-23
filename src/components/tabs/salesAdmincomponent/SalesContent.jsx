@@ -79,7 +79,7 @@ const api = {
 const fmt = (n) => Number(n || 0).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
 const pad2 = (n) => String(n).padStart(2, "0");
-const TYPES = ["업무", "주유", "휴가"];
+const TYPES = ["업무", "주유", "개인주유", "개인사용"];
 const TODAY = new Date().toISOString().split("T")[0];
 const getThisWeekMonday = () => {
   const d = new Date();
@@ -105,10 +105,35 @@ const getKoreaTime = () =>
     hour12: false,
   }).format(new Date());
 
+// 미터기 기준 운행거리 계산
+// 시간이 없는 기록(개인사용 등)도 순서가 맞도록 날짜 → 미터기 순으로 계산
+// 구간 거리는 뒤쪽 기록의 구분(업무/개인사용)에 붙음
+const calcDistances = (list, startMeter = 0) => {
+  const sorted = list
+    .filter((d) => d.meterReading > 0)
+    .sort((a, b) =>
+      a.date === b.date
+        ? a.meterReading - b.meterReading
+        : a.date.localeCompare(b.date),
+    );
+  let last = startMeter || 0;
+  const map = {};
+  sorted.forEach((d) => {
+    map[d.id] = last > 0 && d.meterReading > last ? d.meterReading - last : 0;
+    last = Math.max(last, d.meterReading);
+  });
+  return map;
+};
+const sumDist = (list, key, type) =>
+  list
+    .filter((d) => !type || d.type === type)
+    .reduce((s, d) => s + (d[key] || 0), 0);
+
 const TYPE_STYLE = {
   업무: { bg: "#e8f0fe", color: "#1557b0" },
   주유: { bg: "#fef3c7", color: "#92400e" },
-  휴가: { bg: "#fce7f3", color: "#9d174d" },
+  개인주유: { bg: "#fce7f3", color: "#9d174d" },
+  개인사용: { bg: "#ede9fe", color: "#6d28d9" },
 };
 
 export default function SalesContent() {
@@ -253,10 +278,28 @@ export default function SalesContent() {
     drivingForm.meterReading && lastMeter
       ? parseInt(drivingForm.meterReading) - lastMeter
       : null;
+  // 이후 날짜 중 가장 작은 미터기 (상한선)
+  const nextMeter = (() => {
+    const later = monthDriving
+      .filter(
+        (d) =>
+          d.date > selectedDate &&
+          d.meterReading > 0 &&
+          (!editTarget || d.id !== editTarget.id),
+      )
+      .map((d) => d.meterReading);
+    return later.length > 0 ? Math.min(...later) : 0;
+  })();
+  // 하한선: 추가는 오늘 마지막 미터기, 수정은 전일 미터기 기준
+  const lowerMeter = editTarget ? prevMeter : lastMeter;
   const meterTooLow =
     drivingForm.meterReading &&
-    lastMeter > 0 &&
-    parseInt(drivingForm.meterReading) < lastMeter;
+    lowerMeter > 0 &&
+    parseInt(drivingForm.meterReading) < lowerMeter;
+  const meterTooHigh =
+    drivingForm.meterReading &&
+    nextMeter > 0 &&
+    parseInt(drivingForm.meterReading) > nextMeter;
 
   const enteredDates = new Set(monthDriving.map((d) => d.date));
 
@@ -411,6 +454,16 @@ export default function SalesContent() {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
     }
+    if (meterTooLow) {
+      setError(`미터기는 ${fmt(lowerMeter)}km 이상이어야 합니다.`);
+      return;
+    }
+    if (meterTooHigh) {
+      setError(
+        `이후 날짜에 ${fmt(nextMeter)}km 기록이 있어 그보다 클 수 없습니다.`,
+      );
+      return;
+    }
     try {
       const payload = { ...drivingForm, date: drivingForm.startDate };
       let res;
@@ -522,14 +575,11 @@ export default function SalesContent() {
       if (!b.arrivalTime) return -1;
       return a.arrivalTime.localeCompare(b.arrivalTime);
     });
-    let lastM = 0;
-    const withDist = sorted.map((d) => {
-      const m = d.meterReading || 0;
-      let dist = 0;
-      if (m > 0 && lastM > 0 && m > lastM) dist = m - lastM;
-      if (m > 0) lastM = m;
-      return { ...d, calcDist: dist };
-    });
+    const distMap = calcDistances(sorted);
+    const withDist = sorted.map((d) => ({
+      ...d,
+      calcDist: distMap[d.id] || 0,
+    }));
 
     const titleRow = [[`${year}년 ${month}월 운행일지`]];
     const infoRow = [[`작성자: ${username}`, "", "", "", "", "", "", ""]];
@@ -578,6 +628,8 @@ export default function SalesContent() {
       ...colHeader,
       ...dataRows,
       totalRow,
+      ["업무 거리", "", "", "", "", sumDist(withDist, "calcDist", "업무")],
+      ["개인 거리", "", "", "", "", sumDist(withDist, "calcDist", "개인사용")],
     ]);
     ws["!cols"] = [
       { wch: 12 },
@@ -611,16 +663,18 @@ export default function SalesContent() {
       if (!b.arrivalTime) return -1;
       return a.arrivalTime.localeCompare(b.arrivalTime);
     });
-    let lastM = 0;
-    const withDist = sorted.map((d) => {
-      const m = d.meterReading || 0;
-      let dist = 0;
-      if (m > 0 && lastM > 0 && m > lastM) dist = m - lastM;
-      if (m > 0) lastM = m;
-      return { ...d, calcDist: dist };
-    });
+    const distMap = calcDistances(sorted);
+    const withDist = sorted.map((d) => ({
+      ...d,
+      calcDist: distMap[d.id] || 0,
+    }));
 
-    const typeColor = { 업무: "#1557b0", 주유: "#92400e", 휴가: "#9d174d" };
+    const typeColor = {
+      업무: "#1557b0",
+      주유: "#92400e",
+      개인주유: "#9d174d",
+      개인사용: "#6d28d9",
+    };
     const rows = withDist
       .map(
         (d) => `
@@ -669,6 +723,16 @@ export default function SalesContent() {
             <td style="text-align:right">${totalFuelL.toFixed(2)}L</td>
             <td style="text-align:right">${fmt(totalFuelC)}원</td>
             <td></td>
+          </tr>
+          <tr class="total">
+            <td colspan="5" style="text-align:center">업무 거리</td>
+            <td style="text-align:right">${fmt(sumDist(withDist, "calcDist", "업무"))}km</td>
+            <td colspan="4"></td>
+          </tr>
+          <tr class="total">
+            <td colspan="5" style="text-align:center">개인 거리</td>
+            <td style="text-align:right">${fmt(sumDist(withDist, "calcDist", "개인사용"))}km</td>
+            <td colspan="4"></td>
           </tr>
         </tbody>
       </table>
@@ -936,15 +1000,8 @@ export default function SalesContent() {
       if (!b.arrivalTime) return -1;
       return a.arrivalTime.localeCompare(b.arrivalTime);
     });
-    let lastMeter = prevMeter;
-    return sorted.map((d) => {
-      let dist = 0;
-      if (d.meterReading > 0 && lastMeter > 0 && d.meterReading > lastMeter) {
-        dist = d.meterReading - lastMeter;
-      }
-      if (d.meterReading > 0) lastMeter = d.meterReading;
-      return { ...d, distance: dist };
-    });
+    const distMap = calcDistances(sorted, prevMeter);
+    return sorted.map((d) => ({ ...d, distance: distMap[d.id] || 0 }));
   })();
 
   const dayMeters = recalcDayDriving
@@ -952,6 +1009,8 @@ export default function SalesContent() {
     .filter((m) => m > 0);
   const endMeter = dayMeters.length ? Math.max(...dayMeters) : 0;
   const totalKm = recalcDayDriving.reduce((s, d) => s + (d.distance || 0), 0);
+  const workKm = sumDist(recalcDayDriving, "distance", "업무");
+  const personalKm = sumDist(recalcDayDriving, "distance", "개인사용");
   const totalFuelC = recalcDayDriving.reduce(
     (s, d) => s + (d.fuelCost || 0),
     0,
@@ -1655,6 +1714,16 @@ export default function SalesContent() {
                       color: "#1557b0",
                     },
                     {
+                      label: "업무",
+                      value: workKm > 0 ? `${fmt(workKm)}km` : "-",
+                      color: "#1557b0",
+                    },
+                    {
+                      label: "개인",
+                      value: personalKm > 0 ? `${fmt(personalKm)}km` : "-",
+                      color: "#6d28d9",
+                    },
+                    {
                       label: "총누계",
                       value: endMeter > 0 ? `${fmt(endMeter)}km` : "-",
                       color: "#059669",
@@ -2233,95 +2302,24 @@ export default function SalesContent() {
               </button>
             </div>
             <form onSubmit={handleSubmitDriving} className="modal-form">
-              {/* 날짜 - 업무/주유는 단일, 휴가는 범위 */}
-              {drivingForm.type !== "휴가" ? (
-                <div className="field">
-                  <label>날짜 *</label>
-                  <input
-                    type="date"
-                    value={drivingForm.startDate || ""}
-                    min={THIS_WEEK_MONDAY}
-                    max={THIS_WEEK_SUNDAY}
-                    onChange={(e) =>
-                      setDrivingForm((f) => ({
-                        ...f,
-                        startDate: e.target.value,
-                        endDate: "",
-                      }))
-                    }
-                    required
-                  />
-                </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "10px",
-                    }}
-                  >
-                    <div className="field">
-                      <label>시작 날짜 *</label>
-                      <input
-                        type="date"
-                        value={drivingForm.startDate || ""}
-                        min={THIS_WEEK_MONDAY}
-                        max={THIS_WEEK_SUNDAY}
-                        onChange={(e) =>
-                          setDrivingForm((f) => ({
-                            ...f,
-                            startDate: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="field">
-                      <label>
-                        종료 날짜{" "}
-                        <span
-                          style={{
-                            color: "#aaa",
-                            fontWeight: 400,
-                            fontSize: "11px",
-                          }}
-                        >
-                          (당일이면 생략)
-                        </span>
-                      </label>
-                      <input
-                        type="date"
-                        value={drivingForm.endDate || ""}
-                        min={drivingForm.startDate || ""}
-                        onChange={(e) =>
-                          setDrivingForm((f) => ({
-                            ...f,
-                            endDate: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                  {drivingForm.startDate &&
-                    drivingForm.endDate &&
-                    drivingForm.endDate > drivingForm.startDate && (
-                      <div
-                        style={{
-                          background: "#fce7f3",
-                          borderRadius: "8px",
-                          padding: "8px 12px",
-                          fontSize: "12px",
-                          color: "#9d174d",
-                          fontWeight: 600,
-                        }}
-                      >
-                        🏖 {drivingForm.startDate} ~ {drivingForm.endDate}{" "}
-                        기간으로 저장됩니다.
-                      </div>
-                    )}
-                </>
-              )}
+              {/* 날짜 - 모든 구분 하루 단위 */}
+              <div className="field">
+                <label>날짜 *</label>
+                <input
+                  type="date"
+                  value={drivingForm.startDate || ""}
+                  min={THIS_WEEK_MONDAY}
+                  max={THIS_WEEK_SUNDAY}
+                  onChange={(e) =>
+                    setDrivingForm((f) => ({
+                      ...f,
+                      startDate: e.target.value,
+                      endDate: "",
+                    }))
+                  }
+                  required
+                />
+              </div>
 
               {/* 업무 */}
               {drivingForm.type === "업무" && (
@@ -2441,7 +2439,8 @@ export default function SalesContent() {
                           fontWeight: 400,
                         }}
                       >
-                        현재 기준: {fmt(lastMeter)}km 이상
+                        현재 기준: {fmt(lowerMeter)}km 이상
+                        {nextMeter > 0 && ` ~ ${fmt(nextMeter)}km 이하`}
                       </span>
                     </label>
                     <div style={{ position: "relative" }}>
@@ -2481,7 +2480,19 @@ export default function SalesContent() {
                           fontWeight: 600,
                         }}
                       >
-                        ⚠ 이전 미터기({fmt(lastMeter)}km)보다 낮습니다!
+                        ⚠ 이전 미터기({fmt(lowerMeter)}km)보다 낮습니다!
+                      </p>
+                    )}
+                    {meterTooHigh && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ 이후 날짜 미터기({fmt(nextMeter)}km)보다 큽니다!
                       </p>
                     )}
                   </div>
@@ -2543,7 +2554,7 @@ export default function SalesContent() {
                                 notes: newNotes,
                               }));
                             }}
-                            style={{ width: "110px" }}
+                            style={{ width: "130px", flexShrink: 0 }}
                           />
                           <input
                             type="text"
@@ -2691,53 +2702,9 @@ export default function SalesContent() {
                 </>
               )}
 
-              {/* 휴가 */}
-              {drivingForm.type === "휴가" && (
+              {/* 개인주유 */}
+              {drivingForm.type === "개인주유" && (
                 <>
-                  <div className="field">
-                    <label>미터기 (km) *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        placeholder="오늘 계량기"
-                        value={drivingForm.meterReading}
-                        onChange={(e) =>
-                          setDrivingForm((f) => ({
-                            ...f,
-                            meterReading: e.target.value,
-                          }))
-                        }
-                        style={{ width: "100%", paddingRight: "40px" }}
-                        required
-                      />
-                      <span style={unitSuffix}>km</span>
-                    </div>
-                    {distPreview !== null && distPreview >= 0 && (
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#9d174d",
-                          marginTop: "4px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        개인 운행거리: {fmt(distPreview)}km
-                      </p>
-                    )}
-                    {meterTooLow && (
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#dc2626",
-                          marginTop: "4px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        ⚠ 이전 미터기({fmt(lastMeter)}km)보다 낮습니다!
-                      </p>
-                    )}
-                  </div>
-
                   <div
                     style={{
                       background: "#fce7f3",
@@ -2754,7 +2721,7 @@ export default function SalesContent() {
                         marginBottom: "10px",
                       }}
                     >
-                      ⛽ 개인 주유 (선택)
+                      ⛽ 개인 주유
                     </p>
                     <div
                       style={{
@@ -2829,6 +2796,67 @@ export default function SalesContent() {
                 </>
               )}
 
+              {/* 개인 사용 */}
+              {drivingForm.type === "개인사용" && (
+                <>
+                  <div className="field">
+                    <label>미터기 (km) *</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="number"
+                        placeholder="오늘 계량기"
+                        value={drivingForm.meterReading}
+                        onChange={(e) =>
+                          setDrivingForm((f) => ({
+                            ...f,
+                            meterReading: e.target.value,
+                          }))
+                        }
+                        style={{ width: "100%", paddingRight: "40px" }}
+                        required
+                      />
+                      <span style={unitSuffix}>km</span>
+                    </div>
+                    {distPreview !== null && distPreview >= 0 && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#9d174d",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        개인 운행거리: {fmt(distPreview)}km
+                      </p>
+                    )}
+                    {meterTooLow && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ 이전 미터기({fmt(lowerMeter)}km)보다 낮습니다!
+                      </p>
+                    )}
+                    {meterTooHigh && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ 이후 날짜 미터기({fmt(nextMeter)}km)보다 큽니다!
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+
               {/* 구분 - 맨 아래 */}
               <div className="field">
                 <label>구분 *</label>
@@ -2849,6 +2877,7 @@ export default function SalesContent() {
                             fuelAmount: "",
                             fuelCost: "",
                             fuelUnitPrice: "",
+                            meterReading: "",
                           }))
                         }
                         style={{
@@ -2863,7 +2892,13 @@ export default function SalesContent() {
                           color: isActive ? c.color : "#888",
                         }}
                       >
-                        {t === "주유" ? "⛽ " : t === "휴가" ? "🏖 " : "💼 "}
+                        {t === "주유"
+                          ? "⛽ "
+                          : t === "개인주유"
+                            ? "⛽ "
+                            : t === "개인사용"
+                              ? "🚗 "
+                              : "💼 "}
                         {t}
                       </button>
                     );

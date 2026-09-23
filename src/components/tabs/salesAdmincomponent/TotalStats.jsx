@@ -32,6 +32,32 @@ export default function TotalStats({
   const totalFuelL = summary.reduce((s, u) => s + (u.totalFuelL || 0), 0);
   const totalFuelC = summary.reduce((s, u) => s + (u.totalFuelC || 0), 0);
   const avgKmL = totalFuelL > 0 ? (totalDist / totalFuelL).toFixed(1) : "-";
+  const sumOf = (key) => summary.reduce((s, u) => s + (u[key] || 0), 0);
+  const workDist = sumOf("workDist");
+  const personalDist = sumOf("personalDist");
+  const companyFuelL = sumOf("companyFuelL");
+  const personalFuelL = sumOf("personalFuelL");
+  const companyFuelC = sumOf("companyFuelC");
+  const personalFuelC = sumOf("personalFuelC");
+
+  // 총합 아래 작은 글씨 (법인·업무 / 개인)
+  const Split = ({ a, b, aLabel, bLabel, align = "right" }) => (
+    <div
+      style={{
+        fontSize: "10.5px",
+        fontWeight: 400,
+        color: "#999",
+        marginTop: "2px",
+        textAlign: align,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {aLabel} {a} /{" "}
+      <span style={{ color: "#6d28d9" }}>
+        {bLabel} {b}
+      </span>
+    </div>
+  );
 
   // 엑셀 다운로드
   const downloadExcel = () => {
@@ -46,15 +72,18 @@ export default function TotalStats({
         "총 주유 금액",
       ],
     ];
+    // 엑셀은 개인 제외 (업무 거리 / 법인 주유만)
     const rows = summary.map((u) => {
-      const avg =
-        u.totalFuelL > 0 ? (u.totalDist / u.totalFuelL).toFixed(1) : "";
+      const dist = u.workDist || 0;
+      const fuelL = u.companyFuelL || 0;
+      const fuelC = u.companyFuelC || 0;
+      const avg = fuelL > 0 ? (dist / fuelL).toFixed(1) : "";
       return [
         u.name,
-        u.totalDist > 0 ? u.totalDist : "",
-        u.totalFuelL > 0 ? u.totalFuelL.toFixed(2) : "",
+        dist > 0 ? dist : "",
+        fuelL > 0 ? fuelL.toFixed(2) : "",
         avg,
-        u.totalFuelC > 0 ? u.totalFuelC : "",
+        fuelC > 0 ? fuelC : "",
       ];
     });
     const ws = XLSX.utils.aoa_to_sheet([...title, ...header, ...rows]);
@@ -99,18 +128,19 @@ export default function TotalStats({
 
   // 인쇄
   const printReport = () => {
+    // 인쇄도 개인 제외 (업무 거리 / 법인 주유만)
     const rows = summary
       .map((u) => {
-        const avg =
-          u.totalFuelL > 0
-            ? (u.totalDist / u.totalFuelL).toFixed(1) + "km"
-            : "";
+        const dist = u.workDist || 0;
+        const fuelL = u.companyFuelL || 0;
+        const fuelC = u.companyFuelC || 0;
+        const avg = fuelL > 0 ? (dist / fuelL).toFixed(1) + "km" : "";
         return `<tr>
         <td>${u.name}</td>
-        <td>${u.totalDist > 0 ? fmt(u.totalDist) + "km" : ""}</td>
-        <td>${u.totalFuelL > 0 ? u.totalFuelL.toFixed(0) + " ℓ" : ""}</td>
+        <td>${dist > 0 ? fmt(dist) + "km" : ""}</td>
+        <td>${fuelL > 0 ? fuelL.toFixed(0) + " ℓ" : ""}</td>
         <td>${avg}</td>
-        <td>${u.totalFuelC > 0 ? fmt(u.totalFuelC) : ""}</td>
+        <td>${fuelC > 0 ? fmt(fuelC) : ""}</td>
       </tr>`;
       })
       .join("");
@@ -232,6 +262,7 @@ export default function TotalStats({
           {
             label: "총 운행거리",
             value: `${fmt(totalDist)}km`,
+            sub: [`업무 ${fmt(workDist)}km`, `개인 ${fmt(personalDist)}km`],
             color: "#1557b0",
             bg: "#eff6ff",
             icon: "🚗",
@@ -239,6 +270,10 @@ export default function TotalStats({
           {
             label: "총 주유량",
             value: `${totalFuelL.toFixed(1)}L`,
+            sub: [
+              `법인 ${companyFuelL.toFixed(1)}L`,
+              `개인 ${personalFuelL.toFixed(1)}L`,
+            ],
             color: "#92400e",
             bg: "#fffbeb",
             icon: "⛽",
@@ -253,6 +288,10 @@ export default function TotalStats({
           {
             label: "총 주유금액",
             value: fmtWon(totalFuelC),
+            sub: [
+              `법인 ${fmtWon(companyFuelC)}`,
+              `개인 ${fmtWon(personalFuelC)}`,
+            ],
             color: "#7c3aed",
             bg: "#faf5ff",
             icon: "💳",
@@ -281,6 +320,21 @@ export default function TotalStats({
             <div style={{ fontSize: "22px", fontWeight: 800, color: s.color }}>
               {s.value}
             </div>
+            {s.sub && (
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "#888",
+                  marginTop: "4px",
+                  display: "flex",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span>{s.sub[0]}</span>
+                <span style={{ color: "#6d28d9" }}>{s.sub[1]}</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -536,6 +590,14 @@ export default function TotalStats({
                         }}
                       >
                         {u.totalDist > 0 ? `${fmt(u.totalDist)}km` : "-"}
+                        {u.totalDist > 0 && (
+                          <Split
+                            aLabel="업무"
+                            a={`${fmt(u.workDist)}km`}
+                            bLabel="개인"
+                            b={`${fmt(u.personalDist)}km`}
+                          />
+                        )}
                       </td>
                       <td
                         style={{
@@ -545,6 +607,14 @@ export default function TotalStats({
                         }}
                       >
                         {u.totalFuelL > 0 ? `${u.totalFuelL.toFixed(2)}L` : "-"}
+                        {u.totalFuelL > 0 && (
+                          <Split
+                            aLabel="법인"
+                            a={`${(u.companyFuelL || 0).toFixed(2)}L`}
+                            bLabel="개인"
+                            b={`${(u.personalFuelL || 0).toFixed(2)}L`}
+                          />
+                        )}
                       </td>
                       <td
                         style={{
@@ -563,6 +633,14 @@ export default function TotalStats({
                         }}
                       >
                         {u.totalFuelC > 0 ? fmtWon(u.totalFuelC) : "-"}
+                        {u.totalFuelC > 0 && (
+                          <Split
+                            aLabel="법인"
+                            a={fmtWon(u.companyFuelC)}
+                            bLabel="개인"
+                            b={fmtWon(u.personalFuelC)}
+                          />
+                        )}
                       </td>
                     </tr>
                   );
@@ -594,6 +672,12 @@ export default function TotalStats({
                   }}
                 >
                   {fmt(totalDist)}km
+                  <Split
+                    aLabel="업무"
+                    a={`${fmt(workDist)}km`}
+                    bLabel="개인"
+                    b={`${fmt(personalDist)}km`}
+                  />
                 </td>
                 <td
                   style={{
@@ -604,6 +688,12 @@ export default function TotalStats({
                   }}
                 >
                   {totalFuelL.toFixed(2)}L
+                  <Split
+                    aLabel="법인"
+                    a={`${companyFuelL.toFixed(2)}L`}
+                    bLabel="개인"
+                    b={`${personalFuelL.toFixed(2)}L`}
+                  />
                 </td>
                 <td
                   style={{
@@ -624,6 +714,12 @@ export default function TotalStats({
                   }}
                 >
                   {fmtWon(totalFuelC)}
+                  <Split
+                    aLabel="법인"
+                    a={fmtWon(companyFuelC)}
+                    bLabel="개인"
+                    b={fmtWon(personalFuelC)}
+                  />
                 </td>
               </tr>
             </tfoot>
