@@ -1178,14 +1178,14 @@ export default function GuideAdminContent() {
               <table className="gf-table">
                 <colgroup>
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "13%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "10%" }} />
                   <col style={{ width: "12%" }} />
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "14%" }} />
                 </colgroup>
                 <thead>
                   <tr>
@@ -1193,17 +1193,17 @@ export default function GuideAdminContent() {
                     <th>투어이름</th>
                     <th>대표자</th>
                     <th>결제</th>
-                    <th>비고</th>
                     <th className="th-right">금액(1인)</th>
                     <th className="th-center">인원</th>
                     <th className="th-right">합계</th>
+                    <th>비고</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredIncomes.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="empty">
+                      <td colSpan={9} className="empty">
                         수입 내역이 없습니다.
                       </td>
                     </tr>
@@ -1279,19 +1279,21 @@ export default function GuideAdminContent() {
                         <td style={{ fontSize: "12px", color: "#888" }}>
                           {i.memo || "-"}
                         </td>
-                        <td style={{ display: "flex", gap: "4px" }}>
-                          <button
-                            onClick={() => openIncomeEdit(i)}
-                            style={editBtnStyle}
-                          >
-                            수정
-                          </button>
-                          <button
-                            onClick={() => handleDeleteIncome(i.id)}
-                            className="delete-btn"
-                          >
-                            삭제
-                          </button>
+                        <td>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <button
+                              onClick={() => openIncomeEdit(i)}
+                              style={editBtnStyle}
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteIncome(i.id)}
+                              className="delete-btn"
+                            >
+                              삭제
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1304,15 +1306,26 @@ export default function GuideAdminContent() {
           {activeTab === "expense" && (
             <div className="gf-table-wrap">
               <table className="gf-table">
+                <colgroup>
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "14%" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>날짜</th>
                     <th>투어</th>
                     <th>항목</th>
                     <th>결제</th>
-                    <th>금액(1인)</th>
-                    <th>인원</th>
-                    <th>합계</th>
+                    <th className="th-right">금액(1인)</th>
+                    <th className="th-center">인원</th>
+                    <th className="th-right">합계</th>
                     <th>비고</th>
                     <th></th>
                   </tr>
@@ -1359,19 +1372,21 @@ export default function GuideAdminContent() {
                         <td style={{ fontSize: "12px", color: "#888" }}>
                           {e.memo || "-"}
                         </td>
-                        <td style={{ display: "flex", gap: "4px" }}>
-                          <button
-                            onClick={() => openExpenseEdit(e)}
-                            style={editBtnStyle}
-                          >
-                            수정
-                          </button>
-                          <button
-                            onClick={() => handleDeleteExpense(e.id)}
-                            className="delete-btn"
-                          >
-                            삭제
-                          </button>
+                        <td>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <button
+                              onClick={() => openExpenseEdit(e)}
+                              style={editBtnStyle}
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteExpense(e.id)}
+                              className="delete-btn"
+                            >
+                              삭제
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

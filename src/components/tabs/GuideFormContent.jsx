@@ -1001,13 +1001,14 @@ export default function GuideFormContent() {
             <div className="gf-table-wrap">
               <table className="gf-table">
                 <colgroup>
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "12%" }} />
                   <col style={{ width: "9%" }} />
-                  <col style={{ width: "13%" }} />
-                  <col style={{ width: "10%" }} />
-                  <col style={{ width: "13%" }} />
-                  <col style={{ width: "25%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "16%" }} />
                 </colgroup>
                 <thead>
                   <tr>
