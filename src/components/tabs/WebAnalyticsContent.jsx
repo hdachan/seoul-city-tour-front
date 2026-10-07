@@ -12,6 +12,7 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import { toDateStr } from "../../utils/dateUtils";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
@@ -65,7 +66,7 @@ export default function WebAnalyticsContent() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = toDateStr(new Date());
     const cacheKey = `analytics_${days}_${today}`;
 
     // 오늘 캐시 있으면 바로 사용

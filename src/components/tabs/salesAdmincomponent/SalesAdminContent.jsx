@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import TotalStats from "./TotalStats";
 import axios from "axios";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
+import { toDateStr } from "../../../utils/dateUtils";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
@@ -139,7 +140,7 @@ export default function SalesAdminContent() {
   const [dayDriving, setDayDriving] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(
-    now.toISOString().split("T")[0],
+    toDateStr(now),
   );
   const [prevMeter, setPrevMeter] = useState(0);
   const prevMeterRef = useRef(0);
@@ -766,7 +767,7 @@ export default function SalesAdminContent() {
                   <div
                     onClick={() => {
                       setSelectedUser(u);
-                      setSelectedDate(now.toISOString().split("T")[0]);
+                      setSelectedDate(toDateStr(now));
                       setActiveTab("driving");
                     }}
                     style={{ cursor: "pointer" }}
@@ -1082,7 +1083,7 @@ export default function SalesAdminContent() {
                   {dateOptions.map((d) => {
                     const day = parseInt(d.split("-")[2]);
                     const hasE = enteredDates.has(d);
-                    const isT = d === now.toISOString().split("T")[0];
+                    const isT = d === toDateStr(now);
                     return (
                       <option key={d} value={d}>
                         {month}월 {day}일{isT ? " (오늘)" : ""}

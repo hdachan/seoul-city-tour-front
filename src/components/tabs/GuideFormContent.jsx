@@ -17,19 +17,20 @@ import {
   deleteGuideDailyFee,
 } from "../../api/auth";
 import "./GuideFormContent.css";
+import { toDateStr } from "../../utils/dateUtils";
 
 const TAX_RATE = 0.033;
-const today = () => new Date().toISOString().split("T")[0];
+const today = () => toDateStr(new Date());
 
 // 가이드 정산 설명서 링크 (여기만 바꾸면 됨)
 const GUIDE_MANUAL_URL =
   "https://aquamarine-armchair-686.notion.site/3e2d8a6d432180bd967bd8cc2796059e#3e2d8a6d432180af8142d7294867fe88";
 const getWeekRange = () => {
   const now = new Date();
-  const max = now.toISOString().split("T")[0];
+  const max = toDateStr(now);
   const min = new Date(now);
   min.setDate(now.getDate() - 6);
-  return { min: min.toISOString().split("T")[0], max };
+  return { min: toDateStr(min), max };
 };
 const isInWeekRange = (date) => {
   const { min, max } = getWeekRange();
@@ -397,7 +398,7 @@ export default function GuideFormContent() {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + dir);
     if (d.getFullYear() === new Date(selectedDate).getFullYear()) {
-      setSelectedDate(d.toISOString().split("T")[0]);
+      setSelectedDate(toDateStr(d));
     }
   };
 

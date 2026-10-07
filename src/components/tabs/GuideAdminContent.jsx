@@ -25,16 +25,17 @@ import {
   deleteAdminDailyFee,
   fetchAdminSummary,
 } from "../../api/auth";
+import { toDateStr } from "../../utils/dateUtils";
 
 const TAX_RATE = 0.033;
-const today = () => new Date().toISOString().split("T")[0];
+const today = () => toDateStr(new Date());
 
 const getWeekRange = () => {
   const now = new Date();
-  const max = now.toISOString().split("T")[0];
+  const max = toDateStr(now);
   const min = new Date(now);
   min.setDate(now.getDate() - 6);
-  return { min: min.toISOString().split("T")[0], max };
+  return { min: toDateStr(min), max };
 };
 
 const SelectBtn = ({ options, value, onChange, badgeFn }) => (
@@ -88,7 +89,7 @@ export default function GuideAdminContent() {
   const [summary, setSummary] = useState([]); // 카드뷰용 요약
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
+    toDateStr(new Date()),
   );
   const [isLocked, setIsLocked] = useState(false);
   const [tourNames, setTourNames] = useState([]);
@@ -509,7 +510,7 @@ export default function GuideAdminContent() {
             onClick={() => {
               const d = new Date(selectedDate);
               d.setDate(d.getDate() - 1);
-              const nd = d.toISOString().split("T")[0];
+              const nd = toDateStr(d);
               setSelectedDate(nd);
               setYear(d.getFullYear());
               setMonth(d.getMonth() + 1);
@@ -548,7 +549,7 @@ export default function GuideAdminContent() {
             onClick={() => {
               const d = new Date(selectedDate);
               d.setDate(d.getDate() + 1);
-              const nd = d.toISOString().split("T")[0];
+              const nd = toDateStr(d);
               setSelectedDate(nd);
               setYear(d.getFullYear());
               setMonth(d.getMonth() + 1);

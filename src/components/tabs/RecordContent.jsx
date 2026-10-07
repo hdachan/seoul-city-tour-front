@@ -19,6 +19,7 @@ import {
   removeCategory,
 } from "../../api/auth";
 import axios from "axios";
+import { toDateStr } from "../../utils/dateUtils";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
@@ -56,11 +57,11 @@ export default function RecordContent() {
 
   // 날짜 min/max (선택된 달 기준)
   const minDate = `${selYear}-${String(selMonth).padStart(2, "0")}-01`;
-  const maxDate = new Date(selYear, selMonth, 0).toISOString().split("T")[0];
+  const maxDate = toDateStr(new Date(selYear, selMonth, 0));
   const defaultDate = () => {
     const isCurrentMonth =
       selYear === now.getFullYear() && selMonth === now.getMonth() + 1;
-    return isCurrentMonth ? now.toISOString().split("T")[0] : minDate;
+    return isCurrentMonth ? toDateStr(now) : minDate;
   };
 
   // 기록 상태

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { toDateStr } from "../../../utils/dateUtils";
 import "./SalesContent.css"; // 수정
 import axios from "axios";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
@@ -82,7 +83,7 @@ const fmt = (n) => Number(n || 0).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
 const pad2 = (n) => String(n).padStart(2, "0");
 const TYPES = ["업무", "주유", "개인주유", "개인사용"];
-const TODAY = new Date().toISOString().split("T")[0];
+const TODAY = toDateStr(new Date());
 const getThisWeekMonday = () => {
   const d = new Date();
   const day = d.getDay();

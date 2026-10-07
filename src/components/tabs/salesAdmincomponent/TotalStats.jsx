@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { toDateStr } from "../../../utils/dateUtils";
 
 export default function TotalStats({
   summary,
@@ -19,7 +20,7 @@ export default function TotalStats({
     year === now.getFullYear() && month === now.getMonth() + 1;
   const daysInMonth = new Date(year, month, 0).getDate();
   const todayDay = isCurrentMonth ? now.getDate() : daysInMonth;
-  const today = now.toISOString().split("T")[0];
+  const today = toDateStr(now);
 
   const allDays = Array.from(
     { length: todayDay },
