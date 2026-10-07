@@ -20,6 +20,10 @@ import "./GuideFormContent.css";
 
 const TAX_RATE = 0.033;
 const today = () => new Date().toISOString().split("T")[0];
+
+// 가이드 정산 설명서 링크 (여기만 바꾸면 됨)
+const GUIDE_MANUAL_URL =
+  "https://aquamarine-armchair-686.notion.site/3e2d8a6d432180bd967bd8cc2796059e#3e2d8a6d432180af8142d7294867fe88";
 const getWeekRange = () => {
   const now = new Date();
   const max = now.toISOString().split("T")[0];
@@ -461,7 +465,46 @@ export default function GuideFormContent() {
     <div className="gf-wrapper">
       <div className="gf-header">
         <div>
-          <h2 className="gf-title">📝 가이드 정산</h2>
+          <h2
+            className="gf-title"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            📝 가이드 정산
+            <a
+              href={GUIDE_MANUAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="사용 설명서 보기"
+              aria-label="사용 설명서 보기"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: "#4f46e5",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 800,
+                textDecoration: "none",
+                lineHeight: 1,
+                cursor: "pointer",
+                boxShadow: "0 2px 6px rgba(79,70,229,0.35)",
+                transition: "background 0.15s, transform 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#4338ca";
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#4f46e5";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              !
+            </a>
+          </h2>
           <p className="gf-subtitle">
             {username} · {year}년 {month}월
           </p>

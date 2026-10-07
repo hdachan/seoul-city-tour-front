@@ -40,9 +40,12 @@ function LoginPage() {
       // role은 tokenUtils.js에서 토큰 직접 파싱하므로 저장 불필요
       navigate('/dashboard');
     } catch (err) {
-      if (err.response?.status === 401) setError('아이디 또는 비밀번호가 틀렸습니다.');
-      else if (err.response?.status === 429) setError(err.response.data?.error || '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.');
-      else setError('서버에 연결할 수 없습니다.');
+      const status = err.response?.status;
+      if (status === 401) setError('아이디 또는 비밀번호가 틀렸습니다.');
+      else if (status === 429) setError(err.response.data?.error || '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      else if (status === 400) setError(err.response.data?.error || '입력값을 확인해주세요.');
+      else if (!err.response) setError('서버에 연결할 수 없습니다.');
+      else setError(err.response.data?.error || `로그인 중 오류가 발생했습니다. (${status})`);
     } finally {
       setLoading(false);
     }

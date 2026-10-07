@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { formatDrivingTime } from "./DrivingTimeFields";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
@@ -410,7 +411,7 @@ export default function SalesDrivingStats({ username, name, year, month }) {
                               borderRadius: "6px",
                             }}
                           >
-                            ⏰ {r.arrivalTime}
+                            ⏰ {formatDrivingTime(r)}
                           </span>
                         )}
                         {r.destination && (

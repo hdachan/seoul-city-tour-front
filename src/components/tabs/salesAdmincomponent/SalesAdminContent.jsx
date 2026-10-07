@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import TotalStats from "./TotalStats";
 import axios from "axios";
+import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
@@ -389,6 +390,7 @@ export default function SalesAdminContent() {
       endDate: "",
       type: "업무",
       destination: "",
+      departureTime: "",
       arrivalTime: koreaTime,
       meterReading: "",
       purpose: "",
@@ -408,6 +410,7 @@ export default function SalesAdminContent() {
       endDate: "",
       type: row.type,
       destination: row.destination || "",
+      departureTime: row.departureTime || "",
       arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
       purpose: row.purpose || "",
@@ -1136,7 +1139,7 @@ export default function SalesAdminContent() {
                                       letterSpacing: "0.5px",
                                     }}
                                   >
-                                    ⏰ {d.arrivalTime}
+                                    ⏰ {formatDrivingTime(d)}
                                   </span>
                                 ) : (
                                   <span style={{ color: "#ccc" }}>-</span>
@@ -1692,33 +1695,10 @@ export default function SalesAdminContent() {
                   {/* 업무 */}
                   {drivingForm.type === "업무" && (
                     <>
-                      <div className="field">
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            color: "#1557b0",
-                          }}
-                        >
-                          🕐 도착 시간 *
-                        </label>
-                        <input
-                          type="time"
-                          value={drivingForm.arrivalTime || ""}
-                          onChange={(e) =>
-                            setDrivingForm((f) => ({
-                              ...f,
-                              arrivalTime: e.target.value,
-                            }))
-                          }
-                          required
-                          style={{
-                            fontSize: "16px",
-                            padding: "12px",
-                            letterSpacing: "1px",
-                          }}
-                        />
-                      </div>
+                      <DrivingTimeFields
+                        form={drivingForm}
+                        setForm={setDrivingForm}
+                      />
                       <div
                         className="field"
                         style={{ position: "relative" }}
@@ -2249,6 +2229,7 @@ export default function SalesAdminContent() {
                                 ...f,
                                 type: t,
                                 destination: "",
+                                departureTime: "",
                                 arrivalTime: "",
                                 fuelAmount: "",
                                 fuelCost: "",

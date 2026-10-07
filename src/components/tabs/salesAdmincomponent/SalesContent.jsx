@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import "./SalesContent.css"; // 수정
 import axios from "axios";
+import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import * as XLSX from "xlsx";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -179,6 +180,7 @@ export default function SalesContent() {
     date: TODAY,
     type: "업무",
     destination: "",
+    departureTime: "",
     arrivalTime: getKoreaTime(),
     meterReading: "",
     purpose: "",
@@ -411,6 +413,7 @@ export default function SalesContent() {
       endDate: "",
       type: "업무",
       destination: "",
+      departureTime: "",
       arrivalTime: getKoreaTime(),
       meterReading: "",
       fuelAmount: "",
@@ -437,6 +440,7 @@ export default function SalesContent() {
       endDate: "",
       type: row.type,
       destination: row.destination || "",
+      departureTime: row.departureTime || "",
       arrivalTime: row.arrivalTime || "",
       meterReading: row.meterReading || "",
       purpose: row.purpose || "",
@@ -600,7 +604,7 @@ export default function SalesContent() {
     const dataRows = withDist.map((d) => [
       d.date,
       d.type,
-      d.arrivalTime || "",
+      formatDrivingTime(d),
       d.destination || "",
       d.meterReading || 0,
       d.calcDist || 0,
@@ -681,7 +685,7 @@ export default function SalesContent() {
       <tr>
         <td>${d.date}</td>
         <td style="color:${typeColor[d.type] || "#333"};font-weight:bold">${d.type}</td>
-        <td>${d.arrivalTime || ""}</td>
+        <td>${formatDrivingTime(d)}</td>
         <td>${d.destination || ""}</td>
         <td style="text-align:right">${d.meterReading ? fmt(d.meterReading) : ""}</td>
         <td style="text-align:right;font-weight:bold;color:#1557b0">${d.calcDist > 0 ? fmt(d.calcDist) : ""}</td>
@@ -1307,7 +1311,7 @@ export default function SalesContent() {
                                     letterSpacing: "0.5px",
                                   }}
                                 >
-                                  ⏰ {d.arrivalTime}
+                                  ⏰ {formatDrivingTime(d)}
                                 </span>
                               ) : (
                                 <span style={{ color: "#ccc" }}>-</span>
@@ -1499,7 +1503,7 @@ export default function SalesContent() {
                                 letterSpacing: "0.5px",
                               }}
                             >
-                              ⏰ {d.arrivalTime}
+                              ⏰ {formatDrivingTime(d)}
                             </span>
                           )}
                           {d.destination && (
@@ -2324,33 +2328,10 @@ export default function SalesContent() {
               {/* 업무 */}
               {drivingForm.type === "업무" && (
                 <>
-                  <div className="field">
-                    <label
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        color: "#1557b0",
-                      }}
-                    >
-                      🕐 도착 시간 *
-                    </label>
-                    <input
-                      type="time"
-                      value={drivingForm.arrivalTime}
-                      onChange={(e) =>
-                        setDrivingForm((f) => ({
-                          ...f,
-                          arrivalTime: e.target.value,
-                        }))
-                      }
-                      required
-                      style={{
-                        fontSize: "16px",
-                        padding: "12px",
-                        letterSpacing: "1px",
-                      }}
-                    />
-                  </div>
+                  <DrivingTimeFields
+                    form={drivingForm}
+                    setForm={setDrivingForm}
+                  />
                   <div
                     className="field"
                     style={{ position: "relative" }}
@@ -2873,6 +2854,7 @@ export default function SalesContent() {
                             ...f,
                             type: t,
                             destination: "",
+                            departureTime: "",
                             arrivalTime: "",
                             fuelAmount: "",
                             fuelCost: "",
