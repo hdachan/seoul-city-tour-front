@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import "./SalesContent.css"; // 수정
 import axios from "axios";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
+import SalesMonthlyStats from "./SalesMonthlyStats";
 import * as XLSX from "xlsx";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -1138,7 +1139,23 @@ export default function SalesContent() {
         >
           💳 법인카드
         </button>
+        <button
+          className={`gf-tab ${mainTab === "stats" ? "active" : ""}`}
+          onClick={() => setMainTab("stats")}
+        >
+          📊 월간 통계
+        </button>
       </div>
+
+      {/* ──── 월간 통계 ──── */}
+      {mainTab === "stats" && (
+        <SalesMonthlyStats
+          year={year}
+          month={month}
+          driving={monthDriving}
+          getPrevMeter={api.getPrevMeter}
+        />
+      )}
 
       {/* ──── 운행일지 ──── */}
       {mainTab === "driving" && (
