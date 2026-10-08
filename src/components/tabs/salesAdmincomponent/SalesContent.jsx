@@ -214,7 +214,6 @@ export default function SalesContent() {
     return d;
   });
 
-  const isToday = selectedDate === TODAY;
 
   // 월요일 기준 주 계산
   // 날짜 문자열을 로컬 시간으로 파싱 (UTC 문제 방지)
@@ -266,7 +265,6 @@ export default function SalesContent() {
   // DB weekLocks 기준으로만 체크 (스케줄러가 이번주=false, 지난주=true 관리)
   const isWeekLocked = weekLocks[selectedWeekNum] === true;
   const isAnyLocked = isLocked || isWeekLocked;
-  const isPast = selectedDate < TODAY;
 
   // 이번 주 여부 (UI 표시용)
   const todayWeekNum = getWeekNumForDate(TODAY);
@@ -274,6 +272,8 @@ export default function SalesContent() {
     selectedWeekNum === todayWeekNum &&
     year === new Date().getFullYear() &&
     month === new Date().getMonth() + 1;
+  // 이번 주 + 잠기지 않은 날짜만 입력/수정 가능 (지난 날짜 포함)
+  const canEditDay = !isAnyLocked && isThisWeek;
 
   const receiptBase = Number(receiptForm.amount || 0);
   const supplyPreview = receiptBase ? Math.round(receiptBase / 1.1) : 0;
@@ -359,6 +359,17 @@ export default function SalesContent() {
   useEffect(() => {
     loadMonth();
   }, [loadMonth]);
+  // 연/월을 바꾸면 선택 날짜도 그 달로 이동 (이번 달이면 오늘, 아니면 1일)
+  useEffect(() => {
+    const ym = `${year}-${pad2(month)}`;
+    setSelectedDate((prev) =>
+      prev.startsWith(ym)
+        ? prev
+        : TODAY.startsWith(ym)
+          ? TODAY
+          : `${ym}-01`,
+    );
+  }, [year, month]);
   useEffect(() => {
     loadDay();
   }, [loadDay]);
@@ -376,8 +387,8 @@ export default function SalesContent() {
   }, []);
 
   const handleSaveNote = async () => {
-    if (isPast) {
-      setError("이전 날짜의 비고는 수정할 수 없습니다.");
+    if (!canEditDay) {
+      setError("이번 주가 아니거나 잠긴 날짜의 비고는 수정할 수 없습니다.");
       return;
     }
     setNoteSaving(true);
@@ -1180,24 +1191,22 @@ export default function SalesContent() {
                 const day = parseInt(d.split("-")[2]);
                 const hasEntry = enteredDates.has(d);
                 const isT = d === TODAY;
-                // 이번 주 날짜인지 체크
+                // 이번 주 날짜인지 체크 (모든 날짜 선택·조회 가능, 입력/수정만 이번 주로 제한)
                 const wNum = getWeekNumForDate(d);
                 const isCurrentWeek =
                   wNum === todayWeekNum &&
                   year === now.getFullYear() &&
                   month === now.getMonth() + 1;
                 const wLocked = weekLocks[wNum] === true;
-                const disabled = wLocked || !isCurrentWeek;
+                const readOnly = wLocked || !isCurrentWeek;
                 return (
                   <option
                     key={d}
                     value={d}
-                    disabled={disabled}
-                    style={{ color: disabled ? "#ccc" : "inherit" }}
+                    style={{ color: readOnly ? "#999" : "inherit" }}
                   >
                     {month}월 {day}일{isT ? " (오늘)" : ""}
                     {hasEntry ? " ●" : ""}
-                    {disabled && !wLocked ? " (이번 주 아님)" : ""}
                     {wLocked ? " 🔒" : ""}
                   </option>
                 );
@@ -1226,11 +1235,11 @@ export default function SalesContent() {
                 ＋ 추가
               </button>
             )}
-            {!isThisWeek && isWeekLocked && !isLocked && (
+            {(!isThisWeek || isWeekLocked) && !isLocked && (
               <span
                 style={{ fontSize: "12px", color: "#bbb", padding: "0 4px" }}
               >
-                이번 주가 아닙니다 (조회만)
+                {isWeekLocked ? "🔒 잠긴 주" : "이번 주가 아닙니다"} (조회만)
               </span>
             )}
           </div>
@@ -1452,7 +1461,7 @@ export default function SalesContent() {
                                 {d.type}
                               </span>
                             </td>
-                            {!isLocked && isToday && (
+                            {!isAnyLocked && isThisWeek && (
                               <td style={{ ...tdS, position: "relative" }}>
                                 <DotMenu
                                   id={d.id}
@@ -1542,7 +1551,7 @@ export default function SalesContent() {
                             {d.type}
                           </span>
                         </div>
-                        {!isLocked && isToday && (
+                        {!isAnyLocked && isThisWeek && (
                           <DotMenu
                             id={d.id}
                             onEdit={() => openEdit(d)}
@@ -1814,7 +1823,7 @@ export default function SalesContent() {
                 >
                   📝 비고
                 </span>
-                {isPast ? (
+                {!canEditDay ? (
                   <span
                     style={{
                       fontSize: "13px",

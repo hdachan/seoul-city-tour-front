@@ -162,7 +162,7 @@ export default function GuideFormContent() {
 
   useEffect(() => {
     load(year, month);
-  }, [month]);
+  }, [year, month]);
 
   const checkLocked = () => {
     if (isLocked) {
