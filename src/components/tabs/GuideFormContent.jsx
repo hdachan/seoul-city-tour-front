@@ -18,6 +18,7 @@ import {
 } from "../../api/auth";
 import "./GuideFormContent.css";
 import { toDateStr } from "../../utils/dateUtils";
+import { useDateRollover } from "../../utils/useToday";
 
 const TAX_RATE = 0.033;
 const today = () => toDateStr(new Date());
@@ -77,6 +78,10 @@ export default function GuideFormContent() {
   const now = new Date();
   const username = sessionStorage.getItem("username");
   const [selectedDate, setSelectedDate] = useState(today());
+  // 자정이 지나면 화면 갱신 (수정 가능 7일 범위 재계산), 오늘을 보고 있었으면 새 오늘로 이동
+  useDateRollover((prev, next) =>
+    setSelectedDate((d) => (d === prev ? next : d)),
+  );
   const year = new Date(selectedDate).getFullYear();
   const month = new Date(selectedDate).getMonth() + 1;
 

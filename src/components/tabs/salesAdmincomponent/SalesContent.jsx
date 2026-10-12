@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { toDateStr } from "../../../utils/dateUtils";
+import useToday from "../../../utils/useToday";
 import "./SalesContent.css"; // 수정
 import axios from "axios";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
@@ -88,23 +89,21 @@ const fmt = (n) => Number(n || 0).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
 const pad2 = (n) => String(n).padStart(2, "0");
 const TYPES = ["업무", "주유", "개인주유", "개인사용"];
-const TODAY = toDateStr(new Date());
-const getThisWeekMonday = () => {
-  const d = new Date();
+// 기준일(YYYY-MM-DD)이 속한 주의 월요일 / 일요일
+const getWeekMonday = (dateStr) => {
+  const [y, m, dd] = dateStr.split("-").map(Number);
+  const d = new Date(y, m - 1, dd);
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d.toLocaleDateString("en-CA");
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return toDateStr(d);
 };
-const getThisWeekSunday = () => {
-  const d = new Date();
+const getWeekSunday = (dateStr) => {
+  const [y, m, dd] = dateStr.split("-").map(Number);
+  const d = new Date(y, m - 1, dd);
   const day = d.getDay();
-  const diff = day === 0 ? 0 : 7 - day;
-  d.setDate(d.getDate() + diff);
-  return d.toLocaleDateString("en-CA");
+  d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
+  return toDateStr(d);
 };
-const THIS_WEEK_MONDAY = getThisWeekMonday();
-const THIS_WEEK_SUNDAY = getThisWeekSunday();
 const getKoreaTime = () =>
   new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Seoul",
@@ -146,6 +145,10 @@ const TYPE_STYLE = {
 
 export default function SalesContent() {
   const now = new Date();
+  // 오늘 / 이번 주 (화면을 켜둔 채 자정이 지나면 자동 갱신)
+  const TODAY = useToday();
+  const THIS_WEEK_MONDAY = getWeekMonday(TODAY);
+  const THIS_WEEK_SUNDAY = getWeekSunday(TODAY);
   const username = sessionStorage.getItem("username");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -374,10 +377,30 @@ export default function SalesContent() {
           ? TODAY
           : `${ym}-01`,
     );
-  }, [year, month]);
+  }, [year, month]); // eslint-disable-line react-hooks/exhaustive-deps -- 연/월 변경 시에만 실행
   useEffect(() => {
     loadDay();
   }, [loadDay]);
+  // 자정이 지나 날짜가 바뀌면: 오늘을 보고 있었으면 새 오늘로 이동,
+  // 주 잠금은 스케줄러가 바꾸므로 월 데이터를 다시 불러옴
+  const prevTodayRef = useRef(TODAY);
+  useEffect(() => {
+    const prev = prevTodayRef.current;
+    if (prev === TODAY) return;
+    prevTodayRef.current = TODAY;
+    const [ty, tm] = TODAY.split("-").map(Number);
+    const wasViewingToday =
+      year === Number(prev.slice(0, 4)) && month === Number(prev.slice(5, 7));
+    setSelectedDate((d) => (d === prev ? TODAY : d));
+    if (wasViewingToday && (ty !== year || tm !== month)) {
+      // 월이 넘어간 경우 (예: 31일 → 1일) 새 달로 이동 → loadMonth 자동 실행
+      setYear(ty);
+      setMonth(tm);
+    } else {
+      loadMonth();
+      loadDay();
+    }
+  }, [TODAY]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))

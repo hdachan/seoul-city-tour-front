@@ -26,6 +26,7 @@ import {
   fetchAdminSummary,
 } from "../../api/auth";
 import { toDateStr } from "../../utils/dateUtils";
+import { useDateRollover } from "../../utils/useToday";
 
 const TAX_RATE = 0.033;
 const today = () => toDateStr(new Date());
@@ -91,6 +92,16 @@ export default function GuideAdminContent() {
   const [selectedDate, setSelectedDate] = useState(
     toDateStr(new Date()),
   );
+  // 자정이 지나면: 오늘을 보고 있었으면 새 오늘로, 이번 달 카드뷰였으면 새 달로 이동
+  useDateRollover((prev, next) => {
+    setSelectedDate((d) => (d === prev ? next : d));
+    const [py, pm] = prev.split("-").map(Number);
+    const [ny, nm] = next.split("-").map(Number);
+    if (year === py && month === pm && (ny !== py || nm !== pm)) {
+      setYear(ny);
+      setMonth(nm);
+    }
+  });
   const [isLocked, setIsLocked] = useState(false);
   const [tourNames, setTourNames] = useState([]);
   const [newTourName, setNewTourName] = useState("");

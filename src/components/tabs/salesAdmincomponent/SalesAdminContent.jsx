@@ -3,6 +3,7 @@ import TotalStats from "./TotalStats";
 import axios from "axios";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import { toDateStr } from "../../../utils/dateUtils";
+import { useDateRollover } from "../../../utils/useToday";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
@@ -142,6 +143,20 @@ export default function SalesAdminContent() {
   const [selectedDate, setSelectedDate] = useState(
     toDateStr(now),
   );
+  // 자정이 지나면: 오늘을 보고 있었으면 새 오늘로 이동,
+  // 주 잠금은 스케줄러가 바꾸므로 요약/상세 다시 불러옴 (월이 넘어가면 새 달로 이동)
+  useDateRollover((prev, next) => {
+    setSelectedDate((d) => (d === prev ? next : d));
+    const [py, pm] = prev.split("-").map(Number);
+    const [ny, nm] = next.split("-").map(Number);
+    if (year === py && month === pm && (ny !== py || nm !== pm)) {
+      setYear(ny); // → 요약/상세 자동 재조회
+      setMonth(nm);
+    } else {
+      reloadSummary();
+      if (selectedUser) loadDetail();
+    }
+  });
   const [prevMeter, setPrevMeter] = useState(0);
   const prevMeterRef = useRef(0);
   const [lastMeter, setLastMeter] = useState(0);
