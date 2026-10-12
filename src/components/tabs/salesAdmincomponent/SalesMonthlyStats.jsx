@@ -72,7 +72,6 @@ export default function SalesMonthlyStats({
       .filter((d) => types.includes(d.type))
       .reduce((s, d) => s + (Number(d.fuelAmount) || 0), 0);
   const monthFuelL = sumLiters(["주유", "개인주유"]);
-  const personalFuelL = sumLiters(["개인주유"]);
   const monthDist = workKm + personalKm;
 
   let kmPerL = null;
@@ -85,7 +84,6 @@ export default function SalesMonthlyStats({
     effBasis = "이번 달 주유 기록이 없어 전체 기간 평균으로 계산";
   }
   const needL = kmPerL ? personalKm / kmPerL : null;
-  const diffL = needL !== null ? personalFuelL - needL : null;
   const fmtL = (n) => (Math.round(n * 10) / 10).toLocaleString();
 
   const Card = ({ icon, label, value, unit, color, bg }) => (
@@ -213,36 +211,11 @@ export default function SalesMonthlyStats({
               평균연비를 계산할 주유 기록(주유량 L)이 없습니다.
             </div>
           ) : (
-            <>
-              <SettleRow
-                label="평균 연비"
-                value={`${fmtL(kmPerL)} km/L`}
-                sub={effBasis}
-              />
-              <SettleRow
-                label="넣어야 할 개인주유"
-                value={`${fmtL(needL)} L`}
-                sub={`개인사용 ${fmt(personalKm)}km ÷ ${fmtL(kmPerL)}km/L`}
-              />
-              <SettleRow
-                label="실제 개인주유"
-                value={`${fmtL(personalFuelL)} L`}
-              />
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  fontWeight: 700,
-                  background: diffL >= 0 ? "#d1fae5" : "#fee2e2",
-                  color: diffL >= 0 ? "#065f46" : "#b91c1c",
-                }}
-              >
-                {diffL >= 0
-                  ? `✅ 충분 (${fmtL(diffL)}L 더 넣음)`
-                  : `⚠️ 부족 (${fmtL(-diffL)}L 더 넣어야 함)`}
-              </div>
-            </>
+            <SettleRow
+              label="넣어야 할 개인주유"
+              value={`${fmtL(needL)} L`}
+              sub={`개인사용 ${fmt(personalKm)}km ÷ 평균연비 ${fmtL(kmPerL)}km/L (${effBasis})`}
+            />
           )}
         </div>
       </div>
@@ -258,7 +231,6 @@ function SettleRow({ label, value, sub }) {
         justifyContent: "space-between",
         alignItems: "flex-start",
         padding: "8px 0",
-        borderBottom: "1px solid #f1f1f1",
         gap: "12px",
       }}
     >
