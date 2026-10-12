@@ -70,7 +70,7 @@ export default function DevContent() {
     }
     try {
       await addRole(addForm);
-      setSuccess("역할이 추가되었습니다. 해당 계정은 재로그인 후 적용됩니다.");
+      setSuccess("역할이 추가되었습니다. 해당 계정은 새로고침(F5) 후 적용됩니다.");
       setShowAdd(false);
       setAddForm({ displayName: "", allowedTabs: [] });
       load();
@@ -97,7 +97,7 @@ export default function DevContent() {
     try {
       await updateRole(editTarget.id, editForm);
       setSuccess(
-        "수정되었습니다. 해당 계정은 재로그인 후 변경사항이 적용됩니다.",
+        "수정되었습니다. 해당 계정은 새로고침(F5) 후 변경사항이 적용됩니다.",
       );
       setShowEdit(false);
       load();
@@ -198,7 +198,7 @@ export default function DevContent() {
           color: "#92400e",
         }}
       >
-        💡 탭 권한을 변경한 후 해당 계정이 <strong>재로그인</strong>해야
+        💡 탭 권한을 변경한 후 해당 계정이 <strong>새로고침(F5)</strong>하면
         적용됩니다.
       </div>
 

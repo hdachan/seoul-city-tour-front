@@ -54,20 +54,10 @@ export default function AppLayout() {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // 탭 권한은 대시보드를 열 때마다 서버에서 최신으로 받아옴
+  // (개발 탭에서 권한을 바꾸면 새로고침만으로 반영)
+  // 서버 응답이 없을 때만 마지막으로 받은 목록 → 기본값 순으로 사용
   const loadPermissions = useCallback(async () => {
-    try {
-      const stored = sessionStorage.getItem("allowedTabs");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAllowedTabIds(parsed);
-          setActive(parsed[0]);
-          setLoading(false);
-          return;
-        }
-      }
-    } catch {}
-
     try {
       const res = await axios.get(
         `${BASE_URL}/dev/permissions/${encodeURIComponent(role)}`,
@@ -78,6 +68,14 @@ export default function AppLayout() {
       setAllowedTabIds(tabs);
       setActive(tabs[0] || "");
     } catch {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem("allowedTabs"));
+        if (Array.isArray(stored) && stored.length > 0) {
+          setAllowedTabIds(stored);
+          setActive(stored[0]);
+          return;
+        }
+      } catch {}
       const fallback = {
         ROLE_ADMIN: [
           "admin",
