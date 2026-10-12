@@ -44,6 +44,11 @@ const api = {
       ...authHeader(),
       params: { date },
     }),
+  getFuelEfficiency: (until) =>
+    axios.get(`${BASE_URL}/sales-form/fuel-efficiency`, {
+      ...authHeader(),
+      params: { until },
+    }),
   getPrevMeter: (date) =>
     axios.get(`${BASE_URL}/sales-form/driving/prev-meter`, {
       ...authHeader(),
@@ -1166,6 +1171,7 @@ export default function SalesContent() {
           month={month}
           driving={monthDriving}
           getPrevMeter={api.getPrevMeter}
+          getFuelEfficiency={api.getFuelEfficiency}
         />
       )}
 

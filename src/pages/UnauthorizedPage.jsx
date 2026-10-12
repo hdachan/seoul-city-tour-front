@@ -4,15 +4,8 @@ function UnauthorizedPage() {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    // 역할에 맞는 페이지로 돌려보내기
-    const roles = sessionStorage.getItem('roles');
-    if (!roles) { navigate('/'); return; }
-
-    if (roles.includes('ADMIN'))      navigate('/admin');
-    else if (roles.includes('SALES')) navigate('/sales');
-    else if (roles.includes('GUIDE')) navigate('/guide');
-    else if (roles.includes('DEV'))   navigate('/dev');
-    else navigate('/');
+    // 로그인 상태면 대시보드(역할별 탭은 대시보드에서 처리), 아니면 로그인 화면
+    navigate(sessionStorage.getItem('token') ? '/dashboard' : '/');
   };
 
   return (

@@ -98,7 +98,6 @@ export default function AppLayout() {
           "ginseng",
           "guide-admin",
           "guide-admin-stats",
-          "guide-admin-stats",
           "sales-admin",
           "dev",
         ],
