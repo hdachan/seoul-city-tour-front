@@ -15,9 +15,19 @@ export default function SalesMonthlyStats({
   driving,
   getPrevMeter,
   getFuelEfficiency,
+  getPersonalFuelBalance,
 }) {
   const [startMeter, setStartMeter] = useState(null); // null = 로딩 중
   const [overall, setOverall] = useState({ totalDist: 0, totalFuelL: 0 });
+  const [balance, setBalance] = useState(null); // 개인주유 이월 잔액 (서버 계산)
+
+  // 개인주유 잔액: 운행 기록이 바뀌면(driving) 다시 계산
+  useEffect(() => {
+    setBalance(null);
+    getPersonalFuelBalance(year, month)
+      .then((r) => setBalance(r.data))
+      .catch(() => setBalance(null));
+  }, [year, month, driving, getPersonalFuelBalance]);
 
   useEffect(() => {
     const mm = String(month).padStart(2, "0");
@@ -72,6 +82,7 @@ export default function SalesMonthlyStats({
       .filter((d) => types.includes(d.type))
       .reduce((s, d) => s + (Number(d.fuelAmount) || 0), 0);
   const monthFuelL = sumLiters(["주유", "개인주유"]);
+  const personalFuelL = sumLiters(["개인주유"]);
   const monthDist = workKm + personalKm;
 
   let kmPerL = null;
@@ -84,9 +95,13 @@ export default function SalesMonthlyStats({
     effBasis = "이번 달 주유 기록이 없어 전체 기간 평균으로 계산";
   }
   const needL = kmPerL ? personalKm / kmPerL : null;
-  const fmtL = (n) => (Math.round(n * 10) / 10).toLocaleString();
+  const fmtL = (n) =>
+    Number(n || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
 
-  const Card = ({ icon, label, value, unit, color, bg }) => (
+  const Card = ({ icon, label, value, unit, color, bg, extra }) => (
     <div
       style={{
         background: bg,
@@ -104,6 +119,13 @@ export default function SalesMonthlyStats({
           {unit}
         </span>
       </div>
+      {extra && (
+        <div
+          style={{ fontSize: "14px", fontWeight: 700, color, marginTop: "4px" }}
+        >
+          {extra}
+        </div>
+      )}
     </div>
   );
 
@@ -178,6 +200,7 @@ export default function SalesMonthlyStats({
           unit="원"
           color="#9d174d"
           bg="#fce7f3"
+          extra={`${fmtL(personalFuelL)} L`}
         />
       </Section>
 
@@ -211,11 +234,89 @@ export default function SalesMonthlyStats({
               평균연비를 계산할 주유 기록(주유량 L)이 없습니다.
             </div>
           ) : (
-            <SettleRow
-              label="넣어야 할 개인주유"
-              value={`${fmtL(needL)} L`}
-              sub={`개인사용 ${fmt(personalKm)}km ÷ 평균연비 ${fmtL(kmPerL)}km/L (${effBasis})`}
-            />
+            // 넣어야 할 개인주유 (강조)
+            <div
+              style={{
+                background: "#ede9fe",
+                border: "1.5px solid #c4b5fd",
+                borderRadius: "10px",
+                padding: "16px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{ fontSize: "13px", fontWeight: 700, color: "#6d28d9" }}
+              >
+                ⛽ 넣어야 할 개인주유
+              </div>
+              <div
+                style={{
+                  fontSize: "32px",
+                  fontWeight: 800,
+                  color: "#5b21b6",
+                  margin: "4px 0",
+                }}
+              >
+                {fmtL(needL)}
+                <span
+                  style={{ fontSize: "16px", fontWeight: 700, marginLeft: "4px" }}
+                >
+                  L
+                </span>
+              </div>
+              <div style={{ fontSize: "11px", color: "#7c6aa8" }}>
+                개인사용 {fmt(personalKm)}km ÷ 평균연비 {fmtL(kmPerL)}km/L (
+                {effBasis})
+              </div>
+            </div>
+          )}
+
+          {/* 이월 잔액 (서버에서 운행 기록으로 계산, 저장 없음) */}
+          {balance?.current && (
+            <div style={{ marginTop: "12px" }}>
+              <BalanceRow
+                label="지난달에서 넘어온 양"
+                value={balance.carriedIn}
+                signed
+              />
+              <BalanceRow
+                label="이번 달 넣어야 할 양"
+                value={-balance.current.needL}
+                signed
+              />
+              <BalanceRow
+                label="이번 달 넣은 양"
+                value={balance.current.putL}
+                signed
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "6px",
+                  paddingTop: "10px",
+                  borderTop: "1.5px solid #e5e7eb",
+                  fontWeight: 800,
+                  fontSize: "15px",
+                  color: balance.balance >= 0 ? "#065f46" : "#b91c1c",
+                }}
+              >
+                <span>
+                  {balance.balance >= 0
+                    ? "다음 달로 넘어가는 양"
+                    : "더 넣어야 할 양"}
+                </span>
+                <span>
+                  {balance.balance >= 0
+                    ? `+${fmtL(balance.balance)} L`
+                    : `${fmtL(-balance.balance)} L`}
+                </span>
+              </div>
+              <div style={{ fontSize: "11px", color: "#999", marginTop: "6px" }}>
+                {balance.startMonth.replace("-", "년 ")}월부터 누적 계산
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -223,26 +324,32 @@ export default function SalesMonthlyStats({
   );
 }
 
-function SettleRow({ label, value, sub }) {
+// 이월 계산 한 줄 (+ 초록 / - 빨강)
+function BalanceRow({ label, value, signed }) {
+  const v = Number(value || 0);
+  const text = v.toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
   return (
     <div
       style={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start",
-        padding: "8px 0",
-        gap: "12px",
+        padding: "5px 0",
+        color: "#555",
       }}
     >
-      <div>
-        <div style={{ color: "#555" }}>{label}</div>
-        {sub && (
-          <div style={{ fontSize: "11px", color: "#999", marginTop: "2px" }}>
-            {sub}
-          </div>
-        )}
-      </div>
-      <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{value}</div>
+      <span>{label}</span>
+      <span
+        style={{
+          fontWeight: 700,
+          color: v > 0 ? "#065f46" : v < 0 ? "#b91c1c" : "#555",
+        }}
+      >
+        {signed && v > 0 ? "+" : ""}
+        {text} L
+      </span>
     </div>
   );
 }
