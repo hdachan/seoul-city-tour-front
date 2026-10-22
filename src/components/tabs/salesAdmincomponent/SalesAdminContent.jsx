@@ -1552,7 +1552,6 @@ export default function SalesAdminContent() {
           {/* 운행일지 모달 */}
           {showDrivingModal && (
             <DrivingModal
-              variant="admin"
               form={drivingForm}
               setForm={setDrivingForm}
               isEdit={!!editTarget}

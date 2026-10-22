@@ -47,12 +47,18 @@ const RECEIPTS = [
 const CATEGORIES = [{ id: 1, name: "식대" }, { id: 2, name: "주차" }];
 
 function setupApi(api) {
-  api.getLockStatus.mockImplementation(() => ok({ locked: false, weekLocks: {} }));
+  // 실제 서버와 같은 형태: 2026년 10월 4주차(19~25일)=이번 주 열림, 나머지 잠김
+  api.getLockStatus.mockImplementation(() =>
+    ok({ locked: false, weekLocks: { 1: true, 2: true, 3: true, 4: false, 5: true } }),
+  );
   api.getCategories.mockImplementation(() => ok(CATEGORIES));
   api.getPurposes.mockImplementation(() => ok([]));
   api.getDestinations.mockImplementation(() => ok([]));
   api.getDriving.mockImplementation(() => ok(DRIVING));
-  api.getDrivingDate.mockImplementation(() => ok(DRIVING.filter((d) => d.date === "2026-10-22")));
+  // 마지막 인자가 날짜 (영업: (date), 관리자: (username, date))
+  api.getDrivingDate.mockImplementation((...args) =>
+    ok(DRIVING.filter((d) => d.date === args[args.length - 1])),
+  );
   api.getPrevMeter.mockImplementation(() => ok({ prevMeter: 900 }));
   api.getReceipts.mockImplementation(() => ok(RECEIPTS));
   api.addDriving.mockImplementation(() => ok({ id: 99 }));
@@ -139,7 +145,7 @@ describe("영업 정산 (SalesContent)", () => {
     await open();
     fireEvent.click(screen.getByText("＋ 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    setValue(modal().querySelector("input[placeholder='오늘 계량기']"), "1100");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
     await submit();
     expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
     expect(salesApi.addDriving.mock.calls[0]).toMatchSnapshot();
@@ -151,7 +157,7 @@ describe("영업 정산 (SalesContent)", () => {
     fireEvent.click(screen.getByText("＋ 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     fireEvent.click(typeButton("개인사용"));
-    setValue(modal().querySelector("input[placeholder='오늘 계량기']"), "1050");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1050");
     expect(modalState()).toMatchSnapshot("개인사용 미터기 입력 후");
     await submit();
     fireEvent.click(screen.getByText("＋ 추가"));
@@ -177,7 +183,7 @@ describe("영업 정산 (SalesContent)", () => {
     await open();
     fireEvent.click(screen.getByText("＋ 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    setValue(modal().querySelector("input[placeholder='오늘 계량기']"), "950");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "950");
     await submit();
     expect(salesApi.addDriving).not.toHaveBeenCalled();
     expect(modalState()).toMatchSnapshot("미터기 낮음 경고");
@@ -203,6 +209,92 @@ describe("영업 정산 (SalesContent)", () => {
     expect(modalState()).toMatchSnapshot("수정 입력창");
     await submit();
     expect(salesApi.updateReceipt.mock.calls).toMatchSnapshot("updateReceipt");
+  });
+});
+
+// ───────────── 💼 영업 정산 – 입력 가능 날짜 규칙 (열린 주만, 이번 주 일요일까지) ─────────────
+describe("영업 정산 – 입력 가능 날짜", () => {
+  // 10월 3주차(12~18일)를 관리자가 다시 열어준 상황
+  const reopenWeek3 = () =>
+    salesApi.getLockStatus.mockImplementation(() =>
+      ok({ locked: false, weekLocks: { 1: true, 2: true, 3: false, 4: false, 5: true } }),
+    );
+  const daySelect = () =>
+    screen.getAllByRole("combobox").find((el) => [...el.options].some((o) => o.value === "2026-10-15"));
+  async function openAt(date) {
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    if (date) {
+      await act(async () => {
+        fireEvent.change(daySelect(), { target: { value: date } });
+      });
+    }
+  }
+
+  test("잠긴 지난 주 → 추가 버튼 없음, 조회만", async () => {
+    await openAt("2026-10-15");
+    expect(screen.queryByText("＋ 추가")).toBeNull();
+    expect(screen.getByText(/🔒 잠긴 주/)).toBeInTheDocument();
+  });
+
+  test("관리자가 다시 연 지난 주 → 입력 가능 (날짜는 그 주 안에서)", async () => {
+    reopenWeek3();
+    await openAt("2026-10-15");
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const dateInput = modal().querySelector("input[type=date]");
+    expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-12", "2026-10-18", "2026-10-15"]);
+    // 10/20 에 900km 기록이 있으므로 950 은 막히고 900 은 저장됨 (미터기 검사도 그대로)
+    const meterInput = modal().querySelector("input[placeholder='계량기 숫자']");
+    setValue(meterInput, "950");
+    await submit();
+    expect(salesApi.addDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("이후 날짜에 900km 기록이 있어");
+    setValue(meterInput, "900");
+    await submit();
+    expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
+    expect(salesApi.addDriving.mock.calls[0][0].date).toBe("2026-10-15");
+  });
+
+  test("이번 주 → 지금처럼 입력 가능 (19~25일)", async () => {
+    await openAt();
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const dateInput = modal().querySelector("input[type=date]");
+    expect([dateInput.min, dateInput.max]).toEqual(["2026-10-19", "2026-10-25"]);
+  });
+
+  test("법인카드 – 열린 주 날짜만 고를 수 있고, 잠긴 주 지출은 ··· 메뉴 없음", async () => {
+    salesApi.getReceipts.mockImplementation(() =>
+      ok([...RECEIPTS, { ...RECEIPTS[0], id: 6, date: "2026-10-06", content: "지난주" }]),
+    );
+    await openAt();
+    fireEvent.click(screen.getByText("💳 법인카드"));
+    await screen.findByText("＋ 지출내역");
+    // 지출 2건(오늘 · 잠긴 주) 중 오늘 것만 메뉴가 있음 (PC 표 + 모바일 카드 = 2개)
+    expect(screen.getAllByText("···")).toHaveLength(2);
+    fireEvent.click(screen.getByText("＋ 지출내역"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const dateInput = modal().querySelector("input[type=date]");
+    expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-19", "2026-10-25", "2026-10-22"]);
+  });
+
+  test("법인카드 – 범위 안이라도 잠긴 주 날짜면 저장 안 됨", async () => {
+    // 1주차 + 4주차만 열림 → 고를 수 있는 범위(1~25일) 안에 잠긴 2·3주차가 끼어 있음
+    salesApi.getLockStatus.mockImplementation(() =>
+      ok({ locked: false, weekLocks: { 1: false, 2: true, 3: true, 4: false, 5: true } }),
+    );
+    await openAt();
+    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const dateInput = modal().querySelector("input[type=date]");
+    expect([dateInput.min, dateInput.max]).toEqual(["2026-10-01", "2026-10-25"]);
+    setValue(dateInput, "2026-10-14");
+    setValue(modal().querySelector("input[type=number]"), "5000");
+    await submit();
+    expect(salesApi.addReceipt).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("잠긴 주의 날짜입니다");
   });
 });
 

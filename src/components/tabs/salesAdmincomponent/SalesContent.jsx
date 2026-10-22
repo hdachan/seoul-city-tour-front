@@ -146,16 +146,19 @@ export default function SalesContent() {
 
   // DB weekLocks 기준으로만 체크 (스케줄러가 이번주=false, 지난주=true 관리)
   const isWeekLocked = weekLocks[selectedWeekNum] === true;
-  const isAnyLocked = isLocked || isWeekLocked;
 
-  // 이번 주 여부 (UI 표시용)
-  const todayWeekNum = getWeekNumForDate(TODAY);
-  const isThisWeek =
-    selectedWeekNum === todayWeekNum &&
-    year === new Date().getFullYear() &&
-    month === new Date().getMonth() + 1;
-  // 이번 주 + 잠기지 않은 날짜만 입력/수정 가능 (지난 날짜 포함)
-  const canEditDay = !isAnyLocked && isThisWeek;
+  // 입력/수정 가능한 날짜인지 (운행일지 · 법인카드 · 비고 공통)
+  // - 잠기지 않은 주 + 이번 주 일요일까지
+  //   (이번 주는 스케줄러가 열어두고, 지난 주라도 관리자가 잠금을 풀면 입력 가능)
+  // - 보고 있는 달이 아닌 날짜(이번 주가 두 달에 걸친 경우)는 이번 주만 허용
+  //   (잠금 여부는 서버가 한 번 더 확인)
+  const isDateEditable = (dateStr) => {
+    if (!dateStr || dateStr > THIS_WEEK_SUNDAY) return false;
+    if (dateStr.startsWith(`${year}-${pad2(month)}`))
+      return !isLocked && weekLocks[getWeekNumForDate(dateStr)] === false;
+    return dateStr >= THIS_WEEK_MONDAY;
+  };
+  const canEditDay = isDateEditable(selectedDate);
 
   const distPreview =
     drivingForm.meterReading && lastMeter
@@ -287,7 +290,7 @@ export default function SalesContent() {
 
   const handleSaveNote = async () => {
     if (!canEditDay) {
-      setError("이번 주가 아니거나 잠긴 날짜의 비고는 수정할 수 없습니다.");
+      setError("잠긴 날짜의 비고는 수정할 수 없습니다.");
       return;
     }
     setNoteSaving(true);
@@ -304,7 +307,7 @@ export default function SalesContent() {
 
   // 운행일지 모달
   const openAdd = async () => {
-    if (isAnyLocked) {
+    if (!canEditDay) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
     }
@@ -366,7 +369,7 @@ export default function SalesContent() {
   const handleSubmitDriving = async (e) => {
     e.preventDefault();
     setError("");
-    if (isAnyLocked) {
+    if (!isDateEditable(drivingForm.startDate)) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
     }
@@ -409,7 +412,7 @@ export default function SalesContent() {
   };
   const handleDelete = async (id) => {
     setOpenMenu(null);
-    if (isAnyLocked) {
+    if (!canEditDay) {
       setError("잠긴 주입니다. 삭제할 수 없습니다.");
       return;
     }
@@ -423,16 +426,21 @@ export default function SalesContent() {
     }
   };
 
-  // 법인카드 모달
+  // 법인카드 모달 (입력 가능한 날짜: 이번 달 중 열린 주, 이번 주 일요일까지)
+  const receiptDates = dateOptions.filter(isDateEditable);
   const openReceiptAdd = () => {
-    if (isAnyLocked) {
+    if (receiptDates.length === 0) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
     }
     setError("");
     setEditTarget(null);
     setReceiptForm({
-      date: TODAY,
+      date: receiptDates.includes(TODAY)
+        ? TODAY
+        : receiptDates.includes(selectedDate)
+          ? selectedDate
+          : receiptDates[receiptDates.length - 1],
       category: categories[0]?.name || "",
       content: "",
       amount: "",
@@ -458,6 +466,10 @@ export default function SalesContent() {
   const handleSubmitReceipt = async (e) => {
     e.preventDefault();
     setError("");
+    if (!isDateEditable(receiptForm.date)) {
+      setError("잠긴 주의 날짜입니다. 입력할 수 없습니다.");
+      return;
+    }
     try {
       if (editTarget) await api.updateReceipt(editTarget.id, receiptForm);
       else await api.addReceipt(receiptForm);
@@ -1013,9 +1025,7 @@ export default function SalesContent() {
             <div
               style={{ fontSize: "14px", fontWeight: 700, color: "#92400e" }}
             >
-              {!isThisWeek
-                ? "이번 주가 아닙니다."
-                : `${selectedWeekNum}주차 기록이 잠겨있습니다.`}
+              {`${selectedWeekNum}주차 기록이 잠겨있습니다.`}
             </div>
             <div
               style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}
@@ -1090,14 +1100,9 @@ export default function SalesContent() {
                 const day = parseInt(d.split("-")[2]);
                 const hasEntry = enteredDates.has(d);
                 const isT = d === TODAY;
-                // 이번 주 날짜인지 체크 (모든 날짜 선택·조회 가능, 입력/수정만 이번 주로 제한)
-                const wNum = getWeekNumForDate(d);
-                const isCurrentWeek =
-                  wNum === todayWeekNum &&
-                  year === now.getFullYear() &&
-                  month === now.getMonth() + 1;
-                const wLocked = weekLocks[wNum] === true;
-                const readOnly = wLocked || !isCurrentWeek;
+                // 모든 날짜 선택·조회 가능, 입력/수정은 열린 주만
+                const wLocked = weekLocks[getWeekNumForDate(d)] === true;
+                const readOnly = !isDateEditable(d);
                 return (
                   <option
                     key={d}
@@ -1129,16 +1134,16 @@ export default function SalesContent() {
                 </button>
               </>
             )}
-            {!isAnyLocked && isThisWeek && (
+            {canEditDay && (
               <button className="btn-primary" onClick={openAdd}>
                 ＋ 추가
               </button>
             )}
-            {(!isThisWeek || isWeekLocked) && !isLocked && (
+            {!canEditDay && !isLocked && (
               <span
                 style={{ fontSize: "12px", color: "#bbb", padding: "0 4px" }}
               >
-                {isWeekLocked ? "🔒 잠긴 주" : "이번 주가 아닙니다"} (조회만)
+                {isWeekLocked ? "🔒 잠긴 주" : "입력 기간이 아닙니다"} (조회만)
               </span>
             )}
           </div>
@@ -1210,7 +1215,7 @@ export default function SalesContent() {
                         <th style={{ ...thS, textAlign: "right" }}>주유금액</th>
                         <th style={{ ...thS, textAlign: "right" }}>단가</th>
                         <th style={thS}>구분</th>
-                        {!isAnyLocked && isThisWeek && <th style={thS}></th>}
+                        {canEditDay && <th style={thS}></th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -1360,7 +1365,7 @@ export default function SalesContent() {
                                 {d.type}
                               </span>
                             </td>
-                            {!isAnyLocked && isThisWeek && (
+                            {canEditDay && (
                               <td style={{ ...tdS, position: "relative" }}>
                                 <DotMenu
                                   id={d.id}
@@ -1450,7 +1455,7 @@ export default function SalesContent() {
                             {d.type}
                           </span>
                         </div>
-                        {!isAnyLocked && isThisWeek && (
+                        {canEditDay && (
                           <DotMenu
                             id={d.id}
                             onEdit={() => openEdit(d)}
@@ -1614,7 +1619,7 @@ export default function SalesContent() {
           )}
 
           {/* 당일 요약 + 비고 */}
-          {(dayDriving.length > 0 || isThisWeek) && (
+          {(dayDriving.length > 0 || canEditDay) && (
             <div
               style={{
                 background: "#fff",
@@ -1829,7 +1834,7 @@ export default function SalesContent() {
                   </button>
                 </>
               )}
-              {!isLocked && (
+              {!isLocked && receiptDates.length > 0 && (
                 <button className="btn-primary" onClick={openReceiptAdd}>
                   ＋ 지출내역
                 </button>
@@ -1904,7 +1909,7 @@ export default function SalesContent() {
                         </span>
                       )}
                     </div>
-                    {!isLocked && (
+                    {isDateEditable(r.date) && (
                       <DotMenu
                         id={`rm-${r.id}`}
                         onEdit={() => openReceiptEdit(r)}
@@ -2135,11 +2140,13 @@ export default function SalesContent() {
                         </td>
                         {!isLocked && (
                           <td style={{ ...tdS, position: "relative" }}>
-                            <DotMenu
-                              id={`r-${r.id}`}
-                              onEdit={() => openReceiptEdit(r)}
-                              onDelete={() => handleDeleteReceipt(r.id)}
-                            />
+                            {isDateEditable(r.date) && (
+                              <DotMenu
+                                id={`r-${r.id}`}
+                                onEdit={() => openReceiptEdit(r)}
+                                onDelete={() => handleDeleteReceipt(r.id)}
+                              />
+                            )}
                           </td>
                         )}
                       </tr>
@@ -2216,15 +2223,14 @@ export default function SalesContent() {
       {/* ──── 운행일지 모달 ──── */}
       {showModal && (
         <DrivingModal
-          variant="sales"
           form={drivingForm}
           setForm={setDrivingForm}
           isEdit={!!editTarget}
           error={error}
           onClose={() => setShowModal(false)}
           onSubmit={handleSubmitDriving}
-          dateMin={THIS_WEEK_MONDAY}
-          dateMax={THIS_WEEK_SUNDAY}
+          dateMin={getWeekMonday(selectedDate)}
+          dateMax={getWeekSunday(selectedDate)}
           meter={{
             lowerMeter,
             nextMeter,
@@ -2253,8 +2259,8 @@ export default function SalesContent() {
           error={error}
           onClose={() => setShowReceiptModal(false)}
           onSubmit={handleSubmitReceipt}
-          dateMin={TODAY}
-          dateMax={TODAY}
+          dateMin={receiptDates[0]}
+          dateMax={receiptDates[receiptDates.length - 1]}
           modalStyle={{ maxHeight: "90vh" }}
         />
       )}

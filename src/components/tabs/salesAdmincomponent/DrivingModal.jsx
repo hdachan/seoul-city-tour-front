@@ -7,7 +7,6 @@ import { fmt, TYPES, TYPE_STYLE, unitSuffix } from "./salesShared";
 //   meter            : 미터기 검사 값 { lowerMeter, nextMeter, distPreview, tooLow, tooHigh }
 //   dest             : 도착지 자동완성 { list, search, setSearch, show, setShow, ref }
 export default function DrivingModal({
-  variant,
   form,
   setForm,
   isEdit,
@@ -19,7 +18,6 @@ export default function DrivingModal({
   meter,
   dest,
 }) {
-  const isAdmin = variant === "admin";
   const { lowerMeter, nextMeter, distPreview } = meter;
   const meterTooLow = meter.tooLow;
   const meterTooHigh = meter.tooHigh;
@@ -153,27 +151,11 @@ export default function DrivingModal({
                   )}
               </div>
               <div className="field">
-                {isAdmin ? (
-                  <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
-                ) : (
-                  <label>
-                    미터기 (km) *{" "}
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#1557b0",
-                        fontWeight: 400,
-                      }}
-                    >
-                      현재 기준: {fmt(lowerMeter)}km 이상
-                      {nextMeter > 0 && ` ~ ${fmt(nextMeter)}km 이하`}
-                    </span>
-                  </label>
-                )}
+                <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
                 <div style={{ position: "relative" }}>
                   <input
                     type="number"
-                    placeholder={isAdmin ? "계량기 숫자" : "오늘 계량기"}
+                    placeholder="계량기 숫자"
                     value={form.meterReading || ""}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -527,15 +509,11 @@ export default function DrivingModal({
           {form.type === "개인사용" && (
             <>
               <div className="field">
-                {isAdmin ? (
-                  <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
-                ) : (
-                  <label>미터기 (km) *</label>
-                )}
+                <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
                 <div style={{ position: "relative" }}>
                   <input
                     type="number"
-                    placeholder={isAdmin ? "계량기 숫자" : "오늘 계량기"}
+                    placeholder="계량기 숫자"
                     value={form.meterReading || ""}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -548,7 +526,7 @@ export default function DrivingModal({
                   />
                   <span style={unitSuffix}>km</span>
                 </div>
-                {!isAdmin && distPreview !== null && distPreview >= 0 && (
+                {distPreview !== null && distPreview >= 0 && (
                   <p
                     style={{
                       fontSize: "12px",
@@ -614,7 +592,7 @@ export default function DrivingModal({
                     }
                     style={{
                       flex: 1,
-                      padding: isAdmin ? "9px" : "10px",
+                      padding: "10px",
                       border: `1.5px solid ${isActive ? c.color : "#e0e0e0"}`,
                       borderRadius: "8px",
                       fontSize: "13px",
