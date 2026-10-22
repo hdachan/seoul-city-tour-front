@@ -407,10 +407,7 @@ export default function SalesAdminContent() {
   };
 
   const DotMenu = ({ id, onEdit, onDelete }) => (
-    <div
-      style={{ position: "relative", display: "inline-block" }}
-      ref={openMenu === id ? menuRef : null}
-    >
+    <div className="sl-dot-wrap" ref={openMenu === id ? menuRef : null}>
       <button
         className="dot-btn"
         onClick={() => setOpenMenu(openMenu === id ? null : id)}
@@ -430,37 +427,55 @@ export default function SalesAdminContent() {
     </div>
   );
 
+  const yearMonthSelects = (
+    <>
+      <select
+        className="sl-select is-compact"
+        value={year}
+        onChange={(e) => setYear(Number(e.target.value))}
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}년
+          </option>
+        ))}
+      </select>
+      <select
+        className="sl-select is-compact"
+        value={month}
+        onChange={(e) => setMonth(Number(e.target.value))}
+      >
+        {months.map((m) => (
+          <option key={m} value={m}>
+            {m}월
+          </option>
+        ))}
+      </select>
+    </>
+  );
+
+  const startMeter = prevMeterRef.current || prevMeter;
+
   return (
     <div className="sac-wrapper">
       {/* 메인 탭 */}
-      <div className="sl-tab-bar" style={{ marginBottom: "16px" }}>
-        <button
-          className={`sl-tab ${mainTab === "list" ? "active" : ""}`}
-          onClick={() => {
-            setMainTab("list");
-            setSelectedUser(null);
-          }}
-        >
-          📊 정산 목록
-        </button>
-        <button
-          className={`sl-tab ${mainTab === "total" ? "active" : ""}`}
-          onClick={() => {
-            setMainTab("total");
-            setSelectedUser(null);
-          }}
-        >
-          📈 전체 통계
-        </button>
-        <button
-          className={`sl-tab ${mainTab === "category" ? "active" : ""}`}
-          onClick={() => {
-            setMainTab("category");
-            setSelectedUser(null);
-          }}
-        >
-          🏷 카테고리
-        </button>
+      <div className="sl-tab-bar sl-tab-bar-main">
+        {[
+          { id: "list", label: "📊 정산 목록" },
+          { id: "total", label: "📈 전체 통계" },
+          { id: "category", label: "🏷 카테고리" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            className={`sl-tab ${mainTab === t.id ? "active" : ""}`}
+            onClick={() => {
+              setMainTab(t.id);
+              setSelectedUser(null);
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -493,431 +508,82 @@ export default function SalesAdminContent() {
         />
       )}
 
-      {/* ──── 카테고리 (메인 탭) ──── */}
+      {/* ──── 카테고리 ──── */}
       {mainTab === "category" && (
-        <div>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "10px",
-              border: "1px solid #e8eaed",
-              padding: "16px",
-              marginBottom: "12px",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "14px",
-                fontWeight: 600,
-                marginBottom: "12px",
-              }}
-            >
-              카테고리 추가
-            </h3>
-            <form
-              onSubmit={handleAddCategory}
-              style={{ display: "flex", gap: "8px", alignItems: "center" }}
-            >
-              <input
-                type="text"
-                placeholder="카테고리 이름"
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "9px 12px",
-                  border: "1.5px solid #d8dce3",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-              <button type="submit" className="sl-btn-primary">
-                추가
-              </button>
-            </form>
-          </div>
-          <div className="sac-table-wrap">
-            <table className="sac-table">
-              <thead>
-                <tr>
-                  <th>카테고리명</th>
-                  <th style={{ width: "70px" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={2}
-                      style={{
-                        textAlign: "center",
-                        padding: "2rem",
-                        color: "#bbb",
-                      }}
-                    >
-                      없음
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((c) => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 500 }}>{c.name}</td>
-                      <td>
-                        <button
-                          className="sl-btn-delete"
-                          onClick={() => {
-                            if (window.confirm("삭제?"))
-                              api
-                                .deleteCategory(c.id)
-                                .then(() =>
-                                  api
-                                    .getCategories()
-                                    .then((r) => setCategories(r.data)),
-                                );
-                          }}
-                        >
-                          삭제
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CategoryPanel
+          categories={categories}
+          newCatName={newCatName}
+          setNewCatName={setNewCatName}
+          onAdd={handleAddCategory}
+          onDelete={(c) => {
+            if (window.confirm("삭제?"))
+              api
+                .deleteCategory(c.id)
+                .then(() => api.getCategories().then((r) => setCategories(r.data)));
+          }}
+        />
       )}
 
-      {/* ──── 카드뷰 ──── */}
+      {/* ──── 정산 목록 (사람별 카드) ──── */}
       {mainTab === "list" && !selectedUser && (
         <div>
-          <div className="sac-filter-bar">
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              style={selStyle}
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}년
-                </option>
-              ))}
-            </select>
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              style={selStyle}
-            >
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="sac-filter-bar">{yearMonthSelects}</div>
           <div className="sac-card-grid">
-            {summary.map((u) => {
-              return (
-                <div
-                  key={u.username}
-                  className="sac-user-card"
-                  style={{
-                    borderColor: u.locked
-                      ? "#c6f6d5"
-                      : u.hasData
-                        ? "#bfdbfe"
-                        : "#f0f0f0",
-                  }}
-                >
-                  <div
-                    onClick={() => {
-                      setFromTotal(false);
-                      setSelectedUser(u);
-                      setSelectedDate(toDateStr(now));
-                      setActiveTab("driving");
-                    }}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        marginBottom: "2px",
-                        color: "#1a1a2e",
-                      }}
-                    >
-                      {u.name}
-                    </div>
-                    {u.cardNumber && (
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          color: "#aaa",
-                          marginBottom: "8px",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {u.cardNumber}
-                      </div>
-                    )}
-                    <div style={{ fontSize: "12px", marginBottom: "12px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        <span style={{ color: "#888" }}>운행일지</span>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            color: u.drivingCount > 0 ? "#1557b0" : "#ccc",
-                          }}
-                        >
-                          {u.drivingCount > 0 ? `${u.drivingCount}건` : "없음"}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <span style={{ color: "#888" }}>법인카드</span>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            color: u.receiptCount > 0 ? "#059669" : "#ccc",
-                          }}
-                        >
-                          {u.receiptCount > 0 ? `${u.receiptCount}건` : "없음"}
-                        </span>
-                      </div>
-                      {u.totalDist > 0 && (
-                        <div
-                          style={{
-                            borderTop: "1px solid #f0f2f5",
-                            paddingTop: "6px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "3px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <span style={{ color: "#aaa" }}>총 운행거리</span>
-                            <span style={{ fontWeight: 600, color: "#1557b0" }}>
-                              {fmt(u.totalDist)}km
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: "11px",
-                              paddingLeft: "8px",
-                            }}
-                          >
-                            <span style={{ color: "#bbb" }}>└ 업무 / 개인</span>
-                            <span style={{ color: "#888" }}>
-                              {fmt(u.workDist)}km /{" "}
-                              <span style={{ color: "#6d28d9" }}>
-                                {fmt(u.personalDist)}km
-                              </span>
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <span style={{ color: "#aaa" }}>총 주유량</span>
-                            <span style={{ fontWeight: 600, color: "#92400e" }}>
-                              {u.totalFuelL
-                                ? u.totalFuelL.toFixed(1) + "L"
-                                : "-"}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <span style={{ color: "#aaa" }}>평균 연비</span>
-                            <span style={{ fontWeight: 600, color: "#059669" }}>
-                              {u.avgKmL ? u.avgKmL + "km/L" : "-"}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <span style={{ color: "#aaa" }}>총 주유금액</span>
-                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>
-                              {u.totalFuelC ? fmtWon(u.totalFuelC) : "-"}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* 주 단위 잠금 버튼 */}
-                  <div
-                    style={{
-                      borderTop: "1px solid #f0f2f5",
-                      paddingTop: "10px",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "10px",
-                        color: "#aaa",
-                        fontWeight: 600,
-                        marginBottom: "6px",
-                      }}
-                    >
-                      📅 주 단위 관리
-                    </p>
-                    <div
-                      style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}
-                    >
-                      {getWeeksOfMonth(year, month).map((week) => {
-                        const dbRecord = (u.weekLocks || {})[week.weekNum];
-                        // undefined=레코드없음(자동잠금), true=명시적잠금, false=관리자해제
-                        const wLocked = dbRecord !== false;
-                        return (
-                          <button
-                            key={week.weekNum}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleWeekLock(u, week, wLocked);
-                            }}
-                            style={{
-                              flex: 1,
-                              minWidth: "44px",
-                              padding: "6px 4px",
-                              border: "1.5px solid",
-                              borderRadius: "7px",
-                              fontSize: "10px",
-                              cursor: "pointer",
-                              fontWeight: 600,
-                              textAlign: "center",
-                              background: wLocked ? "#d1fae5" : "#f8f9fb",
-                              color: wLocked ? "#065f46" : "#555",
-                              borderColor: wLocked ? "#86efac" : "#e0e0e0",
-                            }}
-                          >
-                            <div>{wLocked ? "🔒" : "🔓"}</div>
-                            <div style={{ fontSize: "9px", marginTop: "1px" }}>
-                              {week.label}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {summary.map((u) => (
+              <UserSummaryCard
+                key={u.username}
+                user={u}
+                weeks={getWeeksOfMonth(year, month)}
+                onOpen={() => {
+                  setFromTotal(false);
+                  setSelectedUser(u);
+                  setSelectedDate(toDateStr(now));
+                  setActiveTab("driving");
+                }}
+                onWeekLock={handleWeekLock}
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* ──── 상세뷰 ──── */}
+      {/* ──── 상세 (한 사람) ──── */}
       {mainTab === "list" && selectedUser && (
         <div>
-          {/* 필터바 */}
           <div className="sac-filter-bar">
             <button
+              className="sl-btn-back"
               onClick={() => {
                 setSelectedUser(null);
                 setDayDriving([]);
                 if (fromTotal) setMainTab("total");
               }}
-              style={outlineBtn}
             >
               {fromTotal ? "← 전체 통계" : "← 목록"}
             </button>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              style={selStyle}
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}년
-                </option>
-              ))}
-            </select>
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              style={selStyle}
-            >
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: "14px", fontWeight: 700 }}>
-              {selectedUser.name}
-            </span>
-            <div
-              style={{
-                marginLeft: "auto",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            ></div>
+            {yearMonthSelects}
+            <span className="sl-filter-name">{selectedUser.name}</span>
           </div>
-          {isLocked && (
-            <div className="locked-banner">✅ 정산 완료된 달입니다.</div>
-          )}
-          {/* 서브 탭 */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "4px",
-            }}
-          >
-            <div className="sl-tab-bar" style={{ marginBottom: 0 }}>
-              <button
-                className={`sl-tab ${activeTab === "driving" ? "active" : ""}`}
-                onClick={() => setActiveTab("driving")}
-              >
-                📋 운행일지
-              </button>
-              <button
-                className={`sl-tab ${activeTab === "receipt" ? "active" : ""}`}
-                onClick={() => setActiveTab("receipt")}
-              >
-                💳 법인카드
-              </button>
+          {isLocked && <div className="locked-banner">✅ 정산 완료된 달입니다.</div>}
 
-              <button
-                className={`sl-tab ${activeTab === "stats" ? "active" : ""}`}
-                onClick={() => setActiveTab("stats")}
-              >
-                📊 통계
-              </button>
+          {/* 서브 탭 + 추가 버튼 */}
+          <div className="sl-subtab-row">
+            <div className="sl-tab-bar sl-tab-bar-flush">
+              {[
+                { id: "driving", label: "📋 운행일지" },
+                { id: "receipt", label: "💳 법인카드" },
+                { id: "stats", label: "📊 통계" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  className={`sl-tab ${activeTab === t.id ? "active" : ""}`}
+                  onClick={() => setActiveTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
-            <div style={{ marginLeft: "8px" }}>
+            <div className="sl-subtab-actions">
               {!isLocked && activeTab === "driving" && (
                 <button className="sl-btn-primary" onClick={openDrivingAdd}>
                   ＋ 추가
@@ -930,494 +596,65 @@ export default function SalesAdminContent() {
               )}
             </div>
           </div>
+
           {/* ── 운행일지 탭 ── */}
           {activeTab === "driving" && (
-            <div style={{ marginTop: "4px" }}>
-              {/* 날짜 선택 */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                  flexWrap: "wrap",
-                }}
-              >
+            <div className="sl-tab-panel">
+              <div className="sl-date-row">
                 <select
+                  className="sl-select is-compact sl-grow"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{ ...selStyle, flex: 1 }}
                 >
-                  {dateOptions.map((d) => {
-                    const day = parseInt(d.split("-")[2]);
-                    const hasE = enteredDates.has(d);
-                    const isT = d === toDateStr(now);
-                    return (
-                      <option key={d} value={d}>
-                        {month}월 {day}일{isT ? " (오늘)" : ""}
-                        {hasE ? " ●" : ""}
-                      </option>
-                    );
-                  })}
+                  {dateOptions.map((d) => (
+                    <option key={d} value={d}>
+                      {month}월 {parseInt(d.split("-")[2])}일
+                      {d === toDateStr(now) ? " (오늘)" : ""}
+                      {enteredDates.has(d) ? " ●" : ""}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              {/* 운행 기록 표 */}
               {dayDriving.length === 0 ? (
                 <div className="empty-state">기록이 없습니다.</div>
               ) : (
-                <div className="sac-table-wrap" style={{ overflowX: "auto" }}>
-                  <table className="sac-table" style={{ minWidth: "700px" }}>
-                    <thead>
-                      <tr>
-                        <th>시간</th>
-                        <th>도착지</th>
-                        <th style={{ textAlign: "right" }}>미터기</th>
-                        <th style={{ textAlign: "right" }}>운행거리</th>
-                        <th>비고</th>
-                        <th style={{ textAlign: "right" }}>주유량</th>
-                        <th style={{ textAlign: "right" }}>주유금액</th>
-                        <th style={{ textAlign: "right" }}>단가</th>
-                        <th>구분</th>
-                        {!isLocked && <th></th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        const calc = recalcDriving(
-                          dayDriving,
-                          prevMeterRef.current || prevMeter,
-                        );
-                        return calc.map((d) => {
-                          const ts = TYPE_STYLE[d.type] || {
-                            bg: "#f3f4f6",
-                            color: "#555",
-                          };
-                          return (
-                            <tr key={d.id}>
-                              <td>
-                                {d.arrivalTime ? (
-                                  <span
-                                    style={{
-                                      fontSize: "13px",
-                                      fontWeight: 700,
-                                      color: "#1557b0",
-                                      background: "#e8f0fe",
-                                      padding: "2px 8px",
-                                      borderRadius: "6px",
-                                      letterSpacing: "0.5px",
-                                    }}
-                                  >
-                                    ⏰ {formatDrivingTime(d)}
-                                  </span>
-                                ) : (
-                                  <span style={{ color: "#ccc" }}>-</span>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  fontWeight: d.destination ? 500 : 400,
-                                  color: d.destination ? "#1a1a2e" : "#ccc",
-                                }}
-                              >
-                                {d.destination || "-"}
-                              </td>
-                              <td style={{ textAlign: "right" }}>
-                                {d.meterReading > 0
-                                  ? `${fmt(d.meterReading)}km`
-                                  : "-"}
-                              </td>
-                              <td
-                                style={{
-                                  textAlign: "right",
-                                  fontWeight: 600,
-                                  color: "#1557b0",
-                                }}
-                              >
-                                {d.calcDist > 0 ? `${fmt(d.calcDist)}km` : "-"}
-                              </td>
-                              <td style={{ fontSize: "12px", color: "#555" }}>
-                                {d.notes && d.notes.length > 0 ? (
-                                  d.notes.map((n, i) => (
-                                    <div
-                                      key={i}
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "5px",
-                                        marginBottom: "2px",
-                                      }}
-                                    >
-                                      {n.time && (
-                                        <span
-                                          style={{
-                                            fontSize: "11px",
-                                            color: "#1557b0",
-                                            fontWeight: 700,
-                                            background: "#e8f0fe",
-                                            padding: "1px 6px",
-                                            borderRadius: "4px",
-                                            whiteSpace: "nowrap",
-                                          }}
-                                        >
-                                          {n.time}
-                                        </span>
-                                      )}
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#374151",
-                                        }}
-                                      >
-                                        {n.content}
-                                      </span>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span style={{ color: "#ccc" }}>-</span>
-                                )}
-                              </td>
-                              <td
-                                style={{ textAlign: "right", color: "#92400e" }}
-                              >
-                                {d.fuelAmount > 0 ? `${d.fuelAmount}L` : "-"}
-                              </td>
-                              <td style={{ textAlign: "right" }}>
-                                {d.fuelCost > 0 ? fmtWon(d.fuelCost) : "-"}
-                              </td>
-                              <td
-                                style={{
-                                  textAlign: "right",
-                                  fontSize: "12px",
-                                  color: "#888",
-                                }}
-                              >
-                                {d.fuelUnitPrice > 0
-                                  ? `${fmt(d.fuelUnitPrice)}원`
-                                  : "-"}
-                              </td>
-                              <td>
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: 700,
-                                    padding: "3px 8px",
-                                    borderRadius: "99px",
-                                    background: ts.bg,
-                                    color: ts.color,
-                                  }}
-                                >
-                                  {d.type}
-                                </span>
-                              </td>
-                              {!isLocked && (
-                                <td style={{ position: "relative" }}>
-                                  <DotMenu
-                                    id={d.id}
-                                    onEdit={() => openDrivingEdit(d)}
-                                    onDelete={() => handleDeleteDriving(d.id)}
-                                  />
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        });
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <DayDrivingTable
+                    rows={recalcDriving(dayDriving, startMeter)}
+                    showMenu={!isLocked}
+                    renderMenu={(d) => (
+                      <DotMenu
+                        id={d.id}
+                        onEdit={() => openDrivingEdit(d)}
+                        onDelete={() => handleDeleteDriving(d.id)}
+                      />
+                    )}
+                  />
+                  <DaySummary rows={recalcDriving(dayDriving, startMeter)} startMeter={startMeter} />
+                </>
               )}
-
-              {/* 당일 누계 */}
-              {dayDriving.length > 0 &&
-                (() => {
-                  const calc = recalcDriving(
-                    dayDriving,
-                    prevMeterRef.current || prevMeter,
-                  );
-                  const meters = calc
-                    .map((d) => d.meterReading)
-                    .filter((m) => m > 0);
-                  const endMeter = meters.length ? Math.max(...meters) : 0;
-                  const totalKm = calc.reduce((s, d) => s + d.calcDist, 0);
-                  const workKm = calc
-                    .filter((d) => d.type === "업무")
-                    .reduce((s, d) => s + d.calcDist, 0);
-                  const personalKm = calc
-                    .filter((d) => d.type === "개인사용")
-                    .reduce((s, d) => s + d.calcDist, 0);
-                  const totalFuelC = calc.reduce(
-                    (s, d) => s + (d.fuelCost || 0),
-                    0,
-                  );
-                  return (
-                    <div
-                      style={{
-                        background: "#fff",
-                        borderRadius: "10px",
-                        border: "1px solid #e8eaed",
-                        overflow: "hidden",
-                        marginTop: "10px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          borderBottom: "1px solid #f0f2f5",
-                        }}
-                      >
-                        {[
-                          {
-                            label: "전일누계",
-                            value:
-                              (prevMeterRef.current || prevMeter) > 0
-                                ? `${fmt(prevMeterRef.current || prevMeter)}km`
-                                : "-",
-                            color: "#555",
-                          },
-                          {
-                            label: "금일누계",
-                            value: totalKm > 0 ? `${fmt(totalKm)}km` : "-",
-                            color: "#1557b0",
-                          },
-                          {
-                            label: "업무",
-                            value: workKm > 0 ? `${fmt(workKm)}km` : "-",
-                            color: "#1557b0",
-                          },
-                          {
-                            label: "개인",
-                            value:
-                              personalKm > 0 ? `${fmt(personalKm)}km` : "-",
-                            color: "#6d28d9",
-                          },
-                          {
-                            label: "총누계",
-                            value: endMeter > 0 ? `${fmt(endMeter)}km` : "-",
-                            color: "#059669",
-                          },
-                          ...(totalFuelC > 0
-                            ? [
-                                {
-                                  label: "금일주유",
-                                  value: fmtWon(totalFuelC),
-                                  color: "#92400e",
-                                },
-                              ]
-                            : []),
-                        ].map((r, i, arr) => (
-                          <div
-                            key={r.label}
-                            style={{
-                              flex: 1,
-                              padding: "10px 12px",
-                              textAlign: "center",
-                              borderRight:
-                                i < arr.length - 1
-                                  ? "1px solid #f0f2f5"
-                                  : "none",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "10px",
-                                color: "#aaa",
-                                marginBottom: "3px",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {r.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: "13px",
-                                fontWeight: 700,
-                                color: r.color,
-                              }}
-                            >
-                              {r.value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
             </div>
           )}
+
           {/* ── 법인카드 탭 ── */}
           {activeTab === "receipt" && (
-            <div
-              className="sac-table-wrap"
-              style={{ marginTop: "4px", overflowX: "auto" }}
-            >
-              <table className="sac-table" style={{ minWidth: "600px" }}>
-                <thead>
-                  <tr>
-                    <th>날짜</th>
-                    <th>카테고리</th>
-                    <th>신용카드 번호</th>
-                    <th style={{ textAlign: "right" }}>총금액</th>
-                    <th style={{ textAlign: "right" }}>공급가액</th>
-                    <th style={{ textAlign: "right" }}>VAT</th>
-                    <th>사업자</th>
-                    <th>상호</th>
-                    {!isLocked && <th></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {receipts.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        style={{
-                          textAlign: "center",
-                          padding: "2.5rem",
-                          color: "#bbb",
-                        }}
-                      >
-                        내역 없음
-                      </td>
-                    </tr>
-                  ) : (
-                    receipts.map((r) => (
-                      <tr key={r.id}>
-                        <td
-                          style={{
-                            fontSize: "12px",
-                            color: "#888",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.date}
-                        </td>
-                        <td>
-                          {r.category ? (
-                            <span className="cat-badge">{r.category}</span>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td
-                          style={{
-                            maxWidth: "120px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.content || "-"}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "right",
-                            fontWeight: 600,
-                            color: "#1557b0",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "right",
-                            color: "#555",
-                            fontSize: "12px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.supplyAmount ? fmtWon(r.supplyAmount) : "-"}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "right",
-                            color: "#059669",
-                            fontSize: "12px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.vat ? fmtWon(r.vat) : "-"}
-                        </td>
-                        <td style={{ fontSize: "12px" }}>
-                          {r.businessNumber || "-"}
-                        </td>
-                        <td
-                          style={{
-                            fontSize: "12px",
-                            maxWidth: "80px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.companyName || "-"}
-                        </td>
-                        {!isLocked && (
-                          <td style={{ position: "relative" }}>
-                            <DotMenu
-                              id={`r-${r.id}`}
-                              onEdit={() => openReceiptEdit(r)}
-                              onDelete={() => handleDeleteReceipt(r.id)}
-                            />
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-                {receipts.length > 0 && (
-                  <tfoot>
-                    <tr>
-                      <td colSpan={3} style={{ color: "#1557b0" }}>
-                        합계
-                      </td>
-                      <td
-                        style={{
-                          textAlign: "right",
-                          color: "#1557b0",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtWon(
-                          receipts.reduce(
-                            (s, r) => s + (r.totalAmount || 0),
-                            0,
-                          ),
-                        )}
-                      </td>
-                      <td
-                        style={{
-                          textAlign: "right",
-                          color: "#555",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtWon(
-                          receipts.reduce(
-                            (s, r) => s + (r.supplyAmount || 0),
-                            0,
-                          ),
-                        )}
-                      </td>
-                      <td
-                        style={{
-                          textAlign: "right",
-                          color: "#059669",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtWon(receipts.reduce((s, r) => s + (r.vat || 0), 0))}
-                      </td>
-                      <td colSpan={isLocked ? 2 : 3}></td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
+            <ReceiptTable
+              receipts={receipts}
+              showMenu={!isLocked}
+              renderMenu={(r) => (
+                <DotMenu
+                  id={`r-${r.id}`}
+                  onEdit={() => openReceiptEdit(r)}
+                  onDelete={() => handleDeleteReceipt(r.id)}
+                />
+              )}
+            />
           )}
+
           {/* ── 통계 탭 ── */}
           {activeTab === "stats" && (
-            <div style={{ marginTop: "4px" }}>
+            <div className="sl-tab-panel">
               <SalesDrivingStats
                 username={selectedUser.username}
                 name={selectedUser.name}
@@ -1426,102 +663,7 @@ export default function SalesAdminContent() {
               />
             </div>
           )}
-          {/* ── 카테고리 탭 ── */}
-          {activeTab === "category" && (
-            <div style={{ marginTop: "4px" }}>
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: "10px",
-                  border: "1px solid #e8eaed",
-                  padding: "16px",
-                  marginBottom: "12px",
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    marginBottom: "12px",
-                  }}
-                >
-                  카테고리 추가
-                </h3>
-                <form
-                  onSubmit={handleAddCategory}
-                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
-                >
-                  <input
-                    type="text"
-                    placeholder="카테고리 이름"
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: "9px 12px",
-                      border: "1.5px solid #d8dce3",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      outline: "none",
-                    }}
-                  />
-                  <button type="submit" className="sl-btn-primary">
-                    추가
-                  </button>
-                </form>
-              </div>
-              <div className="sac-table-wrap">
-                <table className="sac-table">
-                  <thead>
-                    <tr>
-                      <th>카테고리명</th>
-                      <th style={{ width: "70px" }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categories.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={2}
-                          style={{
-                            textAlign: "center",
-                            padding: "2rem",
-                            color: "#bbb",
-                          }}
-                        >
-                          없음
-                        </td>
-                      </tr>
-                    ) : (
-                      categories.map((c) => (
-                        <tr key={c.id}>
-                          <td style={{ fontWeight: 500 }}>{c.name}</td>
-                          <td>
-                            <button
-                              className="sl-btn-delete"
-                              onClick={() => {
-                                if (window.confirm("삭제?"))
-                                  api
-                                    .deleteCategory(c.id)
-                                    .then(() =>
-                                      api
-                                        .getCategories()
-                                        .then((r) => setCategories(r.data)),
-                                    );
-                              }}
-                            >
-                              삭제
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          {/* 운행일지 모달 */}
+
           {showDrivingModal && (
             <DrivingModal
               form={drivingForm}
@@ -1547,7 +689,6 @@ export default function SalesAdminContent() {
               }}
             />
           )}
-          {/* 법인카드 모달 */} {/* 법인카드 모달 */}
           {showReceiptModal && (
             <ReceiptModal
               form={receiptForm}
@@ -1582,20 +723,319 @@ export default function SalesAdminContent() {
   }
 }
 
-const selStyle = {
-  padding: "7px 12px",
-  border: "1.5px solid #d8dce3",
-  borderRadius: "7px",
-  fontSize: "13px",
-  outline: "none",
-  background: "#fff",
-};
-const outlineBtn = {
-  padding: "7px 12px",
-  border: "1.5px solid #e0e0e0",
-  borderRadius: "8px",
-  background: "#fff",
-  cursor: "pointer",
-  fontSize: "13px",
-  color: "#555",
-};
+// ──── 🏷 카테고리 (추가 · 목록 · 삭제) ────
+function CategoryPanel({ categories, newCatName, setNewCatName, onAdd, onDelete }) {
+  return (
+    <div>
+      <div className="sl-panel">
+        <h3 className="sl-panel-title">카테고리 추가</h3>
+        <form className="sl-inline-form" onSubmit={onAdd}>
+          <input
+            type="text"
+            className="sl-text-input"
+            placeholder="카테고리 이름"
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+          />
+          <button type="submit" className="sl-btn-primary">
+            추가
+          </button>
+        </form>
+      </div>
+      <div className="sac-table-wrap">
+        <table className="sac-table">
+          <thead>
+            <tr>
+              <th>카테고리명</th>
+              <th className="sl-col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="sl-empty-cell">
+                  없음
+                </td>
+              </tr>
+            ) : (
+              categories.map((c) => (
+                <tr key={c.id}>
+                  <td className="sl-cell-name">{c.name}</td>
+                  <td>
+                    <button className="sl-btn-delete" onClick={() => onDelete(c)}>
+                      삭제
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ──── 정산 목록 카드 (한 사람 요약 + 주 단위 잠금) ────
+function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock }) {
+  const countClass = (n, color) => `sl-card-value ${n > 0 ? color : "sl-text-none"}`;
+  return (
+    <div
+      className={`sac-user-card${u.locked ? " is-locked" : u.hasData ? " has-data" : ""}`}
+    >
+      <div className="sl-card-body" onClick={onOpen}>
+        <div className="sl-card-name">{u.name}</div>
+        {u.cardNumber && <div className="sl-card-number">{u.cardNumber}</div>}
+        <div className="sl-card-stats">
+          <div className="sl-card-line">
+            <span className="sl-muted">운행일지</span>
+            <span className={countClass(u.drivingCount, "sl-text-blue")}>
+              {u.drivingCount > 0 ? `${u.drivingCount}건` : "없음"}
+            </span>
+          </div>
+          <div className="sl-card-line is-gap">
+            <span className="sl-muted">법인카드</span>
+            <span className={countClass(u.receiptCount, "sl-text-green")}>
+              {u.receiptCount > 0 ? `${u.receiptCount}건` : "없음"}
+            </span>
+          </div>
+          {u.totalDist > 0 && (
+            <div className="sl-card-dist">
+              <div className="sl-row-between">
+                <span className="sl-faint">총 운행거리</span>
+                <span className="sl-card-value sl-text-blue">{fmt(u.totalDist)}km</span>
+              </div>
+              <div className="sl-card-subline">
+                <span className="sl-faintest">└ 업무 / 개인</span>
+                <span className="sl-muted">
+                  {fmt(u.workDist)}km /{" "}
+                  <span className="sl-text-purple">{fmt(u.personalDist)}km</span>
+                </span>
+              </div>
+              <div className="sl-row-between">
+                <span className="sl-faint">총 주유량</span>
+                <span className="sl-card-value sl-text-amber">
+                  {u.totalFuelL ? u.totalFuelL.toFixed(1) + "L" : "-"}
+                </span>
+              </div>
+              <div className="sl-row-between">
+                <span className="sl-faint">평균 연비</span>
+                <span className="sl-card-value sl-text-green">
+                  {u.avgKmL ? u.avgKmL + "km/L" : "-"}
+                </span>
+              </div>
+              <div className="sl-row-between">
+                <span className="sl-faint">총 주유금액</span>
+                <span className="sl-card-value sl-text-violet">
+                  {u.totalFuelC ? fmtWon(u.totalFuelC) : "-"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 주 단위 잠금 버튼 (기록 없음 = 자동 잠금, false = 관리자가 열어줌) */}
+      <div className="sl-week-lock">
+        <p className="sl-week-lock-title">📅 주 단위 관리</p>
+        <div className="sl-week-lock-row">
+          {weeks.map((week) => {
+            const wLocked = (u.weekLocks || {})[week.weekNum] !== false;
+            return (
+              <button
+                key={week.weekNum}
+                className={`sl-week-btn${wLocked ? " is-locked" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWeekLock(u, week, wLocked);
+                }}
+              >
+                <div>{wLocked ? "🔒" : "🔓"}</div>
+                <div className="sl-week-label">{week.label}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──── 하루 운행 기록 표 ────
+function DayDrivingTable({ rows, showMenu, renderMenu }) {
+  return (
+    <div className="sac-table-wrap sl-scroll-x">
+      <table className="sac-table sl-min-700">
+        <thead>
+          <tr>
+            <th>시간</th>
+            <th>도착지</th>
+            <th className="sl-num">미터기</th>
+            <th className="sl-num">운행거리</th>
+            <th>비고</th>
+            <th className="sl-num">주유량</th>
+            <th className="sl-num">주유금액</th>
+            <th className="sl-num">단가</th>
+            <th>구분</th>
+            {showMenu && <th></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((d) => {
+            const ts = TYPE_STYLE[d.type] || { bg: "#f3f4f6", color: "#555" };
+            return (
+              <tr key={d.id}>
+                <td>
+                  {d.arrivalTime ? (
+                    <span className="sl-time-badge">⏰ {formatDrivingTime(d)}</span>
+                  ) : (
+                    <span className="sl-none">-</span>
+                  )}
+                </td>
+                <td className={d.destination ? "sl-cell-dest" : "sl-cell-empty"}>
+                  {d.destination || "-"}
+                </td>
+                <td className="sl-num">
+                  {d.meterReading > 0 ? `${fmt(d.meterReading)}km` : "-"}
+                </td>
+                <td className="sl-num sl-cell-dist">
+                  {d.calcDist > 0 ? `${fmt(d.calcDist)}km` : "-"}
+                </td>
+                <td className="sl-cell-notes">
+                  {d.notes && d.notes.length > 0 ? (
+                    d.notes.map((n, i) => (
+                      <div key={i} className="sl-note-line">
+                        {n.time && <span className="sl-note-time-badge">{n.time}</span>}
+                        <span className="sl-note-content">{n.content}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="sl-none">-</span>
+                  )}
+                </td>
+                <td className="sl-num sl-text-amber">
+                  {d.fuelAmount > 0 ? `${d.fuelAmount}L` : "-"}
+                </td>
+                <td className="sl-num">{d.fuelCost > 0 ? fmtWon(d.fuelCost) : "-"}</td>
+                <td className="sl-num sl-cell-small-muted">
+                  {d.fuelUnitPrice > 0 ? `${fmt(d.fuelUnitPrice)}원` : "-"}
+                </td>
+                <td>
+                  <span
+                    className="sl-type-badge"
+                    style={{ "--type-color": ts.color, "--type-bg": ts.bg }}
+                  >
+                    {d.type}
+                  </span>
+                </td>
+                {showMenu && <td className="sl-cell-menu">{renderMenu(d)}</td>}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ──── 하루 합계 (전일누계 · 금일누계 · 업무 · 개인 · 총누계 · 금일주유) ────
+function DaySummary({ rows, startMeter }) {
+  const km = (n) => (n > 0 ? `${fmt(n)}km` : "-");
+  const sumDist = (type) =>
+    rows.filter((d) => !type || d.type === type).reduce((s, d) => s + d.calcDist, 0);
+  const meters = rows.map((d) => d.meterReading).filter((m) => m > 0);
+  const endMeter = meters.length ? Math.max(...meters) : 0;
+  const totalFuelC = rows.reduce((s, d) => s + (d.fuelCost || 0), 0);
+
+  const items = [
+    { label: "전일누계", value: km(startMeter), color: "#555" },
+    { label: "금일누계", value: km(sumDist()), color: "#1557b0" },
+    { label: "업무", value: km(sumDist("업무")), color: "#1557b0" },
+    { label: "개인", value: km(sumDist("개인사용")), color: "#6d28d9" },
+    { label: "총누계", value: km(endMeter), color: "#059669" },
+    ...(totalFuelC > 0
+      ? [{ label: "금일주유", value: fmtWon(totalFuelC), color: "#92400e" }]
+      : []),
+  ];
+  return (
+    <div className="sl-day-summary">
+      <div className="sl-day-summary-row">
+        {items.map((r, i) => (
+          <div
+            key={r.label}
+            className={`sl-day-summary-cell${i === items.length - 1 ? " is-last" : ""}`}
+          >
+            <div className="sl-stat-label">{r.label}</div>
+            <div className="sl-stat-value" style={{ color: r.color }}>
+              {r.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ──── 법인카드 표 (+ 합계) ────
+function ReceiptTable({ receipts, showMenu, renderMenu }) {
+  const sum = (key) => receipts.reduce((s, r) => s + (r[key] || 0), 0);
+  return (
+    <div className="sac-table-wrap sl-tab-panel sl-scroll-x">
+      <table className="sac-table sl-min-600">
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>카테고리</th>
+            <th>신용카드 번호</th>
+            <th className="sl-num">총금액</th>
+            <th className="sl-num">공급가액</th>
+            <th className="sl-num">VAT</th>
+            <th>사업자</th>
+            <th>상호</th>
+            {showMenu && <th></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {receipts.length === 0 ? (
+            <tr>
+              <td colSpan={9} className="sl-empty-cell is-tall">
+                내역 없음
+              </td>
+            </tr>
+          ) : (
+            receipts.map((r) => (
+              <tr key={r.id}>
+                <td className="sl-cell-date">{r.date}</td>
+                <td>{r.category ? <span className="cat-badge">{r.category}</span> : "-"}</td>
+                <td className="sl-cell-ellipsis">{r.content || "-"}</td>
+                <td className="sl-num sl-cell-amount">
+                  {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
+                </td>
+                <td className="sl-num sl-cell-supply">
+                  {r.supplyAmount ? fmtWon(r.supplyAmount) : "-"}
+                </td>
+                <td className="sl-num sl-cell-vat">{r.vat ? fmtWon(r.vat) : "-"}</td>
+                <td className="sl-small">{r.businessNumber || "-"}</td>
+                <td className="sl-cell-ellipsis is-narrow sl-small">{r.companyName || "-"}</td>
+                {showMenu && <td className="sl-cell-menu">{renderMenu(r)}</td>}
+              </tr>
+            ))
+          )}
+        </tbody>
+        {receipts.length > 0 && (
+          <tfoot>
+            <tr>
+              <td colSpan={3} className="sl-text-blue">
+                합계
+              </td>
+              <td className="sl-num sl-nowrap sl-text-blue">{fmtWon(sum("totalAmount"))}</td>
+              <td className="sl-num sl-nowrap sl-text-sub">{fmtWon(sum("supplyAmount"))}</td>
+              <td className="sl-num sl-nowrap sl-text-green">{fmtWon(sum("vat"))}</td>
+              <td colSpan={showMenu ? 3 : 2}></td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  );
+}
