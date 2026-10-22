@@ -59,8 +59,7 @@ export default function SalesAdminContent() {
   const [newCatName, setNewCatName] = useState("");
 
   const [showDrivingModal, setShowDrivingModal] = useState(false);
-  // 관리자 화면은 도착지 자동완성 목록을 불러오지 않음 (기존 동작 그대로)
-  const destinations = [];
+  const [destinations, setDestinations] = useState([]); // 도착지 추천 목록 (전체 영업 사원)
   const [destSearch, setDestSearch] = useState("");
   const [showDestDrop, setShowDestDrop] = useState(false);
   const destRef = useRef(null);
@@ -130,6 +129,11 @@ export default function SalesAdminContent() {
       .getCategories()
       .then((r) => setCategories(r.data))
       .catch(() => {});
+    // 도착지 추천 목록 (실패해도 입력에는 영향 없음)
+    api
+      .getDestinations()
+      .then((r) => setDestinations(r.data))
+      .catch(() => {});
   }, []);
   useEffect(() => {
     api
@@ -147,6 +151,8 @@ export default function SalesAdminContent() {
     const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
         setOpenMenu(null);
+      if (destRef.current && !destRef.current.contains(e.target))
+        setShowDestDrop(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);

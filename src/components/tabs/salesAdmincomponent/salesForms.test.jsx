@@ -389,3 +389,24 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
     expect(salesAdminApi.updateReceipt.mock.calls).toMatchSnapshot("updateReceipt");
   });
 });
+
+// ───────────── 📊 영업 정산관리 – 도착지 추천 목록 ─────────────
+describe("영업 정산관리 – 도착지 추천 목록", () => {
+  test("입력한 글자가 들어간 예전 도착지가 뜨고, 누르면 입력됨", async () => {
+    salesAdminApi.getDestinations.mockImplementation(() => ok(["명동역6번", "명동역9번", "시청"]));
+    render(<SalesAdminContent />);
+    fireEvent.click(await screen.findByText("김영업"));
+    await screen.findByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const destInput = modal().querySelector("input[placeholder='경복궁']");
+    fireEvent.focus(destInput);
+    setValue(destInput, "명");
+    expect(screen.getByText("명동역6번")).toBeInTheDocument();
+    expect(screen.getByText("명동역9번")).toBeInTheDocument();
+    expect(screen.queryByText("시청")).toBeNull();
+    fireEvent.click(screen.getByText("명동역9번"));
+    expect(destInput.value).toBe("명동역9번");
+    expect(screen.queryByText("명동역6번")).toBeNull();
+  });
+});

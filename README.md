@@ -1,70 +1,148 @@
-# Getting Started with Create React App
+# Seoul City Tour 관리 시스템 (프론트엔드)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+서울시티투어 내부 관리 시스템의 화면(React)입니다.
+가이드 정산, 영업 운행일지 · 법인카드 정산, 업체별 정산, 인삼 매출 등을 관리합니다.
 
-## Available Scripts
+| 구분 | 저장소 | 기술 |
+|---|---|---|
+| 프론트엔드 (이 저장소) | [seoul-city-tour-front](https://github.com/hdachan/seoul-city-tour-front) | React 19 (Create React App), axios, recharts, xlsx |
+| 백엔드 | [seoul-city-tour-Backend](https://github.com/hdachan/seoul-city-tour-Backend) | Spring Boot 3.2, Java 17, JPA, MySQL, JWT |
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 1. 로컬에서 실행하기
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 준비물
+- Node.js 18 이상
+- 백엔드 서버가 `http://localhost:8080` 에서 실행 중이어야 함 (백엔드 README 참고)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 처음 한 번
+```bash
+npm install
+```
 
-### `npm test`
+`.env.local` 파일을 만들고 백엔드 주소를 적습니다. 이 파일은 git 에 올라가지 않습니다.
+```
+REACT_APP_API_URL=http://localhost:8080/api
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 실행
+```bash
+npm start
+```
+브라우저에서 http://localhost:3000 이 열립니다.
 
-### `npm run build`
+> 로그인할 때 "서버에 연결할 수 없습니다"가 뜨면 백엔드가 꺼져 있는 것입니다.
+> 403 이 뜨면 8080 포트를 다른 프로그램이 쓰고 있는지 확인하세요.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 테스트
+```bash
+npm test
+```
+- `src/components/tabs/salesAdmincomponent/salesForms.test.jsx`
+  영업 정산 · 영업 정산관리 입력창(운행일지 · 법인카드)의 **화면 모양과 서버로 보내는 값**을 기록해 둔 테스트입니다.
+  영업 화면을 고친 뒤 이 테스트가 실패하면 기존 동작이 바뀐 것이므로 확인이 필요합니다.
+  일부러 바꾼 경우에만 `npm test -- -u` 로 기록을 갱신하세요.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 배포용 빌드
+```bash
+npm run build
+```
+`build/` 폴더가 만들어집니다. 배포 환경에서는 `REACT_APP_API_URL` 을 운영 서버 주소로 설정해서 빌드해야 합니다.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 2. 폴더 구조
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+src/
+├── api/
+│   ├── client.js     서버 호출 공용 axios (서버 주소 · 로그인 토큰 자동으로 붙임)
+│   ├── auth.js       로그인, 계정, 운행 기록, 업체 정산, 인삼, 가이드 정산 API
+│   └── sales.js      영업 정산(salesApi) / 영업 정산관리(salesAdminApi) API
+├── components/
+│   ├── AppLayout.jsx         왼쪽 메뉴 + 탭 권한 (로그인한 역할에 따라 탭 표시)
+│   └── tabs/                 탭별 화면
+│       └── salesAdmincomponent/
+│           ├── SalesContent.jsx        💼 영업 정산 (영업 사원)
+│           ├── SalesAdminContent.jsx   📊 영업 정산관리 (관리자)
+│           ├── DrivingModal.jsx        운행일지 입력창 (두 화면 공용)
+│           ├── ReceiptModal.jsx        법인카드 입력창 (두 화면 공용)
+│           ├── salesShared.js          공용 기능 (숫자 표시, 주차 계산, 미터기 거리 계산)
+│           ├── SalesMonthlyStats.jsx   월간 통계 (영업 · 관리자 공용)
+│           └── PersonalFuelPanel.jsx   개인주유 정산 (영업 · 관리자 공용)
+├── pages/            로그인, 권한 없음 화면
+└── utils/
+    ├── dateUtils.js  날짜 → "YYYY-MM-DD" (한국 시간 기준)
+    ├── useToday.js   화면을 켜둔 채 자정이 지나면 오늘 날짜 자동 갱신
+    └── tokenUtils.js 로그인 토큰에서 역할 · 만료 확인
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 3. 계정과 권한
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 역할
+| 역할 | 이름 | 기본으로 보이는 탭 |
+|---|---|---|
+| `ROLE_ADMIN` | 관리자 | 계정 관리, 운행 기록, 업체별 정산, 인삼 매출, 가이드 정산관리, 가이드 정산 통계, 영업 정산관리 |
+| `ROLE_DEV` | 개발자 | 관리자 탭(계정 관리 제외) + ⚙️ 개발 |
+| `ROLE_SALES` | 영업 | 💼 영업 정산 |
+| `ROLE_GUIDE` | 가이드 | 📝 가이드 정산, 📊 내 통계 |
 
-## Learn More
+- 역할별로 보이는 탭은 **⚙️ 개발 탭에서 바꿀 수 있습니다.** 바꾼 뒤 해당 계정이 새로고침(F5)하면 적용됩니다.
+- 화면은 로그인할 때마다 서버에서 탭 권한을 받아옵니다. 서버가 응답하지 않을 때만 위 기본값을 씁니다.
+- 실제 접근 제한은 백엔드가 합니다 (API 마다 탭 권한 검사).
+- 계정 추가 · 수정 · 삭제는 👥 계정 관리 탭에서 합니다.
+- 아이디는 **영문 · 숫자 4~20자**, 비밀번호는 4자 이상이어야 로그인됩니다.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 처음 실행할 때 만들어지는 계정
+백엔드를 계정이 하나도 없는 DB 로 처음 실행하면 `DataInitializer` 가 테스트 계정 4개(admin, sales, guide, dev)를 만듭니다.
+- `dev` 는 아이디가 3자라서 로그인이 안 됩니다. 개발자 계정은 계정 관리에서 4자 이상 아이디로 따로 만드세요.
+- **운영 서버에서는 기본 비밀번호를 반드시 바꾸세요.**
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## 4. 영업 정산 주요 규칙
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 주 단위 잠금
+- 한 달을 **월요일~일요일** 단위 주로 나눕니다 (달의 첫 주 · 마지막 주는 그 달 날짜만).
+- 백엔드 스케줄러가 매일 자정에 **지난 주는 잠그고, 이번 주는 엽니다.**
+- 관리자는 📊 영업 정산관리 → 정산 목록 카드에서 주별 🔒/🔓 를 눌러 잠금을 풀거나 잠글 수 있습니다.
 
-### Analyzing the Bundle Size
+### 영업 사원이 입력할 수 있는 날짜
+- **잠기지 않은 주 + 이번 주 일요일까지** (운행일지 · 법인카드 · 비고 모두 같은 규칙)
+- 이번 주는 기본으로 열려 있고, 관리자가 지난 주 잠금을 풀어주면 그 주도 입력할 수 있습니다.
+- 관리자 화면(영업 정산관리)은 날짜 제한 없이 수정할 수 있습니다.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 운행거리 계산 (미터기 기준)
+- 날짜 → 미터기 순으로 정렬해서, 앞 기록과의 미터기 차이를 거리로 봅니다.
+- 구간 거리는 **뒤쪽 기록의 구분**에 붙습니다. 개인사용이면 개인 km, 그 외는 업무 km 입니다.
+- 달의 첫 구간은 전달 마지막 미터기부터 계산합니다.
 
-### Making a Progressive Web App
+### 개인주유 정산 (계산은 백엔드 `PersonalFuelService`)
+- 평균연비 = 그 달 주행거리 ÷ 그 달 주유량(L)
+  (그 달 주유 기록이 없으면 전체 기간 평균 사용)
+- 넣어야 할 개인주유(L) = 개인사용 km ÷ 평균연비
+- 이월: 다음 달로 넘어가는 양 = 지난달 이월 + 이번 달 넣은 개인주유 − 넣어야 할 양
+  (DB 에 저장하지 않고 첫 기록 달부터 매번 다시 계산)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 5. 배포
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+| 구분 | 방법 |
+|---|---|
+| 프론트 | `npm run build` → `build/` 폴더를 호스팅 서버에 올림. `REACT_APP_API_URL` 은 운영 백엔드 주소 |
+| 백엔드 | jar 를 빌드해서 서버에 올림 (백엔드 README 참고) |
 
-### Deployment
+> 프론트와 백엔드를 같이 바꾼 경우 **백엔드를 먼저** 배포하세요.
+> 새 화면이 새 API 를 부르는데 백엔드가 예전 버전이면 해당 기능이 "불러오지 못했습니다"로 나옵니다.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 6. 커밋 메시지 규칙
+`YYYYMMDD 바뀐 내용 / 바뀐 내용` 형식으로 씁니다.
+```
+20261022 영업 입력 가능 날짜를 '열린 주'로 통일 / 미터기 안내 양쪽 통일
+```
