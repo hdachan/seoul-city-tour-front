@@ -29,13 +29,11 @@
   margin-bottom: 14px;
   width: fit-content;
   flex-wrap: wrap;
-  border-bottom: 2px solid #e5e7eb;
 }
 .sl-tab {
   padding: 7px 14px;
   border: none;
   border-radius: 6px;
-  margin-bottom: -2px;
   background: transparent;
   font-size: 13px;
   font-weight: 500;
@@ -45,15 +43,14 @@
   white-space: nowrap;
 }
 .sl-tab:hover {
-  color: #4f46e5;
-  background: #f5f3ff;
+  color: var(--sl-blue);
+  background: #e8f0fe;
 }
 .sl-tab.active {
   background: #fff;
-  color: #1557b0;
+  color: var(--sl-blue);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border-bottom-color: #4f46e5;
 }
 
 /* ── 버튼 ── */
@@ -230,7 +227,7 @@
 .sl-field input:focus,
 .sl-field select:focus {
   border-color: #1557b0;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(21, 87, 176, 0.1);
 }
 .sl-field input:focus {
   background: #fff;
