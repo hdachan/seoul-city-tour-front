@@ -4,7 +4,7 @@ import { salesAdminApi as api } from "../../../api/sales";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import { toDateStr } from "../../../utils/dateUtils";
 import { useDateRollover } from "../../../utils/useToday";
-import "./SalesAdminContent.css"; // 수정
+import "./sales.css";
 
 import SalesDrivingStats from "./SalesDrivingStats";
 import ReceiptModal from "./ReceiptModal";
@@ -433,9 +433,9 @@ export default function SalesAdminContent() {
   return (
     <div className="sac-wrapper">
       {/* 메인 탭 */}
-      <div className="gf-tab-bar" style={{ marginBottom: "16px" }}>
+      <div className="sl-tab-bar" style={{ marginBottom: "16px" }}>
         <button
-          className={`gf-tab ${mainTab === "list" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "list" ? "active" : ""}`}
           onClick={() => {
             setMainTab("list");
             setSelectedUser(null);
@@ -444,7 +444,7 @@ export default function SalesAdminContent() {
           📊 정산 목록
         </button>
         <button
-          className={`gf-tab ${mainTab === "total" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "total" ? "active" : ""}`}
           onClick={() => {
             setMainTab("total");
             setSelectedUser(null);
@@ -453,7 +453,7 @@ export default function SalesAdminContent() {
           📈 전체 통계
         </button>
         <button
-          className={`gf-tab ${mainTab === "category" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "category" ? "active" : ""}`}
           onClick={() => {
             setMainTab("category");
             setSelectedUser(null);
@@ -464,12 +464,12 @@ export default function SalesAdminContent() {
       </div>
 
       {error && (
-        <div className="alert alert-error" onClick={() => setError("")}>
+        <div className="sl-alert sl-alert-error" onClick={() => setError("")}>
           ⚠ {error}
         </div>
       )}
       {success && (
-        <div className="alert alert-success" onClick={() => setSuccess("")}>
+        <div className="sl-alert sl-alert-success" onClick={() => setSuccess("")}>
           {success}
         </div>
       )}
@@ -532,7 +532,7 @@ export default function SalesAdminContent() {
                   outline: "none",
                 }}
               />
-              <button type="submit" className="btn-primary">
+              <button type="submit" className="sl-btn-primary">
                 추가
               </button>
             </form>
@@ -565,7 +565,7 @@ export default function SalesAdminContent() {
                       <td style={{ fontWeight: 500 }}>{c.name}</td>
                       <td>
                         <button
-                          className="delete-btn"
+                          className="sl-btn-delete"
                           onClick={() => {
                             if (window.confirm("삭제?"))
                               api
@@ -896,22 +896,22 @@ export default function SalesAdminContent() {
               marginBottom: "4px",
             }}
           >
-            <div className="gf-tab-bar" style={{ marginBottom: 0 }}>
+            <div className="sl-tab-bar" style={{ marginBottom: 0 }}>
               <button
-                className={`gf-tab ${activeTab === "driving" ? "active" : ""}`}
+                className={`sl-tab ${activeTab === "driving" ? "active" : ""}`}
                 onClick={() => setActiveTab("driving")}
               >
                 📋 운행일지
               </button>
               <button
-                className={`gf-tab ${activeTab === "receipt" ? "active" : ""}`}
+                className={`sl-tab ${activeTab === "receipt" ? "active" : ""}`}
                 onClick={() => setActiveTab("receipt")}
               >
                 💳 법인카드
               </button>
 
               <button
-                className={`gf-tab ${activeTab === "stats" ? "active" : ""}`}
+                className={`sl-tab ${activeTab === "stats" ? "active" : ""}`}
                 onClick={() => setActiveTab("stats")}
               >
                 📊 통계
@@ -919,12 +919,12 @@ export default function SalesAdminContent() {
             </div>
             <div style={{ marginLeft: "8px" }}>
               {!isLocked && activeTab === "driving" && (
-                <button className="btn-primary" onClick={openDrivingAdd}>
+                <button className="sl-btn-primary" onClick={openDrivingAdd}>
                   ＋ 추가
                 </button>
               )}
               {!isLocked && activeTab === "receipt" && (
-                <button className="btn-primary" onClick={openReceiptAdd}>
+                <button className="sl-btn-primary" onClick={openReceiptAdd}>
                   ＋ 지출내역
                 </button>
               )}
@@ -1465,7 +1465,7 @@ export default function SalesAdminContent() {
                       outline: "none",
                     }}
                   />
-                  <button type="submit" className="btn-primary">
+                  <button type="submit" className="sl-btn-primary">
                     추가
                   </button>
                 </form>
@@ -1498,7 +1498,7 @@ export default function SalesAdminContent() {
                           <td style={{ fontWeight: 500 }}>{c.name}</td>
                           <td>
                             <button
-                              className="delete-btn"
+                              className="sl-btn-delete"
                               onClick={() => {
                                 if (window.confirm("삭제?"))
                                   api

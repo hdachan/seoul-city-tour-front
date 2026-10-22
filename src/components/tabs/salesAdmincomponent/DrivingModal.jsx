@@ -1,5 +1,6 @@
 import DrivingTimeFields from "./DrivingTimeFields";
 import { fmt, TYPES, TYPE_STYLE, unitSuffix } from "./salesShared";
+import "./sales.css";
 
 // 📋 운행일지 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm   : 입력값 (화면마다 자기 상태를 넘김)
@@ -29,25 +30,25 @@ export default function DrivingModal({
   const destRef = dest.ref;
 
   return (
-    <div className="modal-bg" style={{ alignItems: "center" }}>
+    <div className="sl-modal-bg" style={{ alignItems: "center" }}>
       <div
-        className="modal"
+        className="sl-modal"
         style={{ width: "480px", borderRadius: "14px", maxHeight: "90vh" }}
       >
-        <div className="modal-header">
-          <h3 className="modal-title" style={{ margin: 0 }}>
+        <div className="sl-modal-header">
+          <h3 className="sl-modal-title" style={{ margin: 0 }}>
             운행일지 {isEdit ? "수정" : "추가"}
           </h3>
           <button
-            className="modal-close"
+            className="sl-modal-close"
             onClick={onClose}
           >
             ✕
           </button>
         </div>
-        <form onSubmit={onSubmit} className="modal-form">
+        <form onSubmit={onSubmit} className="sl-modal-form">
           {/* 날짜 - 모든 구분 하루 단위 */}
-          <div className="field">
+          <div className="sl-field">
             <label>날짜 *</label>
             <input
               type="date"
@@ -73,7 +74,7 @@ export default function DrivingModal({
                 setForm={setForm}
               />
               <div
-                className="field"
+                className="sl-field"
                 style={{ position: "relative" }}
                 ref={destRef}
               >
@@ -150,7 +151,7 @@ export default function DrivingModal({
                     </div>
                   )}
               </div>
-              <div className="field">
+              <div className="sl-field">
                 <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
                 <div style={{ position: "relative" }}>
                   <input
@@ -205,7 +206,7 @@ export default function DrivingModal({
                   </p>
                 )}
               </div>
-              <div className="field">
+              <div className="sl-field">
                 <label
                   style={{
                     display: "flex",
@@ -342,7 +343,7 @@ export default function DrivingModal({
                     gap: "8px",
                   }}
                 >
-                  <div className="field">
+                  <div className="sl-field">
                     <label>주유량 *</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -364,7 +365,7 @@ export default function DrivingModal({
                       </span>
                     </div>
                   </div>
-                  <div className="field">
+                  <div className="sl-field">
                     <label>주유금액 *</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -385,7 +386,7 @@ export default function DrivingModal({
                       </span>
                     </div>
                   </div>
-                  <div className="field">
+                  <div className="sl-field">
                     <label>단가 *</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -439,7 +440,7 @@ export default function DrivingModal({
                     gap: "8px",
                   }}
                 >
-                  <div className="field">
+                  <div className="sl-field">
                     <label>주유량</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -460,7 +461,7 @@ export default function DrivingModal({
                       </span>
                     </div>
                   </div>
-                  <div className="field">
+                  <div className="sl-field">
                     <label>주유금액</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -480,7 +481,7 @@ export default function DrivingModal({
                       </span>
                     </div>
                   </div>
-                  <div className="field">
+                  <div className="sl-field">
                     <label>단가</label>
                     <div style={{ position: "relative" }}>
                       <input
@@ -508,7 +509,7 @@ export default function DrivingModal({
           {/* 개인 사용 */}
           {form.type === "개인사용" && (
             <>
-              <div className="field">
+              <div className="sl-field">
                 <MeterLabel lowerMeter={lowerMeter} nextMeter={nextMeter} />
                 <div style={{ position: "relative" }}>
                   <input
@@ -567,7 +568,7 @@ export default function DrivingModal({
           )}
 
           {/* 구분 - 맨 아래 */}
-          <div className="field">
+          <div className="sl-field">
             <label>구분 *</label>
             <div style={{ display: "flex", gap: "6px" }}>
               {TYPES.map((t) => {
@@ -616,16 +617,16 @@ export default function DrivingModal({
             </div>
           </div>
 
-          {error && <p className="field-error">⚠ {error}</p>}
-          <div className="modal-btns">
+          {error && <p className="sl-field-error">⚠ {error}</p>}
+          <div className="sl-modal-btns">
             <button
               type="button"
-              className="btn-outline"
+              className="sl-btn-outline"
               onClick={onClose}
             >
               취소
             </button>
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="sl-btn-primary">
               {isEdit ? "수정" : "추가"}
             </button>
           </div>

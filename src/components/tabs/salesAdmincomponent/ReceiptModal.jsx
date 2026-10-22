@@ -1,4 +1,5 @@
 import { fmtWon, unitSuffix } from "./salesShared";
+import "./sales.css";
 
 // 💳 법인카드 지출내역 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm  : 입력값 (화면마다 자기 상태를 넘김)
@@ -26,21 +27,21 @@ export default function ReceiptModal({
     }));
 
   return (
-    <div className="modal-bg" style={{ alignItems: "center" }}>
+    <div className="sl-modal-bg" style={{ alignItems: "center" }}>
       <div
-        className="modal"
+        className="sl-modal"
         style={{ width: "440px", borderRadius: "14px", ...modalStyle }}
       >
-        <div className="modal-header">
-          <h3 className="modal-title" style={{ margin: 0 }}>
+        <div className="sl-modal-header">
+          <h3 className="sl-modal-title" style={{ margin: 0 }}>
             지출내역 {isEdit ? "수정" : "추가"}
           </h3>
-          <button className="modal-close" onClick={onClose}>
+          <button className="sl-modal-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <form onSubmit={onSubmit} className="modal-form">
-          <div className="field">
+        <form onSubmit={onSubmit} className="sl-modal-form">
+          <div className="sl-field">
             <label>날짜</label>
             <input
               type="date"
@@ -50,7 +51,7 @@ export default function ReceiptModal({
               onChange={set("date")}
             />
           </div>
-          <div className="field">
+          <div className="sl-field">
             <label>카테고리</label>
             <select value={form.category || ""} onChange={set("category")}>
               {categories.length === 0 ? (
@@ -64,7 +65,7 @@ export default function ReceiptModal({
               )}
             </select>
           </div>
-          <div className="field">
+          <div className="sl-field">
             <label>신용카드 번호</label>
             <input
               type="text"
@@ -72,7 +73,7 @@ export default function ReceiptModal({
               onChange={set("content")}
             />
           </div>
-          <div className="field">
+          <div className="sl-field">
             <label>총금액 *</label>
             <div style={{ position: "relative" }}>
               <input
@@ -113,7 +114,7 @@ export default function ReceiptModal({
               </div>
             </div>
           )}
-          <div className="field">
+          <div className="sl-field">
             <label>
               사업자번호 <span style={optionalStyle}>(선택)</span>
             </label>
@@ -124,7 +125,7 @@ export default function ReceiptModal({
               onChange={set("businessNumber")}
             />
           </div>
-          <div className="field">
+          <div className="sl-field">
             <label>
               상호 <span style={optionalStyle}>(선택)</span>
             </label>
@@ -134,12 +135,12 @@ export default function ReceiptModal({
               onChange={set("companyName")}
             />
           </div>
-          {error && <p className="field-error">⚠ {error}</p>}
-          <div className="modal-btns">
-            <button type="button" className="btn-outline" onClick={onClose}>
+          {error && <p className="sl-field-error">⚠ {error}</p>}
+          <div className="sl-modal-btns">
+            <button type="button" className="sl-btn-outline" onClick={onClose}>
               취소
             </button>
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="sl-btn-primary">
               {isEdit ? "수정" : "추가"}
             </button>
           </div>

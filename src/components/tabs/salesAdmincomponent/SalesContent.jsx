@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { toDateStr } from "../../../utils/dateUtils";
 import useToday from "../../../utils/useToday";
-import "./SalesContent.css"; // 수정
+import "./sales.css";
 import { salesApi as api } from "../../../api/sales";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
@@ -1026,32 +1026,32 @@ export default function SalesContent() {
         </div>
       )}
       {error && (
-        <div className="alert alert-error" onClick={() => setError("")}>
+        <div className="sl-alert sl-alert-error" onClick={() => setError("")}>
           ⚠ {error}
         </div>
       )}
       {success && (
-        <div className="alert alert-success" onClick={() => setSuccess("")}>
+        <div className="sl-alert sl-alert-success" onClick={() => setSuccess("")}>
           ✅ {success}
         </div>
       )}
 
       {/* 메인 탭 */}
-      <div className="gf-tab-bar" style={{ marginBottom: "14px" }}>
+      <div className="sl-tab-bar" style={{ marginBottom: "14px" }}>
         <button
-          className={`gf-tab ${mainTab === "driving" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "driving" ? "active" : ""}`}
           onClick={() => setMainTab("driving")}
         >
           📋 운행일지
         </button>
         <button
-          className={`gf-tab ${mainTab === "receipt" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "receipt" ? "active" : ""}`}
           onClick={() => setMainTab("receipt")}
         >
           💳 법인카드
         </button>
         <button
-          className={`gf-tab ${mainTab === "stats" ? "active" : ""}`}
+          className={`sl-tab ${mainTab === "stats" ? "active" : ""}`}
           onClick={() => setMainTab("stats")}
         >
           📊 월간 통계
@@ -1109,14 +1109,14 @@ export default function SalesContent() {
             {monthDriving.length > 0 && (
               <>
                 <button
-                  className="btn-outline"
+                  className="sl-btn-outline"
                   onClick={downloadDrivingExcel}
                   style={{ fontSize: "12px", padding: "7px 12px" }}
                 >
                   📥 엑셀
                 </button>
                 <button
-                  className="btn-outline"
+                  className="sl-btn-outline"
                   onClick={printDriving}
                   style={{ fontSize: "12px", padding: "7px 12px" }}
                 >
@@ -1125,7 +1125,7 @@ export default function SalesContent() {
               </>
             )}
             {canEditDay && (
-              <button className="btn-primary" onClick={openAdd}>
+              <button className="sl-btn-primary" onClick={openAdd}>
                 ＋ 추가
               </button>
             )}
@@ -1752,7 +1752,7 @@ export default function SalesContent() {
                       }}
                     />
                     <button
-                      className="btn-primary"
+                      className="sl-btn-primary"
                       onClick={handleSaveNote}
                       disabled={noteSaving}
                       style={{ padding: "7px 12px", fontSize: "12px" }}
@@ -1760,7 +1760,7 @@ export default function SalesContent() {
                       {noteSaving ? "..." : "저장"}
                     </button>
                     <button
-                      className="btn-outline"
+                      className="sl-btn-outline"
                       onClick={() => {
                         setNoteEditing(false);
                         setNoteInput(dailyNote);
@@ -1809,14 +1809,14 @@ export default function SalesContent() {
               {receipts.length > 0 && (
                 <>
                   <button
-                    className="btn-outline"
+                    className="sl-btn-outline"
                     onClick={downloadReceiptExcel}
                     style={{ fontSize: "12px", padding: "7px 12px" }}
                   >
                     📥 엑셀
                   </button>
                   <button
-                    className="btn-outline"
+                    className="sl-btn-outline"
                     onClick={printReceipt}
                     style={{ fontSize: "12px", padding: "7px 12px" }}
                   >
@@ -1825,7 +1825,7 @@ export default function SalesContent() {
                 </>
               )}
               {!isLocked && receiptDates.length > 0 && (
-                <button className="btn-primary" onClick={openReceiptAdd}>
+                <button className="sl-btn-primary" onClick={openReceiptAdd}>
                   ＋ 지출내역
                 </button>
               )}

@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { toDateStr } from "../../../utils/dateUtils";
+import "./sales.css";
 
 export default function TotalStats({
   summary,
@@ -236,14 +237,14 @@ export default function TotalStats({
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
           <button
             onClick={downloadExcel}
-            className="btn-outline"
+            className="sl-btn-outline"
             style={{ fontSize: "12px", padding: "7px 12px" }}
           >
             📥 엑셀
           </button>
           <button
             onClick={printReport}
-            className="btn-outline"
+            className="sl-btn-outline"
             style={{ fontSize: "12px", padding: "7px 12px" }}
           >
             🖨 인쇄

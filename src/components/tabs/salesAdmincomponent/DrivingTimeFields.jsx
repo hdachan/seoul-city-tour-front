@@ -1,3 +1,4 @@
+import "./sales.css";
 // 운행일지 출발/도착 시간 입력 (영업 정산 · 영업 정산관리 공용)
 export default function DrivingTimeFields({ form, setForm }) {
   const timeInput = (key, required) => (
@@ -20,11 +21,11 @@ export default function DrivingTimeFields({ form, setForm }) {
 
   return (
     <div style={{ display: "flex", gap: "10px" }}>
-      <div className="field" style={{ flex: 1, minWidth: 0 }}>
+      <div className="sl-field" style={{ flex: 1, minWidth: 0 }}>
         <label style={labelStyle}>🚗 출발 시간</label>
         {timeInput("departureTime", false)}
       </div>
-      <div className="field" style={{ flex: 1, minWidth: 0 }}>
+      <div className="sl-field" style={{ flex: 1, minWidth: 0 }}>
         <label style={labelStyle}>🕐 도착 시간 *</label>
         {timeInput("arrivalTime", true)}
       </div>

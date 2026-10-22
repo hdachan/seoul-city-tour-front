@@ -1,0 +1,411 @@
+/* ─────────────────────────────────────────────────────────────
+   영업 정산 · 영업 정산관리 전용 스타일
+   - 다른 화면(가이드, 계정 관리 등)과 겹치지 않도록 모든 공용 부품 이름에 sl- 를 붙임
+   - 가이드 화면 CSS 를 고쳐도 영업 화면은 영향을 받지 않음
+   ───────────────────────────────────────────────────────────── */
+
+/* ── 탭 ── */
+.sl-tab-bar {
+  display: flex;
+  gap: 2px;
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 14px;
+  width: fit-content;
+  flex-wrap: wrap;
+  border-bottom: 2px solid #e5e7eb;
+}
+.sl-tab {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  margin-bottom: -2px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sl-tab:hover {
+  color: #4f46e5;
+  background: #f5f3ff;
+}
+.sl-tab.active {
+  background: #fff;
+  color: #1557b0;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-bottom-color: #4f46e5;
+}
+
+/* ── 버튼 ── */
+.sl-btn-primary {
+  padding: 8px 16px;
+  background: #1557b0;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.sl-btn-primary:hover {
+  background: #1248a0;
+}
+.sl-btn-primary:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+.sl-btn-outline {
+  padding: 8px 16px;
+  background: #fff;
+  color: #444;
+  border: 1px solid #d8dce3;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sl-btn-outline:hover {
+  background: #f4f5f7;
+  border-color: #b0b8c8;
+}
+.sl-btn-delete {
+  padding: 4px 10px;
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sl-btn-delete:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+/* ── 알림 (클릭하면 닫힘) ── */
+.sl-alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.sl-alert-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+.sl-alert-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+/* ── 입력창 (모달) ── */
+.sl-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+.sl-modal {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 20px 20px 32px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
+}
+.sl-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.sl-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 1.2rem;
+}
+.sl-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.sl-modal-close:hover {
+  background: #f0f2f5;
+  color: #555;
+}
+.sl-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sl-modal-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f2f5;
+}
+.sl-modal-btns .sl-btn-outline {
+  flex: 1;
+  text-align: center;
+}
+.sl-modal-btns .sl-btn-primary {
+  flex: 2;
+  text-align: center;
+}
+
+/* ── 입력 칸 ── */
+.sl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sl-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+.sl-field input,
+.sl-field select {
+  padding: 11px 12px;
+  border: 1.5px solid #d8dce3;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  background: #fff;
+  color: #1a1a2e;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.sl-field input {
+  font-family: inherit;
+}
+.sl-field input:focus,
+.sl-field select:focus {
+  border-color: #1557b0;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+.sl-field input:focus {
+  background: #fff;
+}
+.sl-field input::placeholder {
+  color: #bbb;
+}
+.sl-field-error {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* ── 화면 틀 ── */
+.sac-wrapper {
+  width: 100%;
+}
+.sac-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  flex-wrap: wrap;
+}
+
+/* ── 정산 목록 카드 (관리자) ── */
+.sac-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.sac-user-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.2rem;
+  border: 2px solid #f0f0f0;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.sac-user-card:active {
+  transform: scale(0.98);
+}
+
+/* ── 표 ── */
+.sac-table-wrap {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  overflow: visible;
+  margin-top: 4px;
+}
+.sac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sac-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  background: #f8f9fb;
+  border-bottom: 1px solid #e8eaed;
+}
+.sac-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 13px;
+}
+.sac-table tfoot td {
+  padding: 10px 12px;
+  font-weight: 700;
+  background: #f0f4ff;
+  border-top: 2px solid #e8eaed;
+}
+
+/* ── 배지 · 안내 ── */
+.cat-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: #e8f0fe;
+  color: #1557b0;
+}
+.locked-banner {
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #276749;
+  font-weight: 500;
+}
+.empty-state {
+  background: #fff;
+  border-radius: 10px;
+  border: 1.5px dashed #e0e0e0;
+  padding: 3rem;
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+}
+
+/* ── ··· 메뉴 (관리자) ── */
+.dot-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+.dot-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-width: 100px;
+}
+.dot-menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+}
+.dot-menu-item:hover {
+  background: #f4f5f7;
+}
+.dot-menu-item.danger {
+  color: #dc2626;
+}
+
+/* ── PC 는 표, 모바일은 카드 ── */
+@media (min-width: 769px) {
+  .desktop-table {
+    display: block !important;
+  }
+  .mobile-cards {
+    display: none !important;
+  }
+}
+
+/* ── 모바일 ── */
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none !important;
+  }
+  .mobile-cards {
+    display: flex !important;
+  }
+  .sl-modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 88vh;
+  }
+  .sl-tab-bar {
+    width: 100%;
+  }
+  .sl-tab {
+    flex: 1;
+    text-align: center;
+  }
+  .sl-btn-primary,
+  .sl-btn-outline {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 640px) {
+  .sac-card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sac-filter-bar {
+    gap: 6px;
+  }
+}

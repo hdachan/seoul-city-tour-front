@@ -101,7 +101,7 @@ afterEach(() => {
   global.Date = RealDate;
 });
 
-const modal = () => document.querySelector(".modal");
+const modal = () => document.querySelector(".sl-modal");
 // 입력창 화면(HTML) + 각 입력칸에 들어있는 값 (HTML 에는 입력값이 안 보여서 따로 기록)
 const modalState = () => ({
   html: modal().outerHTML,
