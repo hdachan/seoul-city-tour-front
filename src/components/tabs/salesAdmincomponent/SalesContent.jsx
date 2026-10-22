@@ -826,82 +826,38 @@ export default function SalesContent() {
     w.document.close();
   };
 
+  // ··· 메뉴 (수정 / 삭제)
   const DotMenu = ({ id, onEdit, onDelete }) => (
     <div
-      style={{
-        position: "relative",
-        display: "inline-block",
-        zIndex: openMenu === id ? 1000 : 1,
-      }}
+      className={`sl-menu${openMenu === id ? " is-open" : ""}`}
       ref={openMenu === id ? menuRef : null}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <button
+        className="sl-menu-btn"
         onClick={(e) => {
           e.stopPropagation();
           setOpenMenu(openMenu === id ? null : id);
-        }}
-        style={{
-          background: "none",
-          border: "none",
-          fontSize: "18px",
-          color: "#bbb",
-          cursor: "pointer",
-          padding: "2px 8px",
-          lineHeight: 1,
         }}
       >
         ···
       </button>
       {openMenu === id && (
-        <div
-          style={{
-            position: "absolute",
-            right: 0,
-            top: "100%",
-            zIndex: 1000,
-            background: "#fff",
-            border: "1px solid #e8eaed",
-            borderRadius: "10px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-            overflow: "hidden",
-            minWidth: "90px",
-          }}
-        >
+        <div className="sl-menu-list">
           <button
+            className="sl-menu-item"
             onClick={(e) => {
               e.stopPropagation();
               onEdit();
-            }}
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "10px 16px",
-              border: "none",
-              background: "#fff",
-              fontSize: "13px",
-              color: "#333",
-              textAlign: "left",
-              cursor: "pointer",
             }}
           >
             수정
           </button>
           <button
+            className="sl-menu-item is-danger"
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
-            }}
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "10px 16px",
-              border: "none",
-              background: "#fff",
-              fontSize: "13px",
-              color: "#dc2626",
-              textAlign: "left",
-              cursor: "pointer",
             }}
           >
             삭제
@@ -922,44 +878,35 @@ export default function SalesContent() {
     return sorted.map((d) => ({ ...d, distance: distMap[d.id] || 0 }));
   })();
 
-  const dayMeters = recalcDayDriving
-    .map((d) => d.meterReading)
-    .filter((m) => m > 0);
+  const dayMeters = recalcDayDriving.map((d) => d.meterReading).filter((m) => m > 0);
   const endMeter = dayMeters.length ? Math.max(...dayMeters) : 0;
   const totalKm = recalcDayDriving.reduce((s, d) => s + (d.distance || 0), 0);
   const workKm = sumDist(recalcDayDriving, "distance", "업무");
   const personalKm = sumDist(recalcDayDriving, "distance", "개인사용");
-  const totalFuelC = recalcDayDriving.reduce(
-    (s, d) => s + (d.fuelCost || 0),
-    0,
-  );
+  const totalFuelC = recalcDayDriving.reduce((s, d) => s + (d.fuelCost || 0), 0);
+  const km = (n) => (n > 0 ? `${fmt(n)}km` : "-");
+  const receiptTotal = receipts.reduce((s, r) => s + (r.totalAmount || 0), 0);
+
+  const closeNoteEdit = () => {
+    setNoteEditing(false);
+    setNoteInput(dailyNote);
+  };
 
   return (
     <div>
-      {/* 헤더 */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "14px",
-          flexWrap: "wrap",
-          gap: "8px",
-        }}
-      >
+      {/* 헤더: 이름 · 카드번호 · 연/월 */}
+      <div className="sl-page-head">
         <div>
-          <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#1a1a2e" }}>
-            💼 영업 정산
-          </h2>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>
+          <h2 className="sl-page-title">💼 영업 정산</h2>
+          <p className="sl-page-sub">
             {username} {myCard ? `· ${myCard}` : ""}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div className="sl-btn-group">
           <select
+            className="sl-select"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            style={selStyle}
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -968,9 +915,9 @@ export default function SalesContent() {
             ))}
           </select>
           <select
+            className="sl-select"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            style={selStyle}
           >
             {months.map((m) => (
               <option key={m} value={m}>
@@ -982,46 +929,16 @@ export default function SalesContent() {
       </div>
 
       {isLocked && (
-        <div
-          style={{
-            background: "#fff0f0",
-            border: "1px solid #fed7d7",
-            borderRadius: "8px",
-            padding: "10px 14px",
-            marginBottom: "12px",
-            fontSize: "13px",
-            color: "#dc2626",
-            fontWeight: 500,
-          }}
-        >
+        <div className="sl-banner-month-locked">
           🔒 이번 달은 잠겨있습니다. 입력/수정/삭제가 불가합니다.
         </div>
       )}
       {!isLocked && isWeekLocked && (
-        <div
-          style={{
-            background: "#fffbeb",
-            border: "2px solid #f59e0b",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            marginBottom: "12px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <span style={{ fontSize: "20px" }}>🔒</span>
+        <div className="sl-banner-week-locked">
+          <span className="sl-banner-icon">🔒</span>
           <div>
-            <div
-              style={{ fontSize: "14px", fontWeight: 700, color: "#92400e" }}
-            >
-              {`${selectedWeekNum}주차 기록이 잠겨있습니다.`}
-            </div>
-            <div
-              style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}
-            >
-              {"이 주의 기록은 입력/수정/삭제할 수 없습니다."}
-            </div>
+            <div className="sl-banner-title">{`${selectedWeekNum}주차 기록이 잠겨있습니다.`}</div>
+            <div className="sl-banner-desc">{"이 주의 기록은 입력/수정/삭제할 수 없습니다."}</div>
           </div>
         </div>
       )}
@@ -1037,25 +954,20 @@ export default function SalesContent() {
       )}
 
       {/* 메인 탭 */}
-      <div className="sl-tab-bar" style={{ marginBottom: "14px" }}>
-        <button
-          className={`sl-tab ${mainTab === "driving" ? "active" : ""}`}
-          onClick={() => setMainTab("driving")}
-        >
-          📋 운행일지
-        </button>
-        <button
-          className={`sl-tab ${mainTab === "receipt" ? "active" : ""}`}
-          onClick={() => setMainTab("receipt")}
-        >
-          💳 법인카드
-        </button>
-        <button
-          className={`sl-tab ${mainTab === "stats" ? "active" : ""}`}
-          onClick={() => setMainTab("stats")}
-        >
-          📊 월간 통계
-        </button>
+      <div className="sl-tab-bar">
+        {[
+          { id: "driving", label: "📋 운행일지" },
+          { id: "receipt", label: "💳 법인카드" },
+          { id: "stats", label: "📊 월간 통계" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            className={`sl-tab ${mainTab === t.id ? "active" : ""}`}
+            onClick={() => setMainTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* ──── 월간 통계 ──── */}
@@ -1071,55 +983,33 @@ export default function SalesContent() {
       {/* ──── 운행일지 ──── */}
       {mainTab === "driving" && (
         <div>
-          {/* 날짜 선택 + 추가 버튼 */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "center",
-              marginBottom: "12px",
-              flexWrap: "wrap",
-            }}
-          >
+          {/* 날짜 선택 + 엑셀/인쇄 + 추가 버튼 */}
+          <div className="sl-toolbar">
             <select
+              className="sl-select sl-grow"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              style={{ ...selStyle, flex: 1 }}
             >
-              {dateOptions.map((d) => {
-                const day = parseInt(d.split("-")[2]);
-                const hasEntry = enteredDates.has(d);
-                const isT = d === TODAY;
-                // 모든 날짜 선택·조회 가능, 입력/수정은 열린 주만
-                const wLocked = weekLocks[getWeekNumForDate(d)] === true;
-                const readOnly = !isDateEditable(d);
-                return (
-                  <option
-                    key={d}
-                    value={d}
-                    style={{ color: readOnly ? "#999" : "inherit" }}
-                  >
-                    {month}월 {day}일{isT ? " (오늘)" : ""}
-                    {hasEntry ? " ●" : ""}
-                    {wLocked ? " 🔒" : ""}
-                  </option>
-                );
-              })}
+              {dateOptions.map((d) => (
+                // 모든 날짜 선택·조회 가능, 입력/수정은 열린 주만 (입력 불가 날짜는 회색)
+                <option
+                  key={d}
+                  value={d}
+                  style={{ color: isDateEditable(d) ? "inherit" : "#999" }}
+                >
+                  {month}월 {parseInt(d.split("-")[2])}일
+                  {d === TODAY ? " (오늘)" : ""}
+                  {enteredDates.has(d) ? " ●" : ""}
+                  {weekLocks[getWeekNumForDate(d)] === true ? " 🔒" : ""}
+                </option>
+              ))}
             </select>
             {monthDriving.length > 0 && (
               <>
-                <button
-                  className="sl-btn-outline"
-                  onClick={downloadDrivingExcel}
-                  style={{ fontSize: "12px", padding: "7px 12px" }}
-                >
+                <button className="sl-btn-outline is-small" onClick={downloadDrivingExcel}>
                   📥 엑셀
                 </button>
-                <button
-                  className="sl-btn-outline"
-                  onClick={printDriving}
-                  style={{ fontSize: "12px", padding: "7px 12px" }}
-                >
+                <button className="sl-btn-outline is-small" onClick={printDriving}>
                   🖨 인쇄
                 </button>
               </>
@@ -1130,566 +1020,189 @@ export default function SalesContent() {
               </button>
             )}
             {!canEditDay && !isLocked && (
-              <span
-                style={{ fontSize: "12px", color: "#bbb", padding: "0 4px" }}
-              >
+              <span className="sl-readonly-note">
                 {isWeekLocked ? "🔒 잠긴 주" : "입력 기간이 아닙니다"} (조회만)
               </span>
             )}
           </div>
 
-          {/* 전일 미터기 정보 */}
           {prevMeter > 0 && (
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#888",
-                marginBottom: "8px",
-                paddingLeft: "4px",
-              }}
-            >
-              전일 미터기:{" "}
-              <strong style={{ color: "#555" }}>{fmt(prevMeter)}km</strong>
+            <div className="sl-prev-meter">
+              전일 미터기: <strong className="sl-text-sub">{fmt(prevMeter)}km</strong>
             </div>
           )}
 
-          {/* 운행 기록 */}
+          {/* 운행 기록 (PC 는 표, 모바일은 카드) */}
           {dayDriving.length === 0 ? (
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: "10px",
-                border: "1.5px dashed #e0e0e0",
-                padding: "2.5rem",
-                textAlign: "center",
-                color: "#bbb",
-                fontSize: "13px",
-              }}
-            >
-              "기록이 없습니다."
-            </div>
+            <div className="sl-empty-box">"기록이 없습니다."</div>
           ) : (
             <>
-              {/* 데스크탑 표 */}
-              <div style={{ display: "none" }} className="desktop-table">
-                <div
-                  style={{
-                    background: "#fff",
-                    borderRadius: "10px",
-                    border: "1px solid #e8eaed",
-                    overflow: "visible",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      fontSize: "13px",
-                      minWidth: "700px",
-                    }}
-                  >
+              <div className="desktop-table">
+                <div className="sl-table-box has-gap">
+                  <table className="sl-table sl-min-700">
                     <thead>
-                      <tr
-                        style={{
-                          background: "#f8f9fb",
-                          borderBottom: "1px solid #e8eaed",
-                        }}
-                      >
-                        <th style={thS}>시간</th>
-                        <th style={thS}>도착지</th>
-                        <th style={{ ...thS, textAlign: "right" }}>미터기</th>
-                        <th style={{ ...thS, textAlign: "right" }}>운행거리</th>
-                        <th style={thS}>비고</th>
-                        <th style={{ ...thS, textAlign: "right" }}>주유량</th>
-                        <th style={{ ...thS, textAlign: "right" }}>주유금액</th>
-                        <th style={{ ...thS, textAlign: "right" }}>단가</th>
-                        <th style={thS}>구분</th>
-                        {canEditDay && <th style={thS}></th>}
+                      <tr>
+                        <th>시간</th>
+                        <th>도착지</th>
+                        <th className="sl-num">미터기</th>
+                        <th className="sl-num">운행거리</th>
+                        <th>비고</th>
+                        <th className="sl-num">주유량</th>
+                        <th className="sl-num">주유금액</th>
+                        <th className="sl-num">단가</th>
+                        <th>구분</th>
+                        {canEditDay && <th></th>}
                       </tr>
                     </thead>
                     <tbody>
-                      {recalcDayDriving.map((d) => {
-                        const ts = TYPE_STYLE[d.type] || {
-                          bg: "#f3f4f6",
-                          color: "#555",
-                        };
-                        return (
-                          <tr
-                            key={d.id}
-                            style={{ borderBottom: "1px solid #f0f2f5" }}
-                          >
-                            <td style={{ ...tdS }}>
-                              {d.arrivalTime ? (
-                                <span
-                                  style={{
-                                    fontSize: "13px",
-                                    fontWeight: 700,
-                                    color: "#1557b0",
-                                    background: "#e8f0fe",
-                                    padding: "2px 8px",
-                                    borderRadius: "6px",
-                                    letterSpacing: "0.5px",
-                                  }}
-                                >
-                                  ⏰ {formatDrivingTime(d)}
-                                </span>
-                              ) : (
-                                <span style={{ color: "#ccc" }}>-</span>
-                              )}
-                            </td>
-                            <td
-                              style={{
-                                ...tdS,
-                                fontWeight: d.destination ? 500 : 400,
-                                color: d.destination ? "#1a1a2e" : "#ccc",
-                              }}
-                            >
-                              {d.destination || "-"}
-                            </td>
-                            <td style={{ ...tdS, textAlign: "right" }}>
-                              {d.meterReading > 0
-                                ? `${fmt(d.meterReading)}km`
-                                : "-"}
-                            </td>
-                            <td
-                              style={{
-                                ...tdS,
-                                textAlign: "right",
-                                fontWeight: 600,
-                                color: "#1557b0",
-                              }}
-                            >
-                              {d.distance > 0 ? `${fmt(d.distance)}km` : "-"}
-                            </td>
-                            <td style={{ ...tdS }}>
-                              {d.notes && d.notes.length > 0 ? (
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "3px",
-                                  }}
-                                >
-                                  {d.notes.map((n, ni) => (
-                                    <div
-                                      key={ni}
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "5px",
-                                      }}
-                                    >
-                                      {n.time && (
-                                        <span
-                                          style={{
-                                            fontSize: "11px",
-                                            color: "#1557b0",
-                                            fontWeight: 700,
-                                            background: "#e8f0fe",
-                                            padding: "1px 6px",
-                                            borderRadius: "4px",
-                                            whiteSpace: "nowrap",
-                                          }}
-                                        >
-                                          {n.time}
-                                        </span>
-                                      )}
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#374151",
-                                        }}
-                                      >
-                                        {n.content}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : d.purpose ? (
-                                <span
-                                  style={{ fontSize: "12px", color: "#374151" }}
-                                >
-                                  {d.purpose}
-                                </span>
-                              ) : (
-                                <span style={{ color: "#ccc" }}>-</span>
-                              )}
-                            </td>
-                            <td
-                              style={{
-                                ...tdS,
-                                textAlign: "right",
-                                color: "#92400e",
-                              }}
-                            >
-                              {d.fuelAmount > 0 ? `${d.fuelAmount}L` : "-"}
-                            </td>
-                            <td style={{ ...tdS, textAlign: "right" }}>
-                              {d.fuelCost > 0 ? fmtWon(d.fuelCost) : "-"}
-                            </td>
-                            <td
-                              style={{
-                                ...tdS,
-                                textAlign: "right",
-                                fontSize: "12px",
-                                color: "#888",
-                              }}
-                            >
-                              {d.fuelUnitPrice > 0
-                                ? `${fmt(d.fuelUnitPrice)}원`
-                                : "-"}
-                            </td>
-                            <td style={tdS}>
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 700,
-                                  padding: "3px 8px",
-                                  borderRadius: "99px",
-                                  background: ts.bg,
-                                  color: ts.color,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {d.type}
-                              </span>
-                            </td>
-                            {canEditDay && (
-                              <td style={{ ...tdS, position: "relative" }}>
-                                <DotMenu
-                                  id={d.id}
-                                  onEdit={() => openEdit(d)}
-                                  onDelete={() => handleDelete(d.id)}
-                                />
-                              </td>
+                      {recalcDayDriving.map((d) => (
+                        <tr key={d.id}>
+                          <td>
+                            {d.arrivalTime ? (
+                              <span className="sl-time-badge">⏰ {formatDrivingTime(d)}</span>
+                            ) : (
+                              <span className="sl-none">-</span>
                             )}
-                          </tr>
-                        );
-                      })}
+                          </td>
+                          <td className={d.destination ? "sl-cell-dest" : "sl-cell-empty"}>
+                            {d.destination || "-"}
+                          </td>
+                          <td className="sl-num">{km(d.meterReading)}</td>
+                          <td className="sl-num sl-cell-dist">{km(d.distance)}</td>
+                          <td>
+                            {d.notes && d.notes.length > 0 ? (
+                              <div className="sl-note-list">
+                                {d.notes.map((n, ni) => (
+                                  <div key={ni} className="sl-note-item">
+                                    {n.time && <span className="sl-note-time-badge">{n.time}</span>}
+                                    <span className="sl-note-content">{n.content}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : d.purpose ? (
+                              <span className="sl-note-content">{d.purpose}</span>
+                            ) : (
+                              <span className="sl-none">-</span>
+                            )}
+                          </td>
+                          <td className="sl-num sl-text-amber">
+                            {d.fuelAmount > 0 ? `${d.fuelAmount}L` : "-"}
+                          </td>
+                          <td className="sl-num">{d.fuelCost > 0 ? fmtWon(d.fuelCost) : "-"}</td>
+                          <td className="sl-num sl-cell-small-muted">
+                            {d.fuelUnitPrice > 0 ? `${fmt(d.fuelUnitPrice)}원` : "-"}
+                          </td>
+                          <td>
+                            <TypeBadge type={d.type} nowrap />
+                          </td>
+                          {canEditDay && (
+                            <td className="sl-cell-menu">
+                              <DotMenu
+                                id={d.id}
+                                onEdit={() => openEdit(d)}
+                                onDelete={() => handleDelete(d.id)}
+                              />
+                            </td>
+                          )}
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* 모바일 카드 */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  marginBottom: "12px",
-                }}
-                className="mobile-cards"
-              >
-                {recalcDayDriving.map((d) => {
-                  const ts = TYPE_STYLE[d.type] || {
-                    bg: "#f3f4f6",
-                    color: "#555",
-                  };
-                  return (
-                    <div
-                      key={d.id}
-                      style={{
-                        background: "#fff",
-                        borderRadius: "10px",
-                        border: "1px solid #e8eaed",
-                        padding: "12px 14px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          {d.arrivalTime && (
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                fontWeight: 700,
-                                color: "#1557b0",
-                                background: "#e8f0fe",
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                letterSpacing: "0.5px",
-                              }}
-                            >
-                              ⏰ {formatDrivingTime(d)}
-                            </span>
-                          )}
-                          {d.destination && (
-                            <span style={{ fontWeight: 600, fontSize: "14px" }}>
-                              {d.destination}
-                            </span>
-                          )}
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              padding: "3px 8px",
-                              borderRadius: "99px",
-                              background: ts.bg,
-                              color: ts.color,
-                            }}
-                          >
-                            {d.type}
-                          </span>
-                        </div>
-                        {canEditDay && (
-                          <DotMenu
-                            id={d.id}
-                            onEdit={() => openEdit(d)}
-                            onDelete={() => handleDelete(d.id)}
-                          />
+              <div className="mobile-cards">
+                {recalcDayDriving.map((d) => (
+                  <div key={d.id} className="sl-card">
+                    <div className="sl-card-head">
+                      <div className="sl-card-head-left">
+                        {d.arrivalTime && (
+                          <span className="sl-time-badge">⏰ {formatDrivingTime(d)}</span>
                         )}
+                        {d.destination && <span className="sl-card-dest">{d.destination}</span>}
+                        <TypeBadge type={d.type} />
                       </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: "4px 12px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        {d.meterReading > 0 && (
-                          <Row
-                            label="미터기"
-                            value={`${fmt(d.meterReading)}km`}
-                          />
-                        )}
-                        {d.distance > 0 && (
-                          <Row
-                            label="운행거리"
-                            value={`${fmt(d.distance)}km`}
-                            color="#1557b0"
-                          />
-                        )}
-                        {((d.notes && d.notes.length > 0) || d.purpose) && (
-                          <div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedNotes((prev) => ({
-                                  ...prev,
-                                  [d.id]: !prev[d.id],
-                                }))
-                              }
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                background: "none",
-                                border: "none",
-                                padding: "4px 0",
-                                cursor: "pointer",
-                                width: "100%",
-                                textAlign: "left",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#aaa",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                📝 비고
-                              </span>
-                              <span style={{ fontSize: "11px", color: "#aaa" }}>
-                                {d.notes && d.notes.length > 0
-                                  ? `(${d.notes.length}개)`
-                                  : ""}
-                              </span>
-                              <span
-                                style={{
-                                  marginLeft: "auto",
-                                  fontSize: "12px",
-                                  color: "#aaa",
-                                }}
-                              >
-                                {expandedNotes[d.id] ? "▲" : "▼"}
-                              </span>
-                            </button>
-                            {expandedNotes[d.id] && (
-                              <div
-                                style={{
-                                  marginTop: "4px",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "4px",
-                                }}
-                              >
-                                {d.notes && d.notes.length > 0 ? (
-                                  d.notes.map((n, ni) => (
-                                    <div
-                                      key={ni}
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "6px",
-                                        padding: "4px 8px",
-                                        background: "#f8f9fb",
-                                        borderRadius: "6px",
-                                      }}
-                                    >
-                                      {n.time && (
-                                        <span
-                                          style={{
-                                            fontSize: "11px",
-                                            color: "#1557b0",
-                                            fontWeight: 700,
-                                            background: "#e8f0fe",
-                                            padding: "1px 6px",
-                                            borderRadius: "4px",
-                                            whiteSpace: "nowrap",
-                                          }}
-                                        >
-                                          {n.time}
-                                        </span>
-                                      )}
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#374151",
-                                        }}
-                                      >
-                                        {n.content}
-                                      </span>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <div
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#374151",
-                                      padding: "4px 8px",
-                                      background: "#f8f9fb",
-                                      borderRadius: "6px",
-                                    }}
-                                  >
-                                    {d.purpose}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {d.fuelAmount > 0 && (
-                          <Row
-                            label="주유량"
-                            value={`${d.fuelAmount}L`}
-                            color="#92400e"
-                          />
-                        )}
-                        {d.fuelCost > 0 && (
-                          <Row label="주유금액" value={fmtWon(d.fuelCost)} />
-                        )}
-                        {d.fuelUnitPrice > 0 && (
-                          <Row
-                            label="단가"
-                            value={`${fmt(d.fuelUnitPrice)}원/L`}
-                          />
-                        )}
-                      </div>
+                      {canEditDay && (
+                        <DotMenu
+                          id={d.id}
+                          onEdit={() => openEdit(d)}
+                          onDelete={() => handleDelete(d.id)}
+                        />
+                      )}
                     </div>
-                  );
-                })}
+                    <div className="sl-card-grid">
+                      {d.meterReading > 0 && <Row label="미터기" value={`${fmt(d.meterReading)}km`} />}
+                      {d.distance > 0 && (
+                        <Row label="운행거리" value={`${fmt(d.distance)}km`} color="#1557b0" />
+                      )}
+                      {((d.notes && d.notes.length > 0) || d.purpose) && (
+                        <div>
+                          <button
+                            type="button"
+                            className="sl-note-toggle"
+                            onClick={() =>
+                              setExpandedNotes((prev) => ({ ...prev, [d.id]: !prev[d.id] }))
+                            }
+                          >
+                            <span className="sl-note-toggle-label">📝 비고</span>
+                            <span className="sl-note-toggle-count">
+                              {d.notes && d.notes.length > 0 ? `(${d.notes.length}개)` : ""}
+                            </span>
+                            <span className="sl-note-toggle-arrow">
+                              {expandedNotes[d.id] ? "▲" : "▼"}
+                            </span>
+                          </button>
+                          {expandedNotes[d.id] && (
+                            <div className="sl-note-expanded">
+                              {d.notes && d.notes.length > 0 ? (
+                                d.notes.map((n, ni) => (
+                                  <div key={ni} className="sl-note-chip">
+                                    {n.time && <span className="sl-note-time-badge">{n.time}</span>}
+                                    <span className="sl-note-content">{n.content}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="sl-note-chip-text">{d.purpose}</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {d.fuelAmount > 0 && (
+                        <Row label="주유량" value={`${d.fuelAmount}L`} color="#92400e" />
+                      )}
+                      {d.fuelCost > 0 && <Row label="주유금액" value={fmtWon(d.fuelCost)} />}
+                      {d.fuelUnitPrice > 0 && (
+                        <Row label="단가" value={`${fmt(d.fuelUnitPrice)}원/L`} />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </>
           )}
 
-          {/* 당일 요약 + 비고 */}
+          {/* 당일 합계 + 그날 비고 */}
           {(dayDriving.length > 0 || canEditDay) && (
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: "10px",
-                border: "1px solid #e8eaed",
-                overflow: "hidden",
-              }}
-            >
-              {/* 누계 행 */}
+            <div className="sl-day-summary">
               {dayDriving.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0",
-                    borderBottom: "1px solid #f0f2f5",
-                  }}
-                >
+                <div className="sl-day-summary-row">
                   {[
-                    {
-                      label: "전일누계",
-                      value: prevMeter > 0 ? `${fmt(prevMeter)}km` : "-",
-                      color: "#555",
-                    },
-                    {
-                      label: "금일누계",
-                      value: totalKm > 0 ? `${fmt(totalKm)}km` : "-",
-                      color: "#1557b0",
-                    },
-                    {
-                      label: "업무",
-                      value: workKm > 0 ? `${fmt(workKm)}km` : "-",
-                      color: "#1557b0",
-                    },
-                    {
-                      label: "개인",
-                      value: personalKm > 0 ? `${fmt(personalKm)}km` : "-",
-                      color: "#6d28d9",
-                    },
-                    {
-                      label: "총누계",
-                      value: endMeter > 0 ? `${fmt(endMeter)}km` : "-",
-                      color: "#059669",
-                    },
+                    { label: "전일누계", value: km(prevMeter), color: "#555" },
+                    { label: "금일누계", value: km(totalKm), color: "#1557b0" },
+                    { label: "업무", value: km(workKm), color: "#1557b0" },
+                    { label: "개인", value: km(personalKm), color: "#6d28d9" },
+                    { label: "총누계", value: km(endMeter), color: "#059669" },
                     ...(totalFuelC > 0
-                      ? [
-                          {
-                            label: "금일주유",
-                            value: fmtWon(totalFuelC),
-                            color: "#92400e",
-                          },
-                        ]
+                      ? [{ label: "금일주유", value: fmtWon(totalFuelC), color: "#92400e" }]
                       : []),
                   ].map((r, i, arr) => (
                     <div
                       key={r.label}
-                      style={{
-                        flex: 1,
-                        padding: "10px 12px",
-                        textAlign: "center",
-                        borderRight:
-                          i < arr.length - 1 ? "1px solid #f0f2f5" : "none",
-                      }}
+                      className={`sl-day-summary-cell${i === arr.length - 1 ? " is-last" : ""}`}
                     >
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          color: "#aaa",
-                          marginBottom: "3px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {r.label}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: 700,
-                          color: r.color,
-                        }}
-                      >
+                      <div className="sl-stat-label">{r.label}</div>
+                      <div className="sl-stat-value" style={{ color: r.color }}>
                         {r.value}
                       </div>
                     </div>
@@ -1697,89 +1210,42 @@ export default function SalesContent() {
                 </div>
               )}
 
-              {/* 비고 */}
-              <div
-                style={{
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  minHeight: "44px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#aaa",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  📝 비고
-                </span>
+              <div className="sl-day-note">
+                <span className="sl-day-note-label">📝 비고</span>
                 {!canEditDay ? (
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      color: dailyNote ? "#333" : "#ccc",
-                    }}
-                  >
+                  <span className={`sl-day-note-text${dailyNote ? "" : " is-empty"}`}>
                     {dailyNote || "없음"}
                   </span>
                 ) : noteEditing ? (
                   <>
                     <input
                       type="text"
+                      className="sl-day-note-input"
                       value={noteInput}
                       onChange={(e) => setNoteInput(e.target.value)}
                       autoFocus
                       placeholder="이날 비고 입력..."
                       disabled={isLocked}
-                      style={{
-                        flex: 1,
-                        padding: "7px 10px",
-                        border: "1.5px solid #1557b0",
-                        borderRadius: "7px",
-                        fontSize: "13px",
-                        outline: "none",
-                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleSaveNote();
-                        if (e.key === "Escape") {
-                          setNoteEditing(false);
-                          setNoteInput(dailyNote);
-                        }
+                        if (e.key === "Escape") closeNoteEdit();
                       }}
                     />
                     <button
-                      className="sl-btn-primary"
+                      className="sl-btn-primary is-small"
                       onClick={handleSaveNote}
                       disabled={noteSaving}
-                      style={{ padding: "7px 12px", fontSize: "12px" }}
                     >
                       {noteSaving ? "..." : "저장"}
                     </button>
-                    <button
-                      className="sl-btn-outline"
-                      onClick={() => {
-                        setNoteEditing(false);
-                        setNoteInput(dailyNote);
-                      }}
-                      style={{ padding: "7px 10px", fontSize: "12px" }}
-                    >
+                    <button className="sl-btn-outline is-tight" onClick={closeNoteEdit}>
                       취소
                     </button>
                   </>
                 ) : (
                   <span
+                    className={`sl-day-note-edit${dailyNote ? "" : " is-empty"}${isLocked ? " is-locked" : ""}`}
                     onClick={() => !isLocked && setNoteEditing(true)}
-                    style={{
-                      flex: 1,
-                      fontSize: "13px",
-                      color: dailyNote ? "#333" : "#bbb",
-                      cursor: isLocked ? "default" : "pointer",
-                      padding: "4px 0",
-                    }}
                   >
                     {dailyNote || (isLocked ? "없음" : "클릭해서 입력...")}
                   </span>
@@ -1793,33 +1259,17 @@ export default function SalesContent() {
       {/* ──── 법인카드 ──── */}
       {mainTab === "receipt" && (
         <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "12px",
-            }}
-          >
-            <p style={{ fontSize: "13px", color: "#888" }}>
-              카드번호:{" "}
-              <strong style={{ color: "#1a1a2e" }}>{myCard || "미등록"}</strong>
+          <div className="sl-receipt-head">
+            <p className="sl-card-no">
+              카드번호: <strong className="sl-text-dark">{myCard || "미등록"}</strong>
             </p>
-            <div style={{ display: "flex", gap: "6px" }}>
+            <div className="sl-btn-group">
               {receipts.length > 0 && (
                 <>
-                  <button
-                    className="sl-btn-outline"
-                    onClick={downloadReceiptExcel}
-                    style={{ fontSize: "12px", padding: "7px 12px" }}
-                  >
+                  <button className="sl-btn-outline is-small" onClick={downloadReceiptExcel}>
                     📥 엑셀
                   </button>
-                  <button
-                    className="sl-btn-outline"
-                    onClick={printReceipt}
-                    style={{ fontSize: "12px", padding: "7px 12px" }}
-                  >
+                  <button className="sl-btn-outline is-small" onClick={printReceipt}>
                     🖨 인쇄
                   </button>
                 </>
@@ -1831,73 +1281,18 @@ export default function SalesContent() {
               )}
             </div>
           </div>
-          {/* 모바일 법인카드 카드 */}
-          <div
-            className="mobile-cards"
-            style={{
-              display: "none",
-              flexDirection: "column",
-              gap: "8px",
-              marginBottom: "12px",
-            }}
-          >
+
+          {/* 모바일 카드 */}
+          <div className="mobile-cards">
             {receipts.length === 0 ? (
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: "10px",
-                  border: "1.5px dashed #e0e0e0",
-                  padding: "2rem",
-                  textAlign: "center",
-                  color: "#bbb",
-                  fontSize: "13px",
-                }}
-              >
-                내역이 없습니다.
-              </div>
+              <div className="sl-empty-box is-small">내역이 없습니다.</div>
             ) : (
               receipts.map((r) => (
-                <div
-                  key={r.id}
-                  style={{
-                    background: "#fff",
-                    borderRadius: "10px",
-                    border: "1px solid #e8eaed",
-                    padding: "12px 14px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <span style={{ fontSize: "12px", color: "#888" }}>
-                        {r.date}
-                      </span>
-                      {r.category && (
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: "99px",
-                            background: "#e8f0fe",
-                            color: "#1557b0",
-                          }}
-                        >
-                          {r.category}
-                        </span>
-                      )}
+                <div key={r.id} className="sl-card">
+                  <div className="sl-card-head">
+                    <div className="sl-card-head-left">
+                      <span className="sl-card-date">{r.date}</span>
+                      {r.category && <span className="sl-cat-chip">{r.category}</span>}
                     </div>
                     {isDateEditable(r.date) && (
                       <DotMenu
@@ -1907,229 +1302,70 @@ export default function SalesContent() {
                       />
                     )}
                   </div>
-                  {r.content && (
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        marginBottom: "6px",
-                      }}
-                    >
-                      {r.content}
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "4px 12px",
-                      fontSize: "12px",
-                    }}
-                  >
+                  {r.content && <div className="sl-card-content">{r.content}</div>}
+                  <div className="sl-card-grid">
                     {r.totalAmount > 0 && (
-                      <Row
-                        label="총금액"
-                        value={fmtWon(r.totalAmount)}
-                        color="#1557b0"
-                      />
+                      <Row label="총금액" value={fmtWon(r.totalAmount)} color="#1557b0" />
                     )}
-                    {r.supplyAmount > 0 && (
-                      <Row label="공급가액" value={fmtWon(r.supplyAmount)} />
-                    )}
-                    {r.vat > 0 && (
-                      <Row label="VAT" value={fmtWon(r.vat)} color="#059669" />
-                    )}
-                    {r.businessNumber && (
-                      <Row label="사업자" value={r.businessNumber} />
-                    )}
-                    {r.companyName && (
-                      <Row label="상호" value={r.companyName} />
-                    )}
+                    {r.supplyAmount > 0 && <Row label="공급가액" value={fmtWon(r.supplyAmount)} />}
+                    {r.vat > 0 && <Row label="VAT" value={fmtWon(r.vat)} color="#059669" />}
+                    {r.businessNumber && <Row label="사업자" value={r.businessNumber} />}
+                    {r.companyName && <Row label="상호" value={r.companyName} />}
                   </div>
                 </div>
               ))
             )}
             {receipts.length > 0 && (
-              <div
-                style={{
-                  background: "#f0f4ff",
-                  borderRadius: "10px",
-                  padding: "12px 14px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "#1557b0",
-                  }}
-                >
-                  합계
-                </span>
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: "#1557b0",
-                  }}
-                >
-                  {fmtWon(
-                    receipts.reduce((s, r) => s + (r.totalAmount || 0), 0),
-                  )}
-                </span>
+              <div className="sl-total-box">
+                <span className="sl-total-label">합계</span>
+                <span className="sl-total-value">{fmtWon(receiptTotal)}</span>
               </div>
             )}
           </div>
 
-          {/* 데스크탑 법인카드 표 */}
-          <div className="desktop-table" style={{ display: "none" }}>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: "10px",
-                border: "1px solid #e8eaed",
-                overflow: "visible",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "13px",
-                  minWidth: "600px",
-                }}
-              >
+          {/* PC 표 */}
+          <div className="desktop-table">
+            <div className="sl-table-box">
+              <table className="sl-table sl-min-600">
                 <thead>
-                  <tr
-                    style={{
-                      background: "#f8f9fb",
-                      borderBottom: "1px solid #e8eaed",
-                    }}
-                  >
-                    <th style={thS}>날짜</th>
-                    <th style={thS}>카테고리</th>
-                    <th style={thS}>신용카드 번호</th>
-                    <th style={{ ...thS, textAlign: "right" }}>총금액</th>
-                    <th style={{ ...thS, textAlign: "right" }}>공급가액</th>
-                    <th style={{ ...thS, textAlign: "right" }}>VAT</th>
-                    <th style={thS}>사업자</th>
-                    <th style={thS}>상호</th>
-                    {!isLocked && <th style={thS}></th>}
+                  <tr>
+                    <th>날짜</th>
+                    <th>카테고리</th>
+                    <th>신용카드 번호</th>
+                    <th className="sl-num">총금액</th>
+                    <th className="sl-num">공급가액</th>
+                    <th className="sl-num">VAT</th>
+                    <th>사업자</th>
+                    <th>상호</th>
+                    {!isLocked && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {receipts.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        style={{
-                          textAlign: "center",
-                          padding: "2.5rem",
-                          color: "#bbb",
-                          fontSize: "13px",
-                        }}
-                      >
+                    <tr className="sl-no-line">
+                      <td colSpan={9} className="sl-empty-cell is-tall">
                         내역이 없습니다.
                       </td>
                     </tr>
                   ) : (
                     receipts.map((r) => (
-                      <tr
-                        key={r.id}
-                        style={{ borderBottom: "1px solid #f0f2f5" }}
-                      >
-                        <td
-                          style={{
-                            ...tdS,
-                            fontSize: "12px",
-                            color: "#888",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.date}
-                        </td>
-                        <td style={tdS}>
-                          {r.category ? (
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                padding: "3px 8px",
-                                borderRadius: "99px",
-                                background: "#e8f0fe",
-                                color: "#1557b0",
-                              }}
-                            >
-                              {r.category}
-                            </span>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td
-                          style={{
-                            ...tdS,
-                            maxWidth: "120px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.content || "-"}
-                        </td>
-                        <td
-                          style={{
-                            ...tdS,
-                            textAlign: "right",
-                            fontWeight: 600,
-                            color: "#1557b0",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                      <tr key={r.id}>
+                        <td className="sl-cell-date">{r.date}</td>
+                        <td>{r.category ? <span className="cat-badge">{r.category}</span> : "-"}</td>
+                        <td className="sl-cell-ellipsis">{r.content || "-"}</td>
+                        <td className="sl-num sl-cell-amount">
                           {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
                         </td>
-                        <td
-                          style={{
-                            ...tdS,
-                            textAlign: "right",
-                            color: "#555",
-                            fontSize: "12px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                        <td className="sl-num sl-cell-supply">
                           {r.supplyAmount ? fmtWon(r.supplyAmount) : "-"}
                         </td>
-                        <td
-                          style={{
-                            ...tdS,
-                            textAlign: "right",
-                            color: "#059669",
-                            fontSize: "12px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {r.vat ? fmtWon(r.vat) : "-"}
-                        </td>
-                        <td style={{ ...tdS, fontSize: "12px" }}>
-                          {r.businessNumber || "-"}
-                        </td>
-                        <td
-                          style={{
-                            ...tdS,
-                            fontSize: "12px",
-                            maxWidth: "80px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                        <td className="sl-num sl-cell-vat">{r.vat ? fmtWon(r.vat) : "-"}</td>
+                        <td className="sl-small">{r.businessNumber || "-"}</td>
+                        <td className="sl-cell-ellipsis is-narrow sl-small">
                           {r.companyName || "-"}
                         </td>
                         {!isLocked && (
-                          <td style={{ ...tdS, position: "relative" }}>
+                          <td className="sl-cell-menu">
                             {isDateEditable(r.date) && (
                               <DotMenu
                                 id={`r-${r.id}`}
@@ -2145,62 +1381,18 @@ export default function SalesContent() {
                 </tbody>
                 {receipts.length > 0 && (
                   <tfoot>
-                    <tr
-                      style={{
-                        background: "#f0f4ff",
-                        borderTop: "2px solid #e8eaed",
-                      }}
-                    >
-                      <td
-                        colSpan={3}
-                        style={{ ...tdS, fontWeight: 700, color: "#1557b0" }}
-                      >
+                    <tr>
+                      <td colSpan={3} className="sl-foot-label">
                         합계
                       </td>
-                      <td
-                        style={{
-                          ...tdS,
-                          textAlign: "right",
-                          fontWeight: 700,
-                          color: "#1557b0",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtWon(
-                          receipts.reduce(
-                            (s, r) => s + (r.totalAmount || 0),
-                            0,
-                          ),
-                        )}
+                      <td className="sl-num sl-foot-total">{fmtWon(receiptTotal)}</td>
+                      <td className="sl-num sl-foot-sub">
+                        {fmtWon(receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0))}
                       </td>
-                      <td
-                        style={{
-                          ...tdS,
-                          textAlign: "right",
-                          color: "#555",
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtWon(
-                          receipts.reduce(
-                            (s, r) => s + (r.supplyAmount || 0),
-                            0,
-                          ),
-                        )}
-                      </td>
-                      <td
-                        style={{
-                          ...tdS,
-                          textAlign: "right",
-                          color: "#059669",
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
+                      <td className="sl-num sl-foot-vat">
                         {fmtWon(receipts.reduce((s, r) => s + (r.vat || 0), 0))}
                       </td>
-                      <td colSpan={isLocked ? 2 : 3}></td>
+                      <td colSpan={isLocked ? 2 : 3} className="sl-cell-bare"></td>
                     </tr>
                   </tfoot>
                 )}
@@ -2210,7 +1402,7 @@ export default function SalesContent() {
         </div>
       )}
 
-      {/* ──── 운행일지 모달 ──── */}
+      {/* ──── 운행일지 입력창 ──── */}
       {showModal && (
         <DrivingModal
           form={drivingForm}
@@ -2239,7 +1431,7 @@ export default function SalesContent() {
         />
       )}
 
-      {/* ──── 법인카드 모달 ──── */}
+      {/* ──── 법인카드 입력창 ──── */}
       {showReceiptModal && (
         <ReceiptModal
           form={receiptForm}
@@ -2257,31 +1449,27 @@ export default function SalesContent() {
   );
 }
 
+// 구분 배지 (업무 · 주유 · 개인주유 · 개인사용)
+function TypeBadge({ type, nowrap }) {
+  const ts = TYPE_STYLE[type] || { bg: "#f3f4f6", color: "#555" };
+  return (
+    <span
+      className={`sl-type-badge${nowrap ? " sl-nowrap" : ""}`}
+      style={{ "--type-color": ts.color, "--type-bg": ts.bg }}
+    >
+      {type}
+    </span>
+  );
+}
+
+// 모바일 카드 안 "이름 값" 한 줄
 function Row({ label, value, color }) {
   return (
-    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-      <span style={{ color: "#aaa", fontSize: "11px" }}>{label}</span>
-      <span style={{ fontWeight: 600, color: color || "#1a1a2e" }}>
+    <div className="sl-kv">
+      <span className="sl-kv-label">{label}</span>
+      <span className="sl-kv-value" style={color ? { color } : undefined}>
         {value}
       </span>
     </div>
   );
 }
-
-const selStyle = {
-  padding: "8px 12px",
-  border: "1.5px solid #d8dce3",
-  borderRadius: "7px",
-  fontSize: "13px",
-  outline: "none",
-  background: "#fff",
-};
-const thS = {
-  padding: "9px 12px",
-  textAlign: "left",
-  fontSize: "11px",
-  fontWeight: 600,
-  color: "#888",
-  whiteSpace: "nowrap",
-};
-const tdS = { padding: "11px 12px" };

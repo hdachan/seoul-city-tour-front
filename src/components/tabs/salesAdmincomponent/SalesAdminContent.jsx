@@ -958,7 +958,7 @@ function DaySummary({ rows, startMeter }) {
       : []),
   ];
   return (
-    <div className="sl-day-summary">
+    <div className="sl-day-summary is-spaced">
       <div className="sl-day-summary-row">
         {items.map((r, i) => (
           <div

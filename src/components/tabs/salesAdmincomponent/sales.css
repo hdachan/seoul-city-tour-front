@@ -792,7 +792,7 @@
   margin-top: 1px;
 }
 
-/* ── 표 안 칸 (sac-table 기본 칸보다 우선) ── */
+/* ── 표 안 칸 (두 화면 표 공용, 표 기본 칸 스타일보다 우선) ── */
 .sl-scroll-x {
   overflow-x: auto;
 }
@@ -802,79 +802,79 @@
 .sl-min-600 {
   min-width: 600px;
 }
-.sac-table .sl-num {
+:is(.sac-table, .sl-table) .sl-num {
   text-align: right;
 }
-.sac-table .sl-col-action {
+:is(.sac-table, .sl-table) .sl-col-action {
   width: 70px;
 }
-.sac-table .sl-empty-cell {
+:is(.sac-table, .sl-table) .sl-empty-cell {
   text-align: center;
   padding: 2rem;
   color: #bbb;
 }
-.sac-table .sl-empty-cell.is-tall {
+:is(.sac-table, .sl-table) .sl-empty-cell.is-tall {
   padding: 2.5rem;
 }
-.sac-table .sl-cell-name {
+:is(.sac-table, .sl-table) .sl-cell-name {
   font-weight: 500;
 }
-.sac-table .sl-cell-dest {
+:is(.sac-table, .sl-table) .sl-cell-dest {
   font-weight: 500;
   color: var(--sl-text);
 }
-.sac-table .sl-cell-empty {
+:is(.sac-table, .sl-table) .sl-cell-empty {
   font-weight: 400;
   color: #ccc;
 }
-.sac-table .sl-cell-dist {
+:is(.sac-table, .sl-table) .sl-cell-dist {
   font-weight: 600;
   color: var(--sl-blue);
 }
-.sac-table .sl-cell-notes {
+:is(.sac-table, .sl-table) .sl-cell-notes {
   font-size: 12px;
   color: var(--sl-sub);
 }
-.sac-table .sl-cell-small-muted {
+:is(.sac-table, .sl-table) .sl-cell-small-muted {
   font-size: 12px;
   color: var(--sl-muted);
 }
-.sac-table .sl-cell-menu {
+:is(.sac-table, .sl-table) .sl-cell-menu {
   position: relative;
 }
-.sac-table .sl-cell-date {
+:is(.sac-table, .sl-table) .sl-cell-date {
   font-size: 12px;
   color: var(--sl-muted);
   white-space: nowrap;
 }
-.sac-table .sl-cell-ellipsis {
+:is(.sac-table, .sl-table) .sl-cell-ellipsis {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sac-table .sl-cell-ellipsis.is-narrow {
+:is(.sac-table, .sl-table) .sl-cell-ellipsis.is-narrow {
   max-width: 80px;
 }
-.sac-table .sl-cell-amount {
+:is(.sac-table, .sl-table) .sl-cell-amount {
   font-weight: 600;
   color: var(--sl-blue);
   white-space: nowrap;
 }
-.sac-table .sl-cell-supply {
+:is(.sac-table, .sl-table) .sl-cell-supply {
   color: var(--sl-sub);
   font-size: 12px;
   white-space: nowrap;
 }
-.sac-table .sl-cell-vat {
+:is(.sac-table, .sl-table) .sl-cell-vat {
   color: var(--sl-green);
   font-size: 12px;
   white-space: nowrap;
 }
-.sac-table .sl-small {
+:is(.sac-table, .sl-table) .sl-small {
   font-size: 12px;
 }
-.sac-table .sl-nowrap {
+:is(.sac-table, .sl-table) .sl-nowrap {
   white-space: nowrap;
 }
 
@@ -922,6 +922,8 @@
   border-radius: 10px;
   border: 1px solid var(--sl-line);
   overflow: hidden;
+}
+.sl-day-summary.is-spaced {
   margin-top: 10px;
 }
 .sl-day-summary-row {
@@ -952,6 +954,422 @@
 .sl-dot-wrap {
   position: relative;
   display: inline-block;
+}
+
+/* ── 영업 정산 화면 ── */
+.sl-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sl-page-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sl-text);
+}
+.sl-page-sub {
+  font-size: 12px;
+  color: var(--sl-muted);
+  margin-top: 2px;
+}
+.sl-btn-group {
+  display: flex;
+  gap: 6px;
+}
+.sl-text-dark {
+  color: var(--sl-text);
+}
+.sl-nowrap {
+  white-space: nowrap;
+}
+
+/* 잠금 안내 */
+.sl-banner-month-locked {
+  background: #fff0f0;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--sl-red);
+  font-weight: 500;
+}
+.sl-banner-week-locked {
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sl-banner-icon {
+  font-size: 20px;
+}
+.sl-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sl-amber);
+}
+.sl-banner-desc {
+  font-size: 12px;
+  color: #b45309;
+  margin-top: 2px;
+}
+
+/* 날짜 선택 줄 */
+.sl-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.sl-btn-outline.is-small {
+  font-size: 12px;
+  padding: 7px 12px;
+}
+.sl-btn-outline.is-tight {
+  font-size: 12px;
+  padding: 7px 10px;
+}
+.sl-btn-primary.is-small {
+  font-size: 12px;
+  padding: 7px 12px;
+}
+.sl-readonly-note {
+  font-size: 12px;
+  color: #bbb;
+  padding: 0 4px;
+}
+.sl-prev-meter {
+  font-size: 12px;
+  color: var(--sl-muted);
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+.sl-empty-box {
+  background: #fff;
+  border-radius: 10px;
+  border: 1.5px dashed #e0e0e0;
+  padding: 2.5rem;
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+}
+.sl-empty-box.is-small {
+  padding: 2rem;
+}
+
+/* 영업 정산 표 */
+.sl-table-box {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid var(--sl-line);
+  overflow: visible;
+}
+.sl-table-box.has-gap {
+  margin-bottom: 12px;
+}
+.sl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sl-table thead tr {
+  background: #f8f9fb;
+  border-bottom: 1px solid var(--sl-line);
+}
+.sl-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sl-muted);
+  white-space: nowrap;
+}
+.sl-table td {
+  padding: 11px 12px;
+}
+.sl-table tbody tr {
+  border-bottom: 1px solid var(--sl-line-soft);
+}
+.sl-table tbody tr.sl-no-line {
+  border-bottom: none;
+}
+.sl-table tfoot tr {
+  background: #f0f4ff;
+  border-top: 2px solid var(--sl-line);
+}
+.sl-table .sl-cell-bare {
+  padding: 0;
+}
+.sl-table .sl-foot-label {
+  font-weight: 700;
+  color: var(--sl-blue);
+}
+.sl-table .sl-foot-total {
+  font-weight: 700;
+  color: var(--sl-blue);
+  white-space: nowrap;
+}
+.sl-table .sl-foot-sub {
+  color: var(--sl-sub);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sl-table .sl-foot-vat {
+  color: var(--sl-green);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sl-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sl-note-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ··· 메뉴 (영업 정산) */
+.sl-menu {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.sl-menu.is-open {
+  z-index: 1000;
+}
+.sl-menu-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #bbb;
+  cursor: pointer;
+  padding: 2px 8px;
+  line-height: 1;
+}
+.sl-menu-list {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid var(--sl-line);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-width: 90px;
+}
+.sl-menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+}
+.sl-menu-item.is-danger {
+  color: var(--sl-red);
+}
+
+/* 모바일 카드 */
+.sl-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid var(--sl-line);
+  padding: 12px 14px;
+}
+.sl-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.sl-card-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sl-card-dest {
+  font-weight: 600;
+  font-size: 14px;
+}
+.sl-card-date {
+  font-size: 12px;
+  color: var(--sl-muted);
+}
+.sl-cat-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: #e8f0fe;
+  color: var(--sl-blue);
+}
+.sl-card-content {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.sl-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.sl-kv {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.sl-kv-label {
+  color: var(--sl-faint);
+  font-size: 11px;
+}
+.sl-kv-value {
+  font-weight: 600;
+  color: var(--sl-text);
+}
+.sl-note-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.sl-note-toggle-label {
+  font-size: 11px;
+  color: var(--sl-faint);
+  font-weight: 600;
+}
+.sl-note-toggle-count {
+  font-size: 11px;
+  color: var(--sl-faint);
+}
+.sl-note-toggle-arrow {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--sl-faint);
+}
+.sl-note-expanded {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sl-note-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #f8f9fb;
+  border-radius: 6px;
+}
+.sl-note-chip-text {
+  font-size: 12px;
+  color: #374151;
+  padding: 4px 8px;
+  background: #f8f9fb;
+  border-radius: 6px;
+}
+.sl-total-box {
+  background: #f0f4ff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sl-total-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sl-blue);
+}
+.sl-total-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sl-blue);
+}
+
+/* 그날 비고 */
+.sl-day-note {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.sl-day-note-label {
+  font-size: 12px;
+  color: var(--sl-faint);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sl-day-note-text {
+  font-size: 13px;
+  color: #333;
+}
+.sl-day-note-text.is-empty {
+  color: #ccc;
+}
+.sl-day-note-edit {
+  flex: 1;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.sl-day-note-edit.is-empty {
+  color: #bbb;
+}
+.sl-day-note-edit.is-locked {
+  cursor: default;
+}
+.sl-day-note-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1.5px solid var(--sl-blue);
+  border-radius: 7px;
+  font-size: 13px;
+  outline: none;
+}
+
+/* 영업 정산 법인카드 머리 */
+.sl-receipt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sl-card-no {
+  font-size: 13px;
+  color: var(--sl-muted);
+}
+
+/* PC/모바일 전환 대상 기본값 (아래 미디어 규칙이 덮어씀) */
+.desktop-table {
+  display: none;
+}
+.mobile-cards {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 /* ── PC 는 표, 모바일은 카드 ── */
