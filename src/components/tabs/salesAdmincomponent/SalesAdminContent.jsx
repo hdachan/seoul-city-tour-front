@@ -132,6 +132,7 @@ export default function SalesAdminContent() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("driving");
   const pendingTabRef = useRef(null); // 로드 후 이동할 탭
+  const [fromTotal, setFromTotal] = useState(false); // 전체 통계 > 사람별 통계에서 들어왔는지 (뒤로가기 위치)
 
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -634,6 +635,7 @@ export default function SalesAdminContent() {
           onMonthChange={setMonth}
           onUserClick={(u) => {
             pendingTabRef.current = "stats";
+            setFromTotal(true);
             setSelectedUser(u);
             setMainTab("list");
           }}
@@ -781,6 +783,7 @@ export default function SalesAdminContent() {
                 >
                   <div
                     onClick={() => {
+                      setFromTotal(false);
                       setSelectedUser(u);
                       setSelectedDate(toDateStr(now));
                       setActiveTab("driving");
@@ -992,10 +995,11 @@ export default function SalesAdminContent() {
               onClick={() => {
                 setSelectedUser(null);
                 setDayDriving([]);
+                if (fromTotal) setMainTab("total");
               }}
               style={outlineBtn}
             >
-              ← 목록
+              {fromTotal ? "← 전체 통계" : "← 목록"}
             </button>
             <select
               value={year}

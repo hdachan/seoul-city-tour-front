@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { formatDrivingTime } from "./DrivingTimeFields";
-import PersonalFuelPanel from "./PersonalFuelPanel";
+import SalesMonthlyStats from "./SalesMonthlyStats";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
@@ -23,19 +23,16 @@ export default function SalesDrivingStats({ username, name, year, month }) {
   const [notes, setNotes] = useState({});
   const [prevMeter, setPrevMeter] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [fuelBalance, setFuelBalance] = useState(undefined); // 개인주유 정산 (서버 계산)
 
-  useEffect(() => {
-    if (!username) return;
-    setFuelBalance(undefined);
-    axios
-      .get(`${BASE_URL}/sales-admin/personal-fuel-balance`, {
+  // 개인주유 정산 (서버 계산) — 영업 화면 월간 통계와 같은 값
+  const getPersonalFuelBalance = useCallback(
+    (y, m) =>
+      axios.get(`${BASE_URL}/sales-admin/personal-fuel-balance`, {
         ...authHeader(),
-        params: { salesUsername: username, year, month },
-      })
-      .then((r) => setFuelBalance(r.data))
-      .catch(() => setFuelBalance(null));
-  }, [username, year, month]);
+        params: { salesUsername: username, year: y, month: m },
+      }),
+    [username],
+  );
 
   useEffect(() => {
     if (!username) {
@@ -136,10 +133,6 @@ export default function SalesDrivingStats({ username, name, year, month }) {
       };
     });
 
-  const totalDist = dailyStats.reduce((s, d) => s + d.totalDist, 0);
-  const totalFuelL = dailyStats.reduce((s, d) => s + d.totalFuelL, 0);
-  const totalFuelC = dailyStats.reduce((s, d) => s + d.totalFuelC, 0);
-  const avgKmL = totalFuelL > 0 ? (totalDist / totalFuelL).toFixed(1) : "-";
   const totalReceipt = receipts.reduce((s, r) => s + toNum(r.totalAmount), 0);
 
   return (
@@ -157,73 +150,13 @@ export default function SalesDrivingStats({ username, name, year, month }) {
         </h3>
       </div>
 
-      {/* 합산 카드 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "12px",
-        }}
-      >
-        {[
-          {
-            label: "총 운행거리",
-            value: `${fmt(totalDist)}km`,
-            color: "#1557b0",
-            bg: "#eff6ff",
-            icon: "🚗",
-          },
-          {
-            label: "총 주유량",
-            value: `${totalFuelL.toFixed(2)}L`,
-            color: "#92400e",
-            bg: "#fffbeb",
-            icon: "⛽",
-          },
-          {
-            label: "평균 연비",
-            value: `${avgKmL}km/L`,
-            color: "#059669",
-            bg: "#f0fdf4",
-            icon: "📊",
-          },
-          {
-            label: "총 주유금액",
-            value: fmtWon(totalFuelC),
-            color: "#7c3aed",
-            bg: "#faf5ff",
-            icon: "💳",
-          },
-        ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              background: s.bg,
-              borderRadius: "12px",
-              padding: "16px 18px",
-              border: `1px solid ${s.color}22`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                color: s.color,
-                marginBottom: "6px",
-                fontWeight: 600,
-                opacity: 0.8,
-              }}
-            >
-              {s.icon} {s.label}
-            </div>
-            <div style={{ fontSize: "22px", fontWeight: 800, color: s.color }}>
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 개인주유 정산 (영업 화면과 같은 서버 계산 값) */}
-      <PersonalFuelPanel balance={fuelBalance} />
+      {/* 영업 정산 > 월간 통계와 같은 화면 (주행거리 · 주유비용 · 개인주유 정산) */}
+      <SalesMonthlyStats
+        year={year}
+        month={month}
+        driving={driving}
+        getPersonalFuelBalance={getPersonalFuelBalance}
+      />
 
       {/* 법인카드 총액 */}
       {totalReceipt > 0 && (
