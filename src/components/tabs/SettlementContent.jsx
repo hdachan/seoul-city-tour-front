@@ -17,15 +17,8 @@ import {
   fetchMonthlySettlement,
   saveSettlement,
   fetchYearlySettlement,
+  updatePlatform,
 } from "../../api/auth";
-import axios from "axios";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-const updatePlatform = (id, data) =>
-  axios.put(`${BASE_URL}/settlement/platforms/${id}`, data, authHeader());
 
 const PIE_COLORS = [
   "#1d4ed8",

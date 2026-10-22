@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchGuideStats } from "../../api/auth";
 import "./GuideStatsContent.css";
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
 const fmt = (n) => Number(n).toLocaleString();
 
 const now = new Date();
@@ -27,11 +23,7 @@ export default function GuideStatsContent() {
   const loadStats = () => {
     setLoading(true);
     setError("");
-    axios
-      .get(`${BASE_URL}/guide-form/stats`, {
-        params: { username, year, month },
-        ...authHeader(),
-      })
+    fetchGuideStats(username, year, month)
       .then((r) => setStats(r.data))
       .catch(() => setError("데이터를 불러오지 못했습니다."))
       .finally(() => setLoading(false));

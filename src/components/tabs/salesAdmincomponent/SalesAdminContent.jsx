@@ -1,86 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import TotalStats from "./TotalStats";
-import axios from "axios";
+import { salesAdminApi as api } from "../../../api/sales";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import { toDateStr } from "../../../utils/dateUtils";
 import { useDateRollover } from "../../../utils/useToday";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-
-const api = {
-  getSalesUsers: () =>
-    axios.get(`${BASE_URL}/sales-admin/sales-users`, authHeader()),
-  getSummary: (y, m) =>
-    axios.get(`${BASE_URL}/sales-admin/summary`, {
-      ...authHeader(),
-      params: { year: y, month: m },
-    }),
-  getLockStatus: (u, y, m) =>
-    axios.get(`${BASE_URL}/sales-admin/lock-status`, {
-      ...authHeader(),
-      params: { salesUsername: u, year: y, month: m },
-    }),
-  toggleLock: (u, y, m, l, weekNum = 0) =>
-    axios.post(
-      `${BASE_URL}/sales-admin/lock`,
-      { salesUsername: u, year: y, month: m, locked: l, weekNum },
-      authHeader(),
-    ),
-  getCategories: () =>
-    axios.get(`${BASE_URL}/sales-admin/categories`, authHeader()),
-  addCategory: (name) =>
-    axios.post(`${BASE_URL}/sales-admin/categories`, { name }, authHeader()),
-  deleteCategory: (id) =>
-    axios.delete(`${BASE_URL}/sales-admin/categories/${id}`, authHeader()),
-  getDriving: (u, y, m) =>
-    axios.get(`${BASE_URL}/sales-admin/driving`, {
-      ...authHeader(),
-      params: { salesUsername: u, year: y, month: m },
-    }),
-  getDestinations: () =>
-    axios.get(`${BASE_URL}/sales-admin/destinations`, authHeader()),
-  getPurposes: () =>
-    axios.get(`${BASE_URL}/sales-admin/purposes`, authHeader()),
-  getPrevMeter: (u, date) =>
-    axios.get(`${BASE_URL}/sales-admin/driving/prev-meter`, {
-      ...authHeader(),
-      params: { salesUsername: u, date },
-    }),
-  getDrivingDate: (u, date) =>
-    axios.get(`${BASE_URL}/sales-admin/driving/date`, {
-      ...authHeader(),
-      params: { salesUsername: u, date },
-    }),
-  addDriving: (data) =>
-    axios.post(`${BASE_URL}/sales-admin/driving`, data, authHeader()),
-  updateDriving: (id, data) =>
-    axios.put(`${BASE_URL}/sales-admin/driving/${id}`, data, authHeader()),
-  deleteDriving: (id) =>
-    axios.delete(`${BASE_URL}/sales-admin/driving/${id}`, authHeader()),
-  saveDrivingNotes: (drivingId, contents) =>
-    axios.post(
-      `${BASE_URL}/sales-admin/driving/${drivingId}/notes`,
-      contents,
-      authHeader(),
-    ),
-  getReceipts: (u, y, m) =>
-    axios.get(`${BASE_URL}/sales-admin/receipt`, {
-      ...authHeader(),
-      params: { salesUsername: u, year: y, month: m },
-    }),
-  addReceipt: (data) =>
-    axios.post(`${BASE_URL}/sales-admin/receipt`, data, authHeader()),
-  updateReceipt: (id, data) =>
-    axios.put(`${BASE_URL}/sales-admin/receipt/${id}`, data, authHeader()),
-  deleteReceipt: (id) =>
-    axios.delete(`${BASE_URL}/sales-admin/receipt/${id}`, authHeader()),
-};
 
 const fmt = (n) => Number(n || 0).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";

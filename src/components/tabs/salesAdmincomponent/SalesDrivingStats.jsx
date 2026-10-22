@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { salesAdminApi as api } from "../../../api/sales";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
 const toNum = (v) => Number(v || 0) || 0;
 const fmt = (n) => toNum(n).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
@@ -26,11 +22,7 @@ export default function SalesDrivingStats({ username, name, year, month }) {
 
   // 개인주유 정산 (서버 계산) — 영업 화면 월간 통계와 같은 값
   const getPersonalFuelBalance = useCallback(
-    (y, m) =>
-      axios.get(`${BASE_URL}/sales-admin/personal-fuel-balance`, {
-        ...authHeader(),
-        params: { salesUsername: username, year: y, month: m },
-      }),
+    (y, m) => api.getPersonalFuelBalance(username, y, m),
     [username],
   );
 
@@ -43,22 +35,10 @@ export default function SalesDrivingStats({ username, name, year, month }) {
     // 해당 월 첫 날 이전 마지막 미터기 조회
     const firstDay = `${year}-${String(month).padStart(2, "0")}-01`;
     Promise.all([
-      axios.get(`${BASE_URL}/sales-admin/driving`, {
-        ...authHeader(),
-        params: { salesUsername: username, year, month },
-      }),
-      axios.get(`${BASE_URL}/sales-admin/receipt`, {
-        ...authHeader(),
-        params: { salesUsername: username, year, month },
-      }),
-      axios.get(`${BASE_URL}/sales-admin/daily-notes`, {
-        ...authHeader(),
-        params: { salesUsername: username, year, month },
-      }),
-      axios.get(`${BASE_URL}/sales-admin/driving/prev-meter`, {
-        ...authHeader(),
-        params: { salesUsername: username, date: firstDay },
-      }),
+      api.getDriving(username, year, month),
+      api.getReceipts(username, year, month),
+      api.getDailyNotes(username, year, month),
+      api.getPrevMeter(username, firstDay),
     ])
       .then(([drv, rec, nts, prev]) => {
         setDriving(Array.isArray(drv.data) ? drv.data : []);

@@ -15,13 +15,8 @@ import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
 import GuideFormContent from "./tabs/GuideFormContent";
 import GuideStatsContent from "./tabs/GuideStatsContent";
 import DevContent from "./tabs/DevContent";
-import axios from "axios";
+import { fetchTabPermissions } from "../api/auth";
 import "./AppLayout.css";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
 
 const ALL_TABS = [
   { id: "admin", icon: "👥", label: "계정 관리" },
@@ -59,10 +54,7 @@ export default function AppLayout() {
   // 서버 응답이 없을 때만 마지막으로 받은 목록 → 기본값 순으로 사용
   const loadPermissions = useCallback(async () => {
     try {
-      const res = await axios.get(
-        `${BASE_URL}/dev/permissions/${encodeURIComponent(role)}`,
-        authHeader(),
-      );
+      const res = await fetchTabPermissions(role);
       const tabs = res.data.allowedTabs || [];
       sessionStorage.setItem("allowedTabs", JSON.stringify(tabs));
       setAllowedTabIds(tabs);

@@ -1,19 +1,12 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import {
+  fetchRoles,
+  fetchTabs,
+  addRole,
+  updateRole,
+  deleteRole,
+} from "../../api/auth";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-
-const fetchRoles = () => axios.get(`${BASE_URL}/dev/roles`, authHeader());
-const fetchTabs = () => axios.get(`${BASE_URL}/dev/tabs`, authHeader());
-const addRole = (data) =>
-  axios.post(`${BASE_URL}/dev/roles`, data, authHeader());
-const updateRole = (id, data) =>
-  axios.put(`${BASE_URL}/dev/roles/${id}`, data, authHeader());
-const deleteRole = (id) =>
-  axios.delete(`${BASE_URL}/dev/roles/${id}`, authHeader());
 
 export default function DevContent() {
   const [roles, setRoles] = useState([]);

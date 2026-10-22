@@ -2,88 +2,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { toDateStr } from "../../../utils/dateUtils";
 import useToday from "../../../utils/useToday";
 import "./SalesContent.css"; // 수정
-import axios from "axios";
+import { salesApi as api } from "../../../api/sales";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import * as XLSX from "xlsx";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-
-const api = {
-  getLockStatus: (y, m) =>
-    axios.get(`${BASE_URL}/sales-form/lock-status`, {
-      ...authHeader(),
-      params: { year: y, month: m },
-    }),
-  getMyCard: () => axios.get(`${BASE_URL}/sales-form/my-card`, authHeader()),
-  getCategories: () =>
-    axios.get(`${BASE_URL}/sales-form/categories`, authHeader()),
-  getPurposes: () => axios.get(`${BASE_URL}/sales-form/purposes`, authHeader()),
-  getDrivingNotes: (drivingId) =>
-    axios.get(
-      `${BASE_URL}/sales-form/driving/${drivingId}/notes`,
-      authHeader(),
-    ),
-  saveDrivingNotes: (drivingId, contents) =>
-    axios.post(
-      `${BASE_URL}/sales-form/driving/${drivingId}/notes`,
-      contents,
-      authHeader(),
-    ),
-  getDestinations: () =>
-    axios.get(`${BASE_URL}/sales-form/destinations`, authHeader()),
-  getDriving: (y, m) =>
-    axios.get(`${BASE_URL}/sales-form/driving`, {
-      ...authHeader(),
-      params: { year: y, month: m },
-    }),
-  getDrivingDate: (date) =>
-    axios.get(`${BASE_URL}/sales-form/driving/date`, {
-      ...authHeader(),
-      params: { date },
-    }),
-  getPersonalFuelBalance: (y, m) =>
-    axios.get(`${BASE_URL}/sales-form/personal-fuel-balance`, {
-      ...authHeader(),
-      params: { year: y, month: m },
-    }),
-  getPrevMeter: (date) =>
-    axios.get(`${BASE_URL}/sales-form/driving/prev-meter`, {
-      ...authHeader(),
-      params: { date },
-    }),
-  addDriving: (data) =>
-    axios.post(`${BASE_URL}/sales-form/driving`, data, authHeader()),
-  updateDriving: (id, data) =>
-    axios.put(`${BASE_URL}/sales-form/driving/${id}`, data, authHeader()),
-  deleteDriving: (id) =>
-    axios.delete(`${BASE_URL}/sales-form/driving/${id}`, authHeader()),
-  getReceipts: (y, m) =>
-    axios.get(`${BASE_URL}/sales-form/receipt`, {
-      ...authHeader(),
-      params: { year: y, month: m },
-    }),
-  addReceipt: (data) =>
-    axios.post(`${BASE_URL}/sales-form/receipt`, data, authHeader()),
-  updateReceipt: (id, data) =>
-    axios.put(`${BASE_URL}/sales-form/receipt/${id}`, data, authHeader()),
-  deleteReceipt: (id) =>
-    axios.delete(`${BASE_URL}/sales-form/receipt/${id}`, authHeader()),
-  getDailyNote: (date) =>
-    axios.get(`${BASE_URL}/sales-form/daily-note`, {
-      ...authHeader(),
-      params: { date },
-    }),
-  saveDailyNote: (date, note) =>
-    axios.post(
-      `${BASE_URL}/sales-form/daily-note`,
-      { date, note },
-      authHeader(),
-    ),
-};
 
 const fmt = (n) => Number(n || 0).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
@@ -221,7 +143,6 @@ export default function SalesContent() {
     const d = `${year}-${pad2(month)}-${pad2(i + 1)}`;
     return d;
   });
-
 
   // 월요일 기준 주 계산
   // 날짜 문자열을 로컬 시간으로 파싱 (UTC 문제 방지)

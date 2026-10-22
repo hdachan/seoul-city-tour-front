@@ -17,23 +17,11 @@ import {
   fetchCategories,
   addCategory,
   removeCategory,
+  fetchRecordsByMonth,
+  fetchStats,
+  updateRecord,
 } from "../../api/auth";
-import axios from "axios";
 import { toDateStr } from "../../utils/dateUtils";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-const fetchRecordsByMonth = (year, month) =>
-  axios.get(`${BASE_URL}/record/list`, {
-    ...authHeader(),
-    params: { year, month },
-  });
-const fetchStats = (year) =>
-  axios.get(`${BASE_URL}/record/stats`, { ...authHeader(), params: { year } });
-const updateRecord = (id, data) =>
-  axios.put(`${BASE_URL}/record/${id}`, data, authHeader());
 
 const PIE_COLORS = [
   "#1d4ed8",

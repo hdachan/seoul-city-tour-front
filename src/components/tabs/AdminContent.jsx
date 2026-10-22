@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
-import { fetchAdminUsers, createUser, deleteUser } from "../../api/auth";
+import {
+  fetchAdminUsers,
+  createUser,
+  deleteUser,
+  updateUser,
+  fetchRoles,
+} from "../../api/auth";
 import { getRoleFromToken } from "../../utils/tokenUtils";
-import axios from "axios";
-
-const BASE_URL = process.env.REACT_APP_API_URL;
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
-const updateUser = (id, data) =>
-  axios.put(`${BASE_URL}/admin/users/${id}`, data, authHeader());
-const fetchAllRoles = () => axios.get(`${BASE_URL}/dev/roles`, authHeader());
 
 const ROLE_COLORS = {
   ROLE_ADMIN: { label: "관리자", color: "#7c3aed", bg: "#ede9fe" },
@@ -55,7 +52,7 @@ export default function AdminContent() {
   const load = async () => {
     if (!isAllowed) return;
     try {
-      const [u, r] = await Promise.all([fetchAdminUsers(), fetchAllRoles()]);
+      const [u, r] = await Promise.all([fetchAdminUsers(), fetchRoles()]);
       setUsers(u.data);
       setAllRoles(r.data);
     } catch {

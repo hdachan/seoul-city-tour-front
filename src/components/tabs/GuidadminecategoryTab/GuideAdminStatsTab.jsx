@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchAdminStats, fetchAdminDailyStats } from "../../../api/auth";
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-});
 const fmt = (n) => Number(n).toLocaleString();
 
 const now = new Date();
@@ -23,14 +19,8 @@ export default function GuideAdminStatsTab() {
     setLoading(true);
     setError("");
     Promise.all([
-      axios.get(`${BASE_URL}/guide-admin/stats`, {
-        params: { year, month },
-        ...authHeader(),
-      }),
-      axios.get(`${BASE_URL}/guide-admin/stats/daily`, {
-        params: { year, month },
-        ...authHeader(),
-      }),
+      fetchAdminStats(year, month),
+      fetchAdminDailyStats(year, month),
     ])
       .then(([r1, r2]) => {
         setStats(r1.data);
