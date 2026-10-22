@@ -2251,7 +2251,6 @@ export default function SalesContent() {
           onSubmit={handleSubmitReceipt}
           dateMin={receiptDates[0]}
           dateMax={receiptDates[receiptDates.length - 1]}
-          modalStyle={{ maxHeight: "90vh" }}
         />
       )}
     </div>

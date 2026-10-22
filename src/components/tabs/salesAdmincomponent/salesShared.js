@@ -62,14 +62,3 @@ export const calcDistances = (list, startMeter = 0) => {
   return map;
 };
 
-// 입력칸 오른쪽 단위 글씨 (km, 원, L)
-export const unitSuffix = {
-  position: "absolute",
-  right: "12px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  fontSize: "13px",
-  color: "#888",
-  fontWeight: 600,
-  pointerEvents: "none",
-};

@@ -4,6 +4,21 @@
    - 가이드 화면 CSS 를 고쳐도 영업 화면은 영향을 받지 않음
    ───────────────────────────────────────────────────────────── */
 
+/* ── 자주 쓰는 색 ── */
+:root {
+  --sl-blue: #1557b0; /* 대표 파랑 (버튼, 강조) */
+  --sl-red: #dc2626; /* 경고 · 삭제 */
+  --sl-green: #059669; /* 금액(+) · 완료 */
+  --sl-amber: #92400e; /* 주유(법인) */
+  --sl-pink: #9d174d; /* 개인주유 · 개인사용 */
+  --sl-text: #1a1a2e; /* 본문 진한 글씨 */
+  --sl-sub: #555; /* 보조 글씨 */
+  --sl-muted: #888; /* 흐린 글씨 */
+  --sl-faint: #aaa; /* 더 흐린 글씨 */
+  --sl-line: #e8eaed; /* 테두리 */
+  --sl-line-soft: #f0f2f5; /* 옅은 구분선 · 배경 */
+}
+
 /* ── 탭 ── */
 .sl-tab-bar {
   display: flex;
@@ -119,18 +134,18 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(2px);
 }
 .sl-modal {
   background: #fff;
-  border-radius: 16px 16px 0 0;
+  border-radius: 14px;
   padding: 20px 20px 32px;
   width: 100%;
   max-width: 520px;
-  max-height: 92vh;
+  max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
@@ -145,7 +160,7 @@
   font-size: 16px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 1.2rem;
+  margin: 0;
 }
 .sl-modal-close {
   background: none;
@@ -226,6 +241,210 @@
 .sl-field-error {
   font-size: 12px;
   color: #dc2626;
+}
+
+/* ── 입력창 안 공통 부품 ── */
+.sl-modal-driving {
+  width: 480px;
+}
+.sl-modal-receipt {
+  width: 440px;
+}
+
+/* 단위가 붙는 입력칸 (km · 원 · L) */
+.sl-unit-input {
+  position: relative;
+}
+.sl-unit-input input {
+  padding-right: 40px;
+}
+.sl-unit-input.is-money input {
+  padding-right: 36px;
+}
+.sl-unit-input.is-compact input {
+  padding-right: 24px;
+}
+.sl-unit {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--sl-muted);
+  font-weight: 600;
+  pointer-events: none;
+}
+.sl-unit-input.is-compact .sl-unit {
+  font-size: 11px;
+}
+
+/* 입력칸 아래 안내 · 경고 글씨 */
+.sl-hint {
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.sl-hint.is-info {
+  color: var(--sl-blue);
+}
+.sl-hint.is-personal {
+  color: var(--sl-pink);
+}
+.sl-hint.is-error {
+  color: var(--sl-red);
+}
+.sl-meter-range {
+  font-size: 11px;
+  color: var(--sl-blue);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.sl-optional {
+  color: var(--sl-faint);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* 도착지 추천 목록 */
+.sl-dest-field {
+  position: relative;
+}
+.sl-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--sl-line);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 90px;
+  overflow-y: auto;
+}
+.sl-suggest-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.sl-suggest-item:hover {
+  background: #f4f5f7;
+}
+
+/* 비고 여러 줄 */
+.sl-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sl-mini-btn {
+  font-size: 11px;
+  color: var(--sl-blue);
+  background: none;
+  border: 1px solid var(--sl-blue);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.sl-note-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.sl-field .sl-note-time {
+  width: 130px;
+  flex-shrink: 0;
+}
+.sl-note-text {
+  flex: 1;
+}
+.sl-note-remove {
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--sl-muted);
+  font-size: 12px;
+}
+
+/* 주유 정보 상자 (주유 = 법인 / 개인주유 = 개인) */
+.sl-fuel-box {
+  border-radius: 8px;
+  padding: 12px;
+}
+.sl-fuel-box.is-company {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+}
+.sl-fuel-box.is-personal {
+  background: #fce7f3;
+  border: 1px solid #f9a8d4;
+}
+.sl-fuel-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.sl-fuel-box.is-company .sl-fuel-title {
+  color: var(--sl-amber);
+}
+.sl-fuel-box.is-personal .sl-fuel-title {
+  color: var(--sl-pink);
+}
+.sl-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+/* 구분 버튼 (선택된 버튼은 구분별 색: --type-color / --type-bg) */
+.sl-type-row {
+  display: flex;
+  gap: 6px;
+}
+.sl-type-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 400;
+  background: #fff;
+  color: var(--sl-muted);
+}
+.sl-type-btn.is-active {
+  border-color: var(--type-color);
+  font-weight: 700;
+  background: var(--type-bg);
+  color: var(--type-color);
+}
+
+/* 부가세 미리보기 (법인카드) */
+.sl-vat-box {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.sl-vat-row {
+  display: flex;
+  justify-content: space-between;
+}
+.sl-vat-row.is-first {
+  margin-bottom: 4px;
+}
+.sl-vat-label {
+  color: var(--sl-sub);
+}
+.sl-text-blue {
+  color: var(--sl-blue);
+}
+.sl-text-green {
+  color: var(--sl-green);
 }
 
 /* ── 화면 틀 ── */
@@ -383,10 +602,6 @@
   }
   .mobile-cards {
     display: flex !important;
-  }
-  .sl-modal {
-    border-radius: 16px 16px 0 0;
-    max-height: 88vh;
   }
   .sl-tab-bar {
     width: 100%;
