@@ -7,6 +7,7 @@ import { useDateRollover } from "../../../utils/useToday";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
+import ReceiptModal from "./ReceiptModal";
 import {
   fmt,
   fmtWon,
@@ -96,9 +97,6 @@ export default function SalesAdminContent() {
   })();
 
   const activeCats = categories; // active 컬럼 제거됨
-  const receiptBase = Number(receiptForm.amount || 0);
-  const supplyPreview = receiptBase ? Math.round(receiptBase / 1.1) : 0;
-  const vatPreview = receiptBase ? receiptBase - supplyPreview : 0;
   const daysInMonth = new Date(year, month, 0).getDate();
   const enteredDates = new Set(monthDriving.map((d) => d.date));
 
@@ -2179,186 +2177,15 @@ export default function SalesAdminContent() {
           )}
           {/* 법인카드 모달 */} {/* 법인카드 모달 */}
           {showReceiptModal && (
-            <div className="modal-bg" style={{ alignItems: "center" }}>
-              <div
-                className="modal"
-                style={{ width: "440px", borderRadius: "14px" }}
-              >
-                <div className="modal-header">
-                  <h3 className="modal-title" style={{ margin: 0 }}>
-                    지출내역 {editTarget ? "수정" : "추가"}
-                  </h3>
-                  <button
-                    className="modal-close"
-                    onClick={() => setShowReceiptModal(false)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <form onSubmit={handleSubmitReceipt} className="modal-form">
-                  <div className="field">
-                    <label>날짜</label>
-                    <input
-                      type="date"
-                      value={receiptForm.date || ""}
-                      onChange={(e) =>
-                        setReceiptForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>카테고리</label>
-                    <select
-                      value={receiptForm.category || ""}
-                      onChange={(e) =>
-                        setReceiptForm((f) => ({
-                          ...f,
-                          category: e.target.value,
-                        }))
-                      }
-                    >
-                      {activeCats.length === 0 ? (
-                        <option value="">없음</option>
-                      ) : (
-                        activeCats.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>신용카드 번호</label>
-                    <input
-                      type="text"
-                      value={receiptForm.content || ""}
-                      onChange={(e) =>
-                        setReceiptForm((f) => ({
-                          ...f,
-                          content: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>총금액 *</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number"
-                        value={receiptForm.amount || ""}
-                        onChange={(e) =>
-                          setReceiptForm((f) => ({
-                            ...f,
-                            amount: e.target.value,
-                          }))
-                        }
-                        style={{ width: "100%", paddingRight: "36px" }}
-                        required
-                      />
-                      <span style={unitSfx}>원</span>
-                    </div>
-                  </div>
-                  {receiptBase > 0 && (
-                    <div
-                      style={{
-                        background: "#f0fdf4",
-                        border: "1px solid #86efac",
-                        borderRadius: "8px",
-                        padding: "10px 14px",
-                        fontSize: "13px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>공급가액</span>
-                        <strong style={{ color: "#1557b0" }}>
-                          {fmtWon(supplyPreview)}
-                        </strong>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>VAT 10%</span>
-                        <strong style={{ color: "#059669" }}>
-                          {fmtWon(vatPreview)}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-                  <div className="field">
-                    <label>
-                      사업자번호{" "}
-                      <span
-                        style={{
-                          color: "#aaa",
-                          fontSize: "11px",
-                          fontWeight: 400,
-                        }}
-                      >
-                        (선택)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="000-00-00000"
-                      value={receiptForm.businessNumber || ""}
-                      onChange={(e) =>
-                        setReceiptForm((f) => ({
-                          ...f,
-                          businessNumber: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>
-                      상호{" "}
-                      <span
-                        style={{
-                          color: "#aaa",
-                          fontSize: "11px",
-                          fontWeight: 400,
-                        }}
-                      >
-                        (선택)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={receiptForm.companyName || ""}
-                      onChange={(e) =>
-                        setReceiptForm((f) => ({
-                          ...f,
-                          companyName: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  {error && <p className="field-error">⚠ {error}</p>}
-                  <div className="modal-btns">
-                    <button
-                      type="button"
-                      className="btn-outline"
-                      onClick={() => setShowReceiptModal(false)}
-                    >
-                      취소
-                    </button>
-                    <button type="submit" className="btn-primary">
-                      {editTarget ? "수정" : "추가"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+            <ReceiptModal
+              form={receiptForm}
+              setForm={setReceiptForm}
+              isEdit={!!editTarget}
+              categories={activeCats}
+              error={error}
+              onClose={() => setShowReceiptModal(false)}
+              onSubmit={handleSubmitReceipt}
+            />
           )}
         </div>
       )}
