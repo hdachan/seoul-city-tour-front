@@ -6,11 +6,16 @@ import { salesApi as api } from "../../../api/sales";
 import DrivingTimeFields, { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import * as XLSX from "xlsx";
+import {
+  fmt,
+  fmtWon,
+  pad2,
+  TYPES,
+  TYPE_STYLE,
+  getWeeksOfMonth,
+  calcDistances,
+} from "./salesShared";
 
-const fmt = (n) => Number(n || 0).toLocaleString();
-const fmtWon = (n) => fmt(n) + "원";
-const pad2 = (n) => String(n).padStart(2, "0");
-const TYPES = ["업무", "주유", "개인주유", "개인사용"];
 // 기준일(YYYY-MM-DD)이 속한 주의 월요일 / 일요일
 const getWeekMonday = (dateStr) => {
   const [y, m, dd] = dateStr.split("-").map(Number);
@@ -34,36 +39,10 @@ const getKoreaTime = () =>
     hour12: false,
   }).format(new Date());
 
-// 미터기 기준 운행거리 계산
-// 시간이 없는 기록(개인사용 등)도 순서가 맞도록 날짜 → 미터기 순으로 계산
-// 구간 거리는 뒤쪽 기록의 구분(업무/개인사용)에 붙음
-const calcDistances = (list, startMeter = 0) => {
-  const sorted = list
-    .filter((d) => d.meterReading > 0)
-    .sort((a, b) =>
-      a.date === b.date
-        ? a.meterReading - b.meterReading
-        : a.date.localeCompare(b.date),
-    );
-  let last = startMeter || 0;
-  const map = {};
-  sorted.forEach((d) => {
-    map[d.id] = last > 0 && d.meterReading > last ? d.meterReading - last : 0;
-    last = Math.max(last, d.meterReading);
-  });
-  return map;
-};
 const sumDist = (list, key, type) =>
   list
     .filter((d) => !type || d.type === type)
     .reduce((s, d) => s + (d[key] || 0), 0);
-
-const TYPE_STYLE = {
-  업무: { bg: "#e8f0fe", color: "#1557b0" },
-  주유: { bg: "#fef3c7", color: "#92400e" },
-  개인주유: { bg: "#fce7f3", color: "#9d174d" },
-  개인사용: { bg: "#ede9fe", color: "#6d28d9" },
-};
 
 export default function SalesContent() {
   const now = new Date();
@@ -149,33 +128,6 @@ export default function SalesContent() {
   const parseLocalDate = (dateStr) => {
     const [y, m, d] = dateStr.split("-").map(Number);
     return new Date(y, m - 1, d);
-  };
-
-  const getWeeksOfMonth = (y, m) => {
-    const weeks = [];
-    const firstDay = new Date(y, m - 1, 1);
-    const lastDay = new Date(y, m, 0);
-    let start = new Date(firstDay);
-    const dow = start.getDay();
-    if (dow !== 1) {
-      start.setDate(start.getDate() + (dow === 0 ? -6 : 1 - dow));
-    }
-    let weekNum = 1;
-    while (start <= lastDay) {
-      const end = new Date(start);
-      end.setDate(end.getDate() + 6);
-      const cs = start < firstDay ? new Date(firstDay) : new Date(start);
-      const ce = end > lastDay ? new Date(lastDay) : new Date(end);
-      weeks.push({
-        weekNum,
-        start: cs,
-        end: ce,
-        label: `${cs.getDate()}일~${ce.getDate()}일`,
-      });
-      start.setDate(start.getDate() + 7);
-      weekNum++;
-    }
-    return weeks;
   };
 
   // 선택 날짜가 속한 주 번호 (로컬 시간 기준)

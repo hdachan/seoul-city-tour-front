@@ -7,48 +7,15 @@ import { useDateRollover } from "../../../utils/useToday";
 import "./SalesAdminContent.css"; // 수정
 
 import SalesDrivingStats from "./SalesDrivingStats";
-
-const fmt = (n) => Number(n || 0).toLocaleString();
-const fmtWon = (n) => fmt(n) + "원";
-const pad2 = (n) => String(n).padStart(2, "0");
-const TYPES = ["업무", "주유", "개인주유", "개인사용"];
-const TYPE_STYLE = {
-  업무: { bg: "#e8f0fe", color: "#1557b0" },
-  주유: { bg: "#fef3c7", color: "#92400e" },
-  개인주유: { bg: "#fce7f3", color: "#9d174d" },
-  개인사용: { bg: "#ede9fe", color: "#6d28d9" },
-};
-
-// 월요일 기준 주 계산 유틸 (한국 달력 월~일)
-const getWeeksOfMonth = (year, month) => {
-  const weeks = [];
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  let start = new Date(firstDay);
-  const dow = start.getDay(); // 0=일, 1=월
-  if (dow !== 1) {
-    start.setDate(start.getDate() + (dow === 0 ? -6 : 1 - dow));
-  }
-  let weekNum = 1;
-  while (start <= lastDay) {
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const cs = start < firstDay ? new Date(firstDay) : new Date(start);
-    const ce = end > lastDay ? new Date(lastDay) : new Date(end);
-    const fmt2 = (d) => String(d).padStart(2, "0");
-    weeks.push({
-      weekNum,
-      start: cs,
-      end: ce,
-      startStr: `${year}-${fmt2(cs.getMonth() + 1)}-${fmt2(cs.getDate())}`,
-      endStr: `${year}-${fmt2(ce.getMonth() + 1)}-${fmt2(ce.getDate())}`,
-      label: `${cs.getDate()}일~${ce.getDate()}일`,
-    });
-    start.setDate(start.getDate() + 7);
-    weekNum++;
-  }
-  return weeks;
-};
+import {
+  fmt,
+  fmtWon,
+  pad2,
+  TYPES,
+  TYPE_STYLE,
+  getWeeksOfMonth,
+  calcDistances,
+} from "./salesShared";
 
 export default function SalesAdminContent() {
   const now = new Date();
@@ -175,21 +142,7 @@ export default function SalesAdminContent() {
       return a.arrivalTime.localeCompare(b.arrivalTime);
     });
     // 미터기 순으로 거리 계산 (시간 없는 개인사용도 순서 맞게)
-    // 구간 거리는 뒤쪽 기록의 구분(업무/개인사용)에 붙음
-    const byMeter = sorted
-      .filter((d) => d.meterReading > 0)
-      .sort((a, b) =>
-        a.date === b.date
-          ? a.meterReading - b.meterReading
-          : a.date.localeCompare(b.date),
-      );
-    let last = startMeter || 0;
-    const distMap = {};
-    byMeter.forEach((d) => {
-      distMap[d.id] =
-        last > 0 && d.meterReading > last ? d.meterReading - last : 0;
-      last = Math.max(last, d.meterReading);
-    });
+    const distMap = calcDistances(sorted, startMeter);
     return sorted.map((d) => ({ ...d, calcDist: distMap[d.id] || 0 }));
   };
 
