@@ -1,4 +1,4 @@
-import { fmtWon } from "./salesShared";
+import { fmtWon, unitSuffix } from "./salesShared";
 
 // 💳 법인카드 지출내역 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm  : 입력값 (화면마다 자기 상태를 넘김)
@@ -150,13 +150,3 @@ export default function ReceiptModal({
 }
 
 const optionalStyle = { color: "#aaa", fontSize: "11px", fontWeight: 400 };
-export const unitSuffix = {
-  position: "absolute",
-  right: "12px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  fontSize: "13px",
-  color: "#888",
-  fontWeight: 600,
-  pointerEvents: "none",
-};
