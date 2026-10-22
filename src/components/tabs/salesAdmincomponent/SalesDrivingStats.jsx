@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { formatDrivingTime } from "./DrivingTimeFields";
+import PersonalFuelPanel from "./PersonalFuelPanel";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 const authHeader = () => ({
@@ -22,6 +23,19 @@ export default function SalesDrivingStats({ username, name, year, month }) {
   const [notes, setNotes] = useState({});
   const [prevMeter, setPrevMeter] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fuelBalance, setFuelBalance] = useState(undefined); // 개인주유 정산 (서버 계산)
+
+  useEffect(() => {
+    if (!username) return;
+    setFuelBalance(undefined);
+    axios
+      .get(`${BASE_URL}/sales-admin/personal-fuel-balance`, {
+        ...authHeader(),
+        params: { salesUsername: username, year, month },
+      })
+      .then((r) => setFuelBalance(r.data))
+      .catch(() => setFuelBalance(null));
+  }, [username, year, month]);
 
   useEffect(() => {
     if (!username) {
@@ -207,6 +221,9 @@ export default function SalesDrivingStats({ username, name, year, month }) {
           </div>
         ))}
       </div>
+
+      {/* 개인주유 정산 (영업 화면과 같은 서버 계산 값) */}
+      <PersonalFuelPanel balance={fuelBalance} />
 
       {/* 법인카드 총액 */}
       {totalReceipt > 0 && (
