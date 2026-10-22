@@ -17,7 +17,6 @@ export const createUser = (username, password, role, name) =>
 export const deleteUser = (id) => client.delete(`/admin/users/${id}`);
 
 // 운행 기록
-export const fetchRecords = () => client.get(`/record/list`);
 export const addRecord = (data) => client.post(`/record/add`, data);
 export const removeRecord = (id) => client.delete(`/record/${id}`);
 export const fetchCategories = (type) =>
@@ -38,7 +37,6 @@ export const fetchMonthlySettlement = (year, month) =>
   });
 export const saveSettlement = (platformId, year, month, amount, memo) =>
   client.post(`/settlement/save`, { platformId, year, month, amount, memo });
-export const deleteSettlement = (id) => client.delete(`/settlement/${id}`);
 export const fetchYearlySettlement = (year) =>
   client.get(`/settlement/yearly`, {
     params: { year },
@@ -60,7 +58,6 @@ export const fetchGinsengMonthly = (year, month) =>
   });
 export const saveGinsengRecord = (guideName, date, count) =>
   client.post(`/ginseng/save`, { guideName, date, count });
-export const deleteGinsengRecord = (id) => client.delete(`/ginseng/${id}`);
 
 // 가이드 정산폼
 export const fetchExpenseCategories = (tourNameId, tourName) =>
@@ -124,7 +121,6 @@ export const deleteGuideDailyFee = (id) =>
   client.delete(`/guide-form/daily-fee/${id}`);
 
 // 관리자용 가이드 정산
-export const fetchAdminGuideList = () => client.get(`/guide-admin/guides`);
 export const fetchAdminSummary = (year, month) =>
   client.get(`/guide-admin/summary`, {
     params: { year, month },
@@ -165,60 +161,6 @@ export const updateAdminDailyFee = (id, amount, date) =>
   client.put(`/guide-admin/daily-fee/${id}`, { amount, date });
 export const deleteAdminDailyFee = (id) =>
   client.delete(`/guide-admin/daily-fee/${id}`);
-
-// 영업 정산폼 (영업용)
-export const fetchSalesLockStatus = () => client.get(`/sales-form/lock-status`);
-
-export const fetchSalesReceipts = () => client.get(`/sales-form/receipt`);
-export const addSalesReceipt = (data) =>
-  client.post(`/sales-form/receipt`, data);
-export const updateSalesReceipt = (id, data) =>
-  client.put(`/sales-form/receipt/${id}`, data);
-export const deleteSalesReceipt = (id) =>
-  client.delete(`/sales-form/receipt/${id}`);
-
-export const fetchSalesDriving = () => client.get(`/sales-form/driving`);
-export const addSalesDriving = (data) =>
-  client.post(`/sales-form/driving`, data);
-export const updateSalesDriving = (id, data) =>
-  client.put(`/sales-form/driving/${id}`, data);
-export const deleteSalesDriving = (id) =>
-  client.delete(`/sales-form/driving/${id}`);
-
-// 영업 관리자용
-export const fetchSalesUserList = () => client.get(`/sales-admin/sales-users`);
-export const fetchSalesAdminSummary = (year, month) =>
-  client.get(`/sales-admin/summary`, {
-    params: { year, month },
-  });
-export const fetchSalesAdminLockStatus = (salesUsername, year, month) =>
-  client.get(`/sales-admin/lock-status`, {
-    params: { salesUsername, year, month },
-  });
-export const toggleSalesMonthLock = (salesUsername, year, month, locked) =>
-  client.post(`/sales-admin/lock`, { salesUsername, year, month, locked });
-
-export const fetchAdminReceipts = (salesUsername, year, month) =>
-  client.get(`/sales-admin/receipt`, {
-    params: { salesUsername, year, month },
-  });
-export const addAdminReceipt = (data) =>
-  client.post(`/sales-admin/receipt`, data);
-export const updateAdminReceipt = (id, data) =>
-  client.put(`/sales-admin/receipt/${id}`, data);
-export const deleteAdminReceipt = (id) =>
-  client.delete(`/sales-admin/receipt/${id}`);
-
-export const fetchAdminDriving = (salesUsername, year, month) =>
-  client.get(`/sales-admin/driving`, {
-    params: { salesUsername, year, month },
-  });
-export const addAdminDriving = (data) =>
-  client.post(`/sales-admin/driving`, data);
-export const updateAdminDriving = (id, data) =>
-  client.put(`/sales-admin/driving/${id}`, data);
-export const deleteAdminDriving = (id) =>
-  client.delete(`/sales-admin/driving/${id}`);
 
 // 계정 관리 (수정)
 export const updateUser = (id, data) => client.put(`/admin/users/${id}`, data);

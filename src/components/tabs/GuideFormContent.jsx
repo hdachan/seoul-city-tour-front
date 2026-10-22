@@ -75,7 +75,6 @@ const SelectBtn = ({ options, value, onChange, badgeFn }) => (
 );
 
 export default function GuideFormContent() {
-  const now = new Date();
   const username = sessionStorage.getItem("username");
   const [selectedDate, setSelectedDate] = useState(today());
   // 자정이 지나면 화면 갱신 (수정 가능 7일 범위 재계산), 오늘을 보고 있었으면 새 오늘로 이동
@@ -422,9 +421,6 @@ export default function GuideFormContent() {
     (s, r) => s + (Number(r.headcount) || 0),
     0,
   );
-  const totalDailyFee = dailyFees.reduce((s, d) => s + d.amount, 0);
-  const taxAmount = Math.round(totalDailyFee * TAX_RATE);
-  const actualDailyFee = totalDailyFee - taxAmount;
 
   const fmt = (n) => Number(n).toLocaleString() + "원";
   const payBadge = (type) =>

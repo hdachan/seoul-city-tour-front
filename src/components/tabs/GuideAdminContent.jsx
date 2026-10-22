@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import GuideCategoryTab from "./GuidadminecategoryTab/GuideCategoryTab";
 import {
-  fetchAdminGuideList,
   fetchAdminLockStatus,
   toggleMonthLock,
   fetchTourNames,
   addTourName,
   deleteTourName,
-  fetchExpenseCategories,
   fetchAdminExpenseCategories,
   addExpenseCategory,
   deleteExpenseCategory,
@@ -28,16 +26,7 @@ import {
 import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
 
-const TAX_RATE = 0.033;
 const today = () => toDateStr(new Date());
-
-const getWeekRange = () => {
-  const now = new Date();
-  const max = toDateStr(now);
-  const min = new Date(now);
-  min.setDate(now.getDate() - 6);
-  return { min: toDateStr(min), max };
-};
 
 const SelectBtn = ({ options, value, onChange, badgeFn }) => (
   <div style={{ display: "flex", gap: "8px" }}>
@@ -86,7 +75,6 @@ export default function GuideAdminContent() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  const [guides, setGuides] = useState([]);
   const [summary, setSummary] = useState([]); // 카드뷰용 요약
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
@@ -109,7 +97,6 @@ export default function GuideAdminContent() {
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [newExpenseCategory, setNewExpenseCategory] = useState("");
   const [selectedTourForExpense, setSelectedTourForExpense] = useState("");
-  const [catSubTab, setCatSubTab] = useState("tour");
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
@@ -133,9 +120,8 @@ export default function GuideAdminContent() {
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
   useEffect(() => {
-    Promise.all([fetchAdminGuideList(), fetchTourNames()])
-      .then(([g, t]) => {
-        setGuides(g.data);
+    fetchTourNames()
+      .then((t) => {
         setTourNames(t.data);
       })
       .catch(() => setError("데이터를 불러오지 못했습니다."));
@@ -159,11 +145,9 @@ export default function GuideAdminContent() {
     loadDetail();
   }, [selectedGuide, selectedDate]);
 
-  const [allExpenseCategories, setAllExpenseCategories] = useState([]);
   const loadExpenseCategories = () => {
     fetchAdminExpenseCategories()
       .then((r) => {
-        setAllExpenseCategories(r.data);
         setExpenseCategories(r.data);
       })
       .catch(() => {});
@@ -227,8 +211,6 @@ export default function GuideAdminContent() {
       memo: "",
       note: "",
       noteCustom: "",
-      note: "",
-      noteCustom: "",
     });
     setIncomeModal({ mode: "add" });
   };
@@ -290,7 +272,6 @@ export default function GuideAdminContent() {
       tourName: "",
       expenseType: "",
       date: selectedDate,
-      memo: "",
       amount: "",
       headcount: "",
       adult: "",
@@ -439,9 +420,6 @@ export default function GuideAdminContent() {
     (s, r) => s + (Number(r.headcount) || 0),
     0,
   );
-  const totalDailyFee = dailyFees.reduce((s, d) => s + d.amount, 0);
-  const taxAmount = Math.round(totalDailyFee * TAX_RATE);
-  const actualDailyFee = totalDailyFee - taxAmount;
 
   const fmt = (n) => Number(n).toLocaleString() + "원";
   const payBadge = (type) =>

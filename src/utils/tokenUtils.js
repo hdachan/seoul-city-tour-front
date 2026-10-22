@@ -33,30 +33,9 @@ export function isTokenExpired() {
   return Date.now() / 1000 > payload.exp;
 }
 
-// 특정 role 보유 여부 (토큰 기반)
-export function hasRole(role) {
-  const tokenRole = getRoleFromToken();
-  if (!tokenRole) return false;
-  return tokenRole === role || tokenRole === `ROLE_${role}`;
-}
-
-// 여러 role 중 하나라도 있는지
-export function hasAnyRole(roles) {
-  return roles.some((role) => hasRole(role));
-}
-
 // 로그아웃 (토큰 만료 시 자동 호출)
 export function clearSession() {
   sessionStorage.clear();
   window.location.href = "/";
 }
 
-// axios 요청 전 토큰 만료 확인
-export function checkTokenBeforeRequest() {
-  if (isTokenExpired()) {
-    alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
-    clearSession();
-    return false;
-  }
-  return true;
-}

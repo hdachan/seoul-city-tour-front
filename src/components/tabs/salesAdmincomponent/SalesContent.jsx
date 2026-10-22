@@ -60,10 +60,7 @@ export default function SalesContent() {
   const [weekLocks, setWeekLocks] = useState({}); // ← 이 줄 추가
   const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
-  const [purposes, setPurposes] = useState([]);
-  const [noteInputs, setNoteInputs] = useState([""]); // 비고 입력 칸들
   const [expandedNotes, setExpandedNotes] = useState({}); // 모바일 비고 펼치기
-  const [noteEditingId, setNoteEditingId] = useState(null); // 현재 비고 편집 중인 drivingId
   const [destinations, setDestinations] = useState([]);
   const [destSearch, setDestSearch] = useState("");
   const [showDestDrop, setShowDestDrop] = useState(false);
@@ -86,7 +83,6 @@ export default function SalesContent() {
   const [editTarget, setEditTarget] = useState(null);
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
-  const purposeRef = useRef(null);
 
   const [drivingForm, setDrivingForm] = useState({
     date: TODAY,
@@ -109,8 +105,6 @@ export default function SalesContent() {
     businessNumber: "",
     companyName: "",
   });
-  const [purposeSearch, setPurposeSearch] = useState("");
-  const [showPurposeDrop, setShowPurposeDrop] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -191,12 +185,11 @@ export default function SalesContent() {
 
   const loadMonth = useCallback(async () => {
     try {
-      const [lock, drv, rec, cats, purp, card] = await Promise.all([
+      const [lock, drv, rec, cats, card] = await Promise.all([
         api.getLockStatus(year, month),
         api.getDriving(year, month),
         api.getReceipts(year, month),
         api.getCategories(),
-        api.getPurposes(),
         api.getMyCard(),
       ]);
       setIsLocked(lock.data.locked);
@@ -204,7 +197,6 @@ export default function SalesContent() {
       setMonthDriving(drv.data);
       setReceipts(rec.data);
       setCategories(cats.data);
-      setPurposes(purp.data);
       setMyCard(card.data.cardNumber);
       // destinations는 별도 로드 (실패해도 전체 영향 없음)
       api
@@ -279,8 +271,6 @@ export default function SalesContent() {
     const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
         setOpenMenu(null);
-      if (purposeRef.current && !purposeRef.current.contains(e.target))
-        setShowPurposeDrop(false);
       if (destRef.current && !destRef.current.contains(e.target))
         setShowDestDrop(false);
     };

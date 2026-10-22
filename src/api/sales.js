@@ -8,9 +8,6 @@ export const salesApi = {
     }),
   getMyCard: () => client.get(`/sales-form/my-card`),
   getCategories: () => client.get(`/sales-form/categories`),
-  getPurposes: () => client.get(`/sales-form/purposes`),
-  getDrivingNotes: (drivingId) =>
-    client.get(`/sales-form/driving/${drivingId}/notes`),
   saveDrivingNotes: (drivingId, contents) =>
     client.post(`/sales-form/driving/${drivingId}/notes`, contents),
   getDestinations: () => client.get(`/sales-form/destinations`),
@@ -50,7 +47,6 @@ export const salesApi = {
 
 // 📊 영업 정산관리 (관리자 · salesUsername 으로 사람 지정)
 export const salesAdminApi = {
-  getSalesUsers: () => client.get(`/sales-admin/sales-users`),
   getSummary: (y, m) =>
     client.get(`/sales-admin/summary`, {
       params: { year: y, month: m },
@@ -72,7 +68,6 @@ export const salesAdminApi = {
       params: { salesUsername: u, year: y, month: m },
     }),
   getDestinations: () => client.get(`/sales-admin/destinations`),
-  getPurposes: () => client.get(`/sales-admin/purposes`),
   getPrevMeter: (u, date) =>
     client.get(`/sales-admin/driving/prev-meter`, {
       params: { salesUsername: u, date },

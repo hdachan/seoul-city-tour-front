@@ -31,7 +31,6 @@ export default function SalesAdminContent() {
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
-  const [weekLocks, setWeekLocks] = useState({}); // { 1: true, 2: false, ... }
   const [monthDriving, setMonthDriving] = useState([]);
   const [dayDriving, setDayDriving] = useState([]);
   const [receipts, setReceipts] = useState([]);
@@ -60,14 +59,11 @@ export default function SalesAdminContent() {
   const [newCatName, setNewCatName] = useState("");
 
   const [showDrivingModal, setShowDrivingModal] = useState(false);
-  const [destinations, setDestinations] = useState([]);
-  const [purposes, setPurposes] = useState([]);
+  // 관리자 화면은 도착지 자동완성 목록을 불러오지 않음 (기존 동작 그대로)
+  const destinations = [];
   const [destSearch, setDestSearch] = useState("");
   const [showDestDrop, setShowDestDrop] = useState(false);
-  const [purposeSearch, setPurposeSearch] = useState("");
-  const [showPurposeDrop, setShowPurposeDrop] = useState(false);
   const destRef = useRef(null);
-  const purposeRef = useRef(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [drivingForm, setDrivingForm] = useState({});
@@ -80,21 +76,6 @@ export default function SalesAdminContent() {
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const weeks = getWeeksOfMonth(year, month);
-
-  // 오늘이 속한 주 번호 (이번 달 기준)
-  const todayWeekNum = (() => {
-    const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD 로컬
-    const todayDate = new Date(
-      ...todayStr
-        .split("-")
-        .map((v, i) => (i === 1 ? Number(v) - 1 : Number(v))),
-    );
-    for (const w of getWeeksOfMonth(year, month)) {
-      if (todayDate >= w.start && todayDate <= w.end) return w.weekNum;
-    }
-    return -1;
-  })();
 
   const activeCats = categories; // active 컬럼 제거됨
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -144,16 +125,6 @@ export default function SalesAdminContent() {
     return sorted.map((d) => ({ ...d, calcDist: distMap[d.id] || 0 }));
   };
 
-  // 월 통계 계산
-  const calcMonthStats = (driving) => {
-    const calc = recalcDriving(driving);
-    const totalDist = calc.reduce((s, d) => s + d.calcDist, 0);
-    const totalFuelL = calc.reduce((s, d) => s + (d.fuelAmount || 0), 0);
-    const totalFuelC = calc.reduce((s, d) => s + (d.fuelCost || 0), 0);
-    const avgKmL = totalFuelL > 0 ? (totalDist / totalFuelL).toFixed(1) : "-";
-    return { totalDist, totalFuelL, totalFuelC, avgKmL };
-  };
-
   useEffect(() => {
     api
       .getCategories()
@@ -189,7 +160,6 @@ export default function SalesAdminContent() {
         api.getReceipts(selectedUser.username, year, month),
       ]);
       setIsLocked(lock.data.locked);
-      setWeekLocks(lock.data.weekLocks || {});
       setMonthDriving(drv.data);
       setReceipts(rec.data);
       // pendingTab 처리
@@ -240,18 +210,16 @@ export default function SalesAdminContent() {
         !currentLocked,
         week.weekNum,
       );
-      setWeekLocks((prev) => ({ ...prev, [week.weekNum]: !currentLocked }));
       setSuccess(
         !currentLocked
           ? `🔒 ${user.name} ${week.label} 잠금`
           : `🔓 ${user.name} ${week.label} 잠금 해제`,
       );
       reloadSummary();
-      // 상세뷰 lock status 재로드 (weekLocks 동기화)
+      // 상세뷰 잠금 상태 재로드
       if (selectedUser?.username === user.username) {
         api.getLockStatus(user.username, year, month).then((r) => {
           setIsLocked(r.data.locked);
-          setWeekLocks(r.data.weekLocks || {});
         });
       }
     } catch {
@@ -644,8 +612,6 @@ export default function SalesAdminContent() {
           </div>
           <div className="sac-card-grid">
             {summary.map((u) => {
-              // 해당 유저 운행 데이터로 통계 계산
-              const userDriving = monthDriving.filter ? monthDriving : [];
               return (
                 <div
                   key={u.username}
@@ -1608,18 +1574,6 @@ export default function SalesAdminContent() {
       })
       .catch((err) => setError(err.response?.data?.error || "추가 실패"));
   }
-}
-
-// ──── 전체 통계 컴포넌트 ────
-function InfoRow({ label, value, color }) {
-  return (
-    <div style={{ fontSize: "12px" }}>
-      <span style={{ color: "#aaa", marginRight: "4px" }}>{label}</span>
-      <span style={{ fontWeight: 600, color: color || "#1a1a2e" }}>
-        {value}
-      </span>
-    </div>
-  );
 }
 
 const selStyle = {

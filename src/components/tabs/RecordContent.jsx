@@ -11,7 +11,6 @@ import {
   Cell,
 } from "recharts";
 import {
-  fetchRecords,
   addRecord,
   removeRecord,
   fetchCategories,
@@ -22,17 +21,6 @@ import {
   updateRecord,
 } from "../../api/auth";
 import { toDateStr } from "../../utils/dateUtils";
-
-const PIE_COLORS = [
-  "#1d4ed8",
-  "#059669",
-  "#e53e3e",
-  "#f59e0b",
-  "#8b5cf6",
-  "#ec4899",
-  "#06b6d4",
-  "#84cc16",
-];
 
 export default function RecordContent() {
   const now = new Date();
@@ -80,17 +68,6 @@ export default function RecordContent() {
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-
-  const calcTotal = () => {
-    const cat1 = cat1List.find(
-      (c) => String(c.id) === String(form.category1Id),
-    );
-    const cat2 = cat2List.find(
-      (c) => String(c.id) === String(form.category2Id),
-    );
-    if (!cat1 || !cat2 || !form.count) return 0;
-    return (cat1.price + cat2.price) * form.count;
-  };
 
   const loadRecords = async () => {
     try {

@@ -1,3 +1,5 @@
+/* eslint-disable testing-library/no-node-access, testing-library/no-unnecessary-act --
+   입력창 화면(HTML)과 입력값을 통째로 기록하는 테스트라 DOM 을 직접 읽음 */
 // 영업 정산 / 영업 정산관리 입력창(운행일지 · 법인카드) "지금 동작 기록" 테스트
 // - 입력창 화면(HTML)을 스냅샷으로 저장하고
 // - 저장 버튼을 누르면 서버로 어떤 값이 가는지 그대로 확인함
