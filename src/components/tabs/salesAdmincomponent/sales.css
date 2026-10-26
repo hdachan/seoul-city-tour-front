@@ -247,6 +247,15 @@
 .sl-modal-receipt {
   width: 440px;
 }
+.sl-modal-start {
+  width: 400px;
+}
+.sl-start-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--sl-sub);
+}
 
 /* 단위가 붙는 입력칸 (km · 원 · L) */
 .sl-unit-input {
@@ -731,6 +740,24 @@
 }
 .sl-card-line.is-gap {
   margin-bottom: 6px;
+}
+/* 시작 미터기 줄 (버튼) */
+.sl-start-line {
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 4px;
+  margin: 0 -4px 6px;
+  box-sizing: content-box;
+  font: inherit;
+  cursor: pointer;
+}
+.sl-start-line:hover {
+  background: #f0f4ff;
+}
+.sl-text-red {
+  color: var(--sl-red);
 }
 .sl-card-value {
   font-weight: 600;

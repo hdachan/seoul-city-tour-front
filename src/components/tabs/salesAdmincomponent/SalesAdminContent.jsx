@@ -9,6 +9,7 @@ import "./sales.css";
 import SalesDrivingStats from "./SalesDrivingStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
+import StartMeterModal from "./StartMeterModal";
 import {
   fmt,
   fmtWon,
@@ -70,6 +71,7 @@ export default function SalesAdminContent() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [startMeterUser, setStartMeterUser] = useState(null); // 시작 미터기 수정 중인 사람
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
 
@@ -541,9 +543,23 @@ export default function SalesAdminContent() {
                   setActiveTab("driving");
                 }}
                 onWeekLock={handleWeekLock}
+                onStartMeter={setStartMeterUser}
               />
             ))}
           </div>
+          {startMeterUser && (
+            <StartMeterModal
+              name={startMeterUser.name}
+              initial={startMeterUser.startMeter}
+              onClose={() => setStartMeterUser(null)}
+              onSave={async (n) => {
+                await api.saveStartMeter(startMeterUser.username, n);
+                setSuccess(`${startMeterUser.name} 시작 미터기 ${fmt(n)}km 저장`);
+                setStartMeterUser(null);
+                reloadSummary();
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -777,7 +793,7 @@ function CategoryPanel({ categories, newCatName, setNewCatName, onAdd, onDelete 
 }
 
 // ──── 정산 목록 카드 (한 사람 요약 + 주 단위 잠금) ────
-function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock }) {
+function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter }) {
   const countClass = (n, color) => `sl-card-value ${n > 0 ? color : "sl-text-none"}`;
   return (
     <div
@@ -799,6 +815,24 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock }) {
               {u.receiptCount > 0 ? `${u.receiptCount}건` : "없음"}
             </span>
           </div>
+          {/* 시작 미터기 (누르면 수정) */}
+          <button
+            type="button"
+            className="sl-card-line sl-start-line"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartMeter(u);
+            }}
+          >
+            <span className="sl-muted">시작 미터기</span>
+            <span
+              className={`sl-card-value ${
+                u.startMeter ? "sl-text-dark" : u.startMeterNeeded ? "sl-text-red" : "sl-text-none"
+              }`}
+            >
+              {u.startMeter ? `${fmt(u.startMeter)}km` : u.startMeterNeeded ? "미입력" : "-"} ✏️
+            </span>
+          </button>
           {u.totalDist > 0 && (
             <div className="sl-card-dist">
               <div className="sl-row-between">

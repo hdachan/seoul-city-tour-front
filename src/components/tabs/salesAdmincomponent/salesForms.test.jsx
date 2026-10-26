@@ -16,9 +16,10 @@ jest.mock("../../../api/sales", () => {
     "getDriving", "getDrivingDate", "getPrevMeter", "addDriving",
     "updateDriving", "deleteDriving", "saveDrivingNotes", "getReceipts",
     "addReceipt", "updateReceipt", "deleteReceipt", "getPersonalFuelBalance",
+    "saveStartMeter",
   ];
   return {
-    salesApi: fns([...common, "getMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote"]),
+    salesApi: fns([...common, "getMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
     salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes"]),
   };
 });
@@ -90,6 +91,9 @@ beforeEach(() => {
   setupApi(salesAdminApi);
   salesApi.getMyCard.mockImplementation(() => ok({ cardNumber: "1234-5678" }));
   salesApi.getDailyNote.mockImplementation(() => ok({ note: "" }));
+  salesApi.getStartMeter.mockImplementation(() => ok({ startMeter: 800, needed: false }));
+  salesApi.saveStartMeter.mockImplementation(() => ok({}));
+  salesAdminApi.saveStartMeter.mockImplementation(() => ok({}));
   salesAdminApi.getSummary.mockImplementation(() =>
     ok([{ username: "kim", name: "김영업", locked: false, hasData: true, receiptCount: 1 }]),
   );
@@ -408,5 +412,79 @@ describe("영업 정산관리 – 도착지 추천 목록", () => {
     fireEvent.click(screen.getByText("명동역9번"));
     expect(destInput.value).toBe("명동역9번");
     expect(screen.queryByText("명동역6번")).toBeNull();
+  });
+});
+
+// ───────────── 🚗 시작 미터기 (처음 1회) ─────────────
+describe("시작 미터기", () => {
+  test("기록이 없는 사람 → 시작 미터기 입력창만 뜨고 닫을 수 없음, 저장하면 화면이 열림", async () => {
+    salesApi.getStartMeter.mockImplementation(() => ok({ startMeter: null, needed: true }));
+    render(<SalesContent />);
+    await screen.findByText("🚗 처음 시작하시네요!");
+    // 닫기 · 취소 버튼 없음, 뒤 화면(운행일지 표)도 안 보임
+    expect(document.querySelector(".sl-modal-close")).toBeNull();
+    expect(screen.queryByText("취소")).toBeNull();
+    expect(screen.queryByText("명동")).toBeNull();
+
+    // 빈 값은 저장 안 됨
+    setValue(modal().querySelector("input"), "0");
+    await submit();
+    expect(salesApi.saveStartMeter).not.toHaveBeenCalled();
+    expect(screen.getByText("⚠ 미터기 숫자를 입력해주세요.")).toBeInTheDocument();
+
+    setValue(modal().querySelector("input"), "10000");
+    await submit();
+    expect(window.confirm).toHaveBeenCalledWith("시작 미터기를 10,000km 로 저장할까요?");
+    expect(salesApi.saveStartMeter).toHaveBeenCalledWith(10000);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    expect(screen.queryByText("🚗 처음 시작하시네요!")).toBeNull();
+  });
+
+  test("서버가 거절하면 안내 문구가 뜨고 입력창은 그대로", async () => {
+    salesApi.getStartMeter.mockImplementation(() => ok({ startMeter: null, needed: true }));
+    salesApi.saveStartMeter.mockImplementation(() =>
+      Promise.reject({ response: { data: { error: "이미 입력했습니다. 수정은 관리자에게 요청해주세요." } } }),
+    );
+    render(<SalesContent />);
+    await screen.findByText("🚗 처음 시작하시네요!");
+    setValue(modal().querySelector("input"), "10000");
+    await submit();
+    expect(await screen.findByText("⚠ 이미 입력했습니다. 수정은 관리자에게 요청해주세요.")).toBeInTheDocument();
+    expect(screen.getByText("🚗 처음 시작하시네요!")).toBeInTheDocument();
+  });
+
+  test("이미 기록이 있는 사람 → 입력창 안 뜸", async () => {
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    expect(screen.queryByText("🚗 처음 시작하시네요!")).toBeNull();
+  });
+
+  test("관리자 – 사람 카드에서 시작 미터기 확인 · 수정", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([
+        { username: "kim", name: "김영업", hasData: true, receiptCount: 1, startMeter: null, startMeterNeeded: true },
+        { username: "lee", name: "이영업", hasData: false, receiptCount: 0, startMeter: 5000, startMeterNeeded: false },
+      ]),
+    );
+    render(<SalesAdminContent />);
+    expect(await screen.findByText("미입력 ✏️")).toBeInTheDocument();
+    expect(screen.getByText("5,000km ✏️")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("5,000km ✏️"));
+    expect(screen.getByText("시작 미터기 수정 · 이영업")).toBeInTheDocument();
+    expect(modal().querySelector("input").value).toBe("5000");
+    setValue(modal().querySelector("input"), "4800");
+    await submit();
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(salesAdminApi.saveStartMeter).toHaveBeenCalledWith("lee", 4800);
+    await waitFor(() => expect(modal()).toBeNull());
+    // 상세 화면으로 넘어가지 않음 (카드 클릭과 분리)
+    expect(screen.queryByText("명동")).toBeNull();
+
+    // 취소하면 저장 없이 닫힘
+    fireEvent.click(screen.getByText("미입력 ✏️"));
+    fireEvent.click(screen.getByText("취소"));
+    expect(modal()).toBeNull();
+    expect(salesAdminApi.saveStartMeter).toHaveBeenCalledTimes(1);
   });
 });

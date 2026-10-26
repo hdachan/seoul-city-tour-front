@@ -27,6 +27,9 @@ export const salesApi = {
     client.get(`/sales-form/driving/prev-meter`, {
       params: { date },
     }),
+  getStartMeter: () => client.get(`/sales-form/start-meter`),
+  saveStartMeter: (startMeter) =>
+    client.post(`/sales-form/start-meter`, { startMeter }),
   addDriving: (data) => client.post(`/sales-form/driving`, data),
   updateDriving: (id, data) => client.put(`/sales-form/driving/${id}`, data),
   deleteDriving: (id) => client.delete(`/sales-form/driving/${id}`),
@@ -76,6 +79,8 @@ export const salesAdminApi = {
     client.get(`/sales-admin/driving/date`, {
       params: { salesUsername: u, date },
     }),
+  saveStartMeter: (u, startMeter) =>
+    client.post(`/sales-admin/start-meter`, { salesUsername: u, startMeter }),
   addDriving: (data) => client.post(`/sales-admin/driving`, data),
   updateDriving: (id, data) => client.put(`/sales-admin/driving/${id}`, data),
   deleteDriving: (id) => client.delete(`/sales-admin/driving/${id}`),

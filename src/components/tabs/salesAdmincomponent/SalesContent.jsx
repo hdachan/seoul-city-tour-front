@@ -7,6 +7,7 @@ import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
+import StartMeterModal from "./StartMeterModal";
 import * as XLSX from "xlsx";
 import {
   fmt,
@@ -107,6 +108,8 @@ export default function SalesContent() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  // 처음 쓰는 사람: 시작 미터기 입력 전까지 화면 막음
+  const [needStartMeter, setNeedStartMeter] = useState(false);
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - 1 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -233,6 +236,12 @@ export default function SalesContent() {
   useEffect(() => {
     loadMonth();
   }, [loadMonth]);
+  useEffect(() => {
+    api
+      .getStartMeter()
+      .then((r) => setNeedStartMeter(!!r.data.needed))
+      .catch(() => {});
+  }, []);
   // 연/월을 바꾸면 선택 날짜도 그 달로 이동 (이번 달이면 오늘, 아니면 1일)
   useEffect(() => {
     const ym = `${year}-${pad2(month)}`;
@@ -891,6 +900,19 @@ export default function SalesContent() {
     setNoteEditing(false);
     setNoteInput(dailyNote);
   };
+
+  // 처음 쓰는 사람: 시작 미터기를 입력해야 들어갈 수 있음 (닫기 버튼 없음)
+  if (needStartMeter)
+    return (
+      <StartMeterModal
+        onSave={async (n) => {
+          await api.saveStartMeter(n);
+          setNeedStartMeter(false);
+          setSuccess("시작 미터기가 저장되었습니다.");
+          loadDay();
+        }}
+      />
+    );
 
   return (
     <div>
