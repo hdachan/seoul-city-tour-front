@@ -4,6 +4,21 @@ export const fmt = (n) => Number(n || 0).toLocaleString();
 export const fmtWon = (n) => fmt(n) + "원";
 export const pad2 = (n) => String(n).padStart(2, "0");
 
+// 구분별 거리 합계 (type 없으면 전체)
+export const sumDist = (list, key, type) =>
+  list
+    .filter((d) => !type || d.type === type)
+    .reduce((s, d) => s + (d[key] || 0), 0);
+
+// 지금 한국 시각 "HH:MM" (운행일지 출발/도착 시간 기본값)
+export const getKoreaTime = () =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+
 export const TYPES = ["업무", "주유", "개인주유", "개인사용"];
 export const TYPE_STYLE = {
   업무: { bg: "#e8f0fe", color: "#1557b0" },

@@ -11,12 +11,19 @@ import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
 import StartMeterModal from "./StartMeterModal";
 import {
+  downloadDrivingExcel,
+  printDriving,
+  downloadReceiptExcel,
+  printReceipt,
+} from "./salesExport";
+import {
   fmt,
   fmtWon,
   pad2,
   TYPE_STYLE,
   getWeeksOfMonth,
   calcDistances,
+  getKoreaTime,
 } from "./salesShared";
 
 export default function SalesAdminContent() {
@@ -33,6 +40,7 @@ export default function SalesAdminContent() {
   const [categories, setCategories] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
   const [monthDriving, setMonthDriving] = useState([]);
+  const [monthStartMeter, setMonthStartMeter] = useState(0); // 지난달 마지막 미터기
   const [dayDriving, setDayDriving] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(
@@ -170,6 +178,11 @@ export default function SalesAdminContent() {
       setIsLocked(lock.data.locked);
       setMonthDriving(drv.data);
       setReceipts(rec.data);
+      // 지난달 마지막 미터기 (엑셀·인쇄 첫 운행거리용) - 실패해도 전체 영향 없음
+      api
+        .getPrevMeter(selectedUser.username, `${year}-${pad2(month)}-01`)
+        .then((r) => setMonthStartMeter(r.data.prevMeter || 0))
+        .catch(() => setMonthStartMeter(0));
       // pendingTab 처리
       if (pendingTabRef.current) {
         setActiveTab(pendingTabRef.current);
@@ -249,18 +262,13 @@ export default function SalesAdminContent() {
         todayMeters.length > 0 ? Math.max(...todayMeters) : prevMeter,
       );
     } catch {}
-    const koreaTime = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Seoul",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date());
+    const koreaTime = getKoreaTime();
     setDrivingForm({
       startDate: selectedDate,
       endDate: "",
       type: "업무",
       destination: "",
-      departureTime: "",
+      departureTime: koreaTime,
       arrivalTime: koreaTime,
       meterReading: "",
       purpose: "",
@@ -457,6 +465,10 @@ export default function SalesAdminContent() {
   );
 
   const startMeter = prevMeterRef.current || prevMeter;
+  // 엑셀 / 인쇄에 넘길 값 (작성자 = 그 사람 아이디, 영업 정산 화면과 같음)
+  const author = selectedUser?.username || "";
+  const exportDriving = { year, month, author, driving: monthDriving, startMeter: monthStartMeter };
+  const exportReceipt = { year, month, author, receipts };
 
   return (
     <div className="sac-wrapper">
@@ -600,6 +612,27 @@ export default function SalesAdminContent() {
               ))}
             </div>
             <div className="sl-subtab-actions">
+              {/* 엑셀 / 인쇄 (영업 정산 화면과 같은 양식, 그 달 전체) */}
+              {activeTab === "driving" && monthDriving.length > 0 && (
+                <>
+                  <button className="sl-btn-outline is-small" onClick={() => downloadDrivingExcel(exportDriving)}>
+                    📥 엑셀
+                  </button>
+                  <button className="sl-btn-outline is-small" onClick={() => printDriving(exportDriving)}>
+                    🖨 인쇄
+                  </button>
+                </>
+              )}
+              {activeTab === "receipt" && receipts.length > 0 && (
+                <>
+                  <button className="sl-btn-outline is-small" onClick={() => downloadReceiptExcel(exportReceipt)}>
+                    📥 엑셀
+                  </button>
+                  <button className="sl-btn-outline is-small" onClick={() => printReceipt(exportReceipt)}>
+                    🖨 인쇄
+                  </button>
+                </>
+              )}
               {!isLocked && activeTab === "driving" && (
                 <button className="sl-btn-primary" onClick={openDrivingAdd}>
                   ＋ 추가

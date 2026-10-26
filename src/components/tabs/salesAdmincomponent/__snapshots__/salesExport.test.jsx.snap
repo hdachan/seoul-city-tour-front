@@ -1,0 +1,1742 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`영업 정산 – 엑셀 · 인쇄 결과 1`] = `
+Object {
+  "drivingExcel": Object {
+    "fileName": "2026년_10월_운행일지_kim.xlsx",
+    "rows": Array [
+      Array [
+        "2026년 10월 운행일지",
+      ],
+      Array [
+        "작성자: kim",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "날짜",
+        "구분",
+        "시간",
+        "도착지",
+        "미터기(km)",
+        "운행거리(km)",
+        "비고",
+        "주유량(L)",
+        "주유금액(원)",
+        "단가(원/L)",
+      ],
+      Array [
+        "2026-10-20",
+        "업무",
+        "07:00 → 08:00",
+        "시청",
+        900,
+        50,
+        "미팅",
+        0,
+        0,
+        0,
+      ],
+      Array [
+        "2026-10-21",
+        "주유",
+        "",
+        "",
+        950,
+        50,
+        "",
+        30.5,
+        50000,
+        1639,
+      ],
+      Array [
+        "2026-10-21",
+        "개인주유",
+        "",
+        "",
+        0,
+        0,
+        "",
+        10,
+        17000,
+        1700,
+      ],
+      Array [
+        "2026-10-22",
+        "업무",
+        "08:00 → 09:00",
+        "명동",
+        1000,
+        50,
+        "",
+        0,
+        0,
+        0,
+      ],
+      Array [
+        "2026-10-22",
+        "개인사용",
+        "",
+        "",
+        1040,
+        40,
+        "",
+        0,
+        0,
+        0,
+      ],
+      Array [
+        "합계",
+        "",
+        "",
+        "",
+        "",
+        190,
+        "",
+        40.5,
+        67000,
+        "",
+      ],
+      Array [
+        "업무 거리",
+        "",
+        "",
+        "",
+        "",
+        100,
+      ],
+      Array [
+        "개인 거리",
+        "",
+        "",
+        "",
+        "",
+        40,
+      ],
+    ],
+    "sheet": Object {
+      "!cols": Array [
+        Object {
+          "wch": 12,
+        },
+        Object {
+          "wch": 8,
+        },
+        Object {
+          "wch": 8,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 12,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 12,
+        },
+        Object {
+          "wch": 10,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 12,
+        },
+      ],
+      "!merges": Array [
+        Object {
+          "e": Object {
+            "c": 9,
+            "r": 0,
+          },
+          "s": Object {
+            "c": 0,
+            "r": 0,
+          },
+        },
+      ],
+      "!pageSetup": Object {
+        "fitToHeight": 0,
+        "fitToPage": true,
+        "fitToWidth": 1,
+        "orientation": "landscape",
+        "paperSize": 9,
+      },
+      "!ref": "A1:J11",
+      "A1": Object {
+        "t": "s",
+        "v": "2026년 10월 운행일지",
+      },
+      "A10": Object {
+        "t": "s",
+        "v": "업무 거리",
+      },
+      "A11": Object {
+        "t": "s",
+        "v": "개인 거리",
+      },
+      "A2": Object {
+        "t": "s",
+        "v": "작성자: kim",
+      },
+      "A3": Object {
+        "t": "s",
+        "v": "날짜",
+      },
+      "A4": Object {
+        "t": "s",
+        "v": "2026-10-20",
+      },
+      "A5": Object {
+        "t": "s",
+        "v": "2026-10-21",
+      },
+      "A6": Object {
+        "t": "s",
+        "v": "2026-10-21",
+      },
+      "A7": Object {
+        "t": "s",
+        "v": "2026-10-22",
+      },
+      "A8": Object {
+        "t": "s",
+        "v": "2026-10-22",
+      },
+      "A9": Object {
+        "t": "s",
+        "v": "합계",
+      },
+      "B10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B3": Object {
+        "t": "s",
+        "v": "구분",
+      },
+      "B4": Object {
+        "t": "s",
+        "v": "업무",
+      },
+      "B5": Object {
+        "t": "s",
+        "v": "주유",
+      },
+      "B6": Object {
+        "t": "s",
+        "v": "개인주유",
+      },
+      "B7": Object {
+        "t": "s",
+        "v": "업무",
+      },
+      "B8": Object {
+        "t": "s",
+        "v": "개인사용",
+      },
+      "B9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C3": Object {
+        "t": "s",
+        "v": "시간",
+      },
+      "C4": Object {
+        "t": "s",
+        "v": "07:00 → 08:00",
+      },
+      "C5": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C7": Object {
+        "t": "s",
+        "v": "08:00 → 09:00",
+      },
+      "C8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D3": Object {
+        "t": "s",
+        "v": "도착지",
+      },
+      "D4": Object {
+        "t": "s",
+        "v": "시청",
+      },
+      "D5": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D7": Object {
+        "t": "s",
+        "v": "명동",
+      },
+      "D8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E3": Object {
+        "t": "s",
+        "v": "미터기(km)",
+      },
+      "E4": Object {
+        "t": "n",
+        "v": 900,
+      },
+      "E5": Object {
+        "t": "n",
+        "v": 950,
+      },
+      "E6": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "E7": Object {
+        "t": "n",
+        "v": 1000,
+      },
+      "E8": Object {
+        "t": "n",
+        "v": 1040,
+      },
+      "E9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F10": Object {
+        "t": "n",
+        "v": 100,
+      },
+      "F11": Object {
+        "t": "n",
+        "v": 40,
+      },
+      "F2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F3": Object {
+        "t": "s",
+        "v": "운행거리(km)",
+      },
+      "F4": Object {
+        "t": "n",
+        "v": 50,
+      },
+      "F5": Object {
+        "t": "n",
+        "v": 50,
+      },
+      "F6": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "F7": Object {
+        "t": "n",
+        "v": 50,
+      },
+      "F8": Object {
+        "t": "n",
+        "v": 40,
+      },
+      "F9": Object {
+        "t": "n",
+        "v": 190,
+      },
+      "G2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G3": Object {
+        "t": "s",
+        "v": "비고",
+      },
+      "G4": Object {
+        "t": "s",
+        "v": "미팅",
+      },
+      "G5": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H3": Object {
+        "t": "s",
+        "v": "주유량(L)",
+      },
+      "H4": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "H5": Object {
+        "t": "n",
+        "v": 30.5,
+      },
+      "H6": Object {
+        "t": "n",
+        "v": 10,
+      },
+      "H7": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "H8": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "H9": Object {
+        "t": "n",
+        "v": 40.5,
+      },
+      "I3": Object {
+        "t": "s",
+        "v": "주유금액(원)",
+      },
+      "I4": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "I5": Object {
+        "t": "n",
+        "v": 50000,
+      },
+      "I6": Object {
+        "t": "n",
+        "v": 17000,
+      },
+      "I7": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "I8": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "I9": Object {
+        "t": "n",
+        "v": 67000,
+      },
+      "J3": Object {
+        "t": "s",
+        "v": "단가(원/L)",
+      },
+      "J4": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "J5": Object {
+        "t": "n",
+        "v": 1639,
+      },
+      "J6": Object {
+        "t": "n",
+        "v": 1700,
+      },
+      "J7": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "J8": Object {
+        "t": "n",
+        "v": 0,
+      },
+      "J9": Object {
+        "t": "s",
+        "v": "",
+      },
+    },
+    "sheetName": "10월 운행일지",
+  },
+  "drivingPrint": "<!DOCTYPE html><html><head><meta charset=\\"UTF-8\\">
+      <style>
+        body { font-family: 맑은고딕, sans-serif; margin: 10mm; }
+        h2 { text-align: center; font-size: 15pt; margin-bottom: 4px; }
+        .info { font-size: 10pt; margin-bottom: 8px; text-align: right; }
+        table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+        th, td { border: 1px solid #999; padding: 3px 5px; }
+        th { background: #f0f0f0; text-align: center; font-weight: bold; }
+        .total { font-weight: bold; background: #f0f4ff; }
+        @media print { @page { size: A4 landscape; margin: 8mm; } }
+      </style></head><body>
+      <h2>2026년 10월 운행일지</h2>
+      <div class=\\"info\\">작성자: kim</div>
+      <table>
+        <thead><tr>
+          <th>날짜</th><th>구분</th><th>시간</th><th>도착지</th>
+          <th>미터기(km)</th><th>운행거리(km)</th><th>비고</th>
+          <th>주유량</th><th>주유금액</th><th>단가</th>
+        </tr></thead>
+        <tbody>
+          
+      <tr>
+        <td>2026-10-20</td>
+        <td style=\\"color:#1557b0;font-weight:bold\\">업무</td>
+        <td>07:00 → 08:00</td>
+        <td>시청</td>
+        <td style=\\"text-align:right\\">900</td>
+        <td style=\\"text-align:right;font-weight:bold;color:#1557b0\\">50</td>
+        <td>미팅</td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+      </tr>
+      <tr>
+        <td>2026-10-21</td>
+        <td style=\\"color:#92400e;font-weight:bold\\">주유</td>
+        <td></td>
+        <td></td>
+        <td style=\\"text-align:right\\">950</td>
+        <td style=\\"text-align:right;font-weight:bold;color:#1557b0\\">50</td>
+        <td></td>
+        <td style=\\"text-align:right\\">30.5L</td>
+        <td style=\\"text-align:right\\">50,000원</td>
+        <td style=\\"text-align:right\\">1,639</td>
+      </tr>
+      <tr>
+        <td>2026-10-21</td>
+        <td style=\\"color:#9d174d;font-weight:bold\\">개인주유</td>
+        <td></td>
+        <td></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right;font-weight:bold;color:#1557b0\\"></td>
+        <td></td>
+        <td style=\\"text-align:right\\">10L</td>
+        <td style=\\"text-align:right\\">17,000원</td>
+        <td style=\\"text-align:right\\">1,700</td>
+      </tr>
+      <tr>
+        <td>2026-10-22</td>
+        <td style=\\"color:#1557b0;font-weight:bold\\">업무</td>
+        <td>08:00 → 09:00</td>
+        <td>명동</td>
+        <td style=\\"text-align:right\\">1,000</td>
+        <td style=\\"text-align:right;font-weight:bold;color:#1557b0\\">50</td>
+        <td></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+      </tr>
+      <tr>
+        <td>2026-10-22</td>
+        <td style=\\"color:#6d28d9;font-weight:bold\\">개인사용</td>
+        <td></td>
+        <td></td>
+        <td style=\\"text-align:right\\">1,040</td>
+        <td style=\\"text-align:right;font-weight:bold;color:#1557b0\\">40</td>
+        <td></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+        <td style=\\"text-align:right\\"></td>
+      </tr>
+          <tr class=\\"total\\">
+            <td colspan=\\"5\\" style=\\"text-align:center\\">합 계</td>
+            <td style=\\"text-align:right\\">190km</td>
+            <td></td>
+            <td style=\\"text-align:right\\">40.50L</td>
+            <td style=\\"text-align:right\\">67,000원</td>
+            <td></td>
+          </tr>
+          <tr class=\\"total\\">
+            <td colspan=\\"5\\" style=\\"text-align:center\\">업무 거리</td>
+            <td style=\\"text-align:right\\">100km</td>
+            <td colspan=\\"4\\"></td>
+          </tr>
+          <tr class=\\"total\\">
+            <td colspan=\\"5\\" style=\\"text-align:center\\">개인 거리</td>
+            <td style=\\"text-align:right\\">40km</td>
+            <td colspan=\\"4\\"></td>
+          </tr>
+        </tbody>
+      </table>
+      <script>window.onload=()=>{window.print();window.close();}</script>
+      </body></html>",
+  "receiptExcel": Object {
+    "fileName": "2026년_10월_신용카드매출전표_kim.xlsx",
+    "rows": Array [
+      Array [
+        "신용카드 매출전표 등 수취금액 합계표",
+      ],
+      Array [
+        "2026  년  10  월",
+        "",
+        "작성자: kim",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "날 짜",
+        "신용카드 카드번호",
+        "내  용",
+        "총 금액",
+        "공급가액",
+        "VAT",
+        "사업자등록번호",
+        "상호",
+      ],
+      Array [
+        "2026-10-22",
+        "1234-5678",
+        "식대",
+        11000,
+        10000,
+        1000,
+        "123-45-67890",
+        "식당",
+      ],
+      Array [
+        "2026-10-23",
+        "1234-5678",
+        "주차",
+        5500,
+        5000,
+        500,
+        "",
+        "주차장",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+      Array [
+        "합  계",
+        "",
+        "",
+        16500,
+        15000,
+        1500,
+        "",
+        "",
+      ],
+    ],
+    "sheet": Object {
+      "!cols": Array [
+        Object {
+          "wch": 10,
+        },
+        Object {
+          "wch": 20,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 14,
+        },
+        Object {
+          "wch": 12,
+        },
+        Object {
+          "wch": 16,
+        },
+        Object {
+          "wch": 14,
+        },
+      ],
+      "!merges": Array [
+        Object {
+          "e": Object {
+            "c": 7,
+            "r": 0,
+          },
+          "s": Object {
+            "c": 0,
+            "r": 0,
+          },
+        },
+      ],
+      "!pageSetup": Object {
+        "fitToHeight": 0,
+        "fitToPage": true,
+        "fitToWidth": 1,
+        "orientation": "landscape",
+        "paperSize": 9,
+      },
+      "!ref": "A1:H24",
+      "A1": Object {
+        "t": "s",
+        "v": "신용카드 매출전표 등 수취금액 합계표",
+      },
+      "A10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A2": Object {
+        "t": "s",
+        "v": "2026  년  10  월",
+      },
+      "A20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A24": Object {
+        "t": "s",
+        "v": "합  계",
+      },
+      "A3": Object {
+        "t": "s",
+        "v": "날 짜",
+      },
+      "A4": Object {
+        "t": "s",
+        "v": "2026-10-22",
+      },
+      "A5": Object {
+        "t": "s",
+        "v": "2026-10-23",
+      },
+      "A6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "A9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B24": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B3": Object {
+        "t": "s",
+        "v": "신용카드 카드번호",
+      },
+      "B4": Object {
+        "t": "s",
+        "v": "1234-5678",
+      },
+      "B5": Object {
+        "t": "s",
+        "v": "1234-5678",
+      },
+      "B6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C2": Object {
+        "t": "s",
+        "v": "작성자: kim",
+      },
+      "C20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C24": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C3": Object {
+        "t": "s",
+        "v": "내  용",
+      },
+      "C4": Object {
+        "t": "s",
+        "v": "식대",
+      },
+      "C5": Object {
+        "t": "s",
+        "v": "주차",
+      },
+      "C6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D24": Object {
+        "t": "n",
+        "v": 16500,
+      },
+      "D3": Object {
+        "t": "s",
+        "v": "총 금액",
+      },
+      "D4": Object {
+        "t": "n",
+        "v": 11000,
+      },
+      "D5": Object {
+        "t": "n",
+        "v": 5500,
+      },
+      "D6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "D9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E24": Object {
+        "t": "n",
+        "v": 15000,
+      },
+      "E3": Object {
+        "t": "s",
+        "v": "공급가액",
+      },
+      "E4": Object {
+        "t": "n",
+        "v": 10000,
+      },
+      "E5": Object {
+        "t": "n",
+        "v": 5000,
+      },
+      "E6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "E9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F24": Object {
+        "t": "n",
+        "v": 1500,
+      },
+      "F3": Object {
+        "t": "s",
+        "v": "VAT",
+      },
+      "F4": Object {
+        "t": "n",
+        "v": 1000,
+      },
+      "F5": Object {
+        "t": "n",
+        "v": 500,
+      },
+      "F6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "F9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G24": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G3": Object {
+        "t": "s",
+        "v": "사업자등록번호",
+      },
+      "G4": Object {
+        "t": "s",
+        "v": "123-45-67890",
+      },
+      "G5": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G9": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H10": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H11": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H12": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H13": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H14": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H15": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H16": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H17": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H18": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H19": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H2": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H20": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H21": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H22": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H23": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H24": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H3": Object {
+        "t": "s",
+        "v": "상호",
+      },
+      "H4": Object {
+        "t": "s",
+        "v": "식당",
+      },
+      "H5": Object {
+        "t": "s",
+        "v": "주차장",
+      },
+      "H6": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H7": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H8": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H9": Object {
+        "t": "s",
+        "v": "",
+      },
+    },
+    "sheetName": "10월 법인카드",
+  },
+  "receiptPrint": "<!DOCTYPE html><html><head><meta charset=\\"UTF-8\\">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: '맑은 고딕', sans-serif; padding: 8mm; }
+        h2 { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 6px; letter-spacing: 1px; }
+        .info { font-size: 10pt; margin-bottom: 6px; display: flex; gap: 30px; }
+        table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        th { border: 1.5px solid #000; padding: 5px 4px; text-align: center; font-weight: bold; background: #fff; }
+        td { border: 1px solid #000; padding: 4px; height: 22px; }
+        th:nth-child(1), td:nth-child(1) { width: 7%; }
+        th:nth-child(2), td:nth-child(2) { width: 18%; }
+        th:nth-child(3), td:nth-child(3) { width: 12%; }
+        th:nth-child(4), td:nth-child(4) { width: 11%; }
+        th:nth-child(5), td:nth-child(5) { width: 11%; }
+        th:nth-child(6), td:nth-child(6) { width: 8%; }
+        th:nth-child(7), td:nth-child(7) { width: 14%; }
+        th:nth-child(8), td:nth-child(8) { width: 14%; }
+        @media print {
+          @page { size: A4 landscape; margin: 8mm; }
+          body { padding: 0; }
+        }
+      </style></head><body>
+      <h2>신용카드 매출전표 등 수취금액 합계표</h2>
+      <div class=\\"info\\">
+        <span>20&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;10&nbsp;&nbsp;&nbsp;월</span>
+        <span>작성자: kim</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>날 짜</th>
+          <th>신용카드 카드번호</th>
+          <th>내&nbsp;&nbsp;용</th>
+          <th>총 금액</th>
+          <th>공급가액</th>
+          <th>VAT</th>
+          <th>사업자등록번호</th>
+          <th>상호</th>
+        </tr></thead>
+        <tbody>
+      <tr>
+        <td style=\\"text-align:center\\">10-22</td>
+        <td>1234-5678</td>
+        <td>식대</td>
+        <td style=\\"text-align:right\\">11,000</td>
+        <td style=\\"text-align:right\\">10,000</td>
+        <td style=\\"text-align:right\\">1,000</td>
+        <td>123-45-67890</td>
+        <td>식당</td>
+      </tr>
+      <tr>
+        <td style=\\"text-align:center\\">10-23</td>
+        <td>1234-5678</td>
+        <td>주차</td>
+        <td style=\\"text-align:right\\">5,500</td>
+        <td style=\\"text-align:right\\">5,000</td>
+        <td style=\\"text-align:right\\">500</td>
+        <td></td>
+        <td>주차장</td>
+      </tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style=\\"font-weight:bold\\">
+      <td colspan=\\"3\\" style=\\"text-align:center;border-top:2px solid #000\\">합 계</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">16,500</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">15,000</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">1,500</td>
+      <td style=\\"border-top:2px solid #000\\"></td>
+      <td style=\\"border-top:2px solid #000\\"></td>
+    </tr></tbody>
+      </table>
+      <script>window.onload=()=>{window.print();window.close();}</script>
+      </body></html>",
+}
+`;

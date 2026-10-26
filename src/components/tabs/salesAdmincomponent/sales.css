@@ -668,6 +668,11 @@
 }
 .sl-subtab-actions {
   margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .sl-tab-panel {
   margin-top: 4px;
@@ -1420,6 +1425,18 @@
   .sl-tab {
     flex: 1;
     text-align: center;
+  }
+  /* 관리자 상세: 탭은 한 줄 전체, 엑셀·인쇄·추가 버튼은 그 아래 한 줄 */
+  .sl-subtab-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sl-subtab-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .sl-subtab-actions:empty {
+    display: none;
   }
   .sl-btn-primary,
   .sl-btn-outline {

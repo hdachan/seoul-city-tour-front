@@ -1,5 +1,5 @@
 import DrivingTimeFields from "./DrivingTimeFields";
-import { fmt, TYPES, TYPE_STYLE } from "./salesShared";
+import { fmt, TYPES, TYPE_STYLE, getKoreaTime } from "./salesShared";
 import "./sales.css";
 
 const TYPE_ICON = { 업무: "💼 ", 주유: "⛽ ", 개인주유: "⛽ ", 개인사용: "🚗 " };
@@ -188,8 +188,9 @@ export default function DrivingModal({
                       ...f,
                       type: t,
                       destination: "",
-                      departureTime: "",
-                      arrivalTime: "",
+                      // 업무로 바꾸면 출발/도착 시간을 지금 시각으로 다시 채움
+                      departureTime: t === "업무" ? getKoreaTime() : "",
+                      arrivalTime: t === "업무" ? getKoreaTime() : "",
                       fuelAmount: "",
                       fuelCost: "",
                       fuelUnitPrice: "",
