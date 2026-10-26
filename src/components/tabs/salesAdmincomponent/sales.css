@@ -1426,6 +1426,21 @@
     flex: 1;
     text-align: center;
   }
+  /* 그날 합계: 한 줄에 6칸이면 넘쳐서 3칸씩 두 줄로 */
+  .sl-day-summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .sl-day-summary-cell {
+    padding: 9px 6px;
+    min-width: 0;
+  }
+  .sl-day-summary-cell:nth-child(3n) {
+    border-right: none;
+  }
+  .sl-day-summary-cell:nth-child(n + 4) {
+    border-top: 1px solid var(--sl-line-soft);
+  }
   /* 관리자 상세: 탭은 한 줄 전체, 엑셀·인쇄·추가 버튼은 그 아래 한 줄 */
   .sl-subtab-row {
     flex-wrap: wrap;
