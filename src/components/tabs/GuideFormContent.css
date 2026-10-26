@@ -67,6 +67,45 @@
   color: #dc2626;
 }
 
+/* 일비 목록 - 모바일 카드 */
+.gf-fee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gf-fee-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #bbb;
+  font-size: 13px;
+}
+.gf-fee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  padding: 12px 16px;
+}
+.gf-fee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.gf-fee-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.gf-fee-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
 /* 일비 카드 */
 .daily-fee-card {
   background: #fffbeb;

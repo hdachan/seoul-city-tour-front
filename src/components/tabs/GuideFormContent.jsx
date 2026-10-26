@@ -1123,7 +1123,30 @@ export default function GuideFormContent() {
         </>
       )}
 
-      {activeTab === "dailyfee" && (
+      {activeTab === "dailyfee" && isMobile && (
+        // 모바일: 한 줄 카드 (날짜 · 금액 · 수정/삭제)
+        <div className="gf-fee-list">
+          {filteredDailyFees.length === 0 ? (
+            <div className="gf-fee-empty">일비 내역이 없습니다.</div>
+          ) : (
+            filteredDailyFees.map((d) => (
+              <div key={d.id} className="gf-fee-card">
+                <div className="gf-fee-info">
+                  <span className="gf-fee-date">{d.date}</span>
+                  <span className="gf-fee-amount">{fmt(d.amount)}</span>
+                </div>
+                <ActionBtns
+                  locked={isLocked}
+                  onEdit={() => openFeeEdit(d)}
+                  onDelete={() => handleDeleteFee(d.id)}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "dailyfee" && !isMobile && (
         <div>
           <div className="gf-table-wrap">
             <table className="gf-table">
