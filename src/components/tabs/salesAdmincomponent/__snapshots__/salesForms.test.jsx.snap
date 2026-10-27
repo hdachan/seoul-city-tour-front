@@ -23,8 +23,9 @@ Array [
       "businessNumber": "테스트",
       "category": "식대",
       "companyName": "테스트",
-      "content": "테스트",
+      "content": "",
       "date": "2026-10-22",
+      "note": "",
     },
   ],
 ]
@@ -41,6 +42,7 @@ Array [
       "companyName": "식당",
       "content": "점심",
       "date": "2026-10-22",
+      "note": "",
     },
   ],
 ]
@@ -48,11 +50,11 @@ Array [
 
 exports[`영업 정산 (SalesContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 수정 입력창 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 수정</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"점심\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"11000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">10,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">1,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"123-45-67890\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"식당\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">수정</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 수정</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"점심\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"11000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">10,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">1,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"123-45-67890\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"식당\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">수정</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = 점심",
+    "input[text] 1234-5678-9012-3456 = 점심",
     "input[number]  = 11000",
     "input[text] 000-00-00000 = 123-45-67890",
     "input[text]  = 식당",
@@ -62,11 +64,11 @@ Object {
 
 exports[`영업 정산 (SalesContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 추가 입력 후 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"22000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">20,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">2,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"22000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">20,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">2,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = 테스트",
+    "input[text] 1234-5678-9012-3456 = ",
     "input[number]  = 22000",
     "input[text] 000-00-00000 = 테스트",
     "input[text]  = 테스트",
@@ -76,11 +78,11 @@ Object {
 
 exports[`영업 정산 (SalesContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 추가 입력창 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input min=\\"2026-10-19\\" max=\\"2026-10-25\\" type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"1234-5678\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = ",
+    "input[text] 1234-5678-9012-3456 = 1234-5678",
     "input[number]  = ",
     "input[text] 000-00-00000 = ",
     "input[text]  = ",
@@ -324,8 +326,9 @@ Array [
       "businessNumber": "테스트",
       "category": "식대",
       "companyName": "테스트",
-      "content": "테스트",
+      "content": "",
       "date": "2026-10-22",
+      "note": "",
       "salesUsername": "kim",
     },
   ],
@@ -343,6 +346,7 @@ Array [
       "companyName": "식당",
       "content": "점심",
       "date": "2026-10-22",
+      "note": "",
       "salesUsername": "kim",
     },
   ],
@@ -351,11 +355,11 @@ Array [
 
 exports[`영업 정산관리 (SalesAdminContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 수정 입력창 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 수정</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"점심\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"11000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">10,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">1,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"123-45-67890\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"식당\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">수정</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 수정</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"점심\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"11000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">10,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">1,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"123-45-67890\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"식당\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">수정</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = 점심",
+    "input[text] 1234-5678-9012-3456 = 점심",
     "input[number]  = 11000",
     "input[text] 000-00-00000 = 123-45-67890",
     "input[text]  = 식당",
@@ -365,11 +369,11 @@ Object {
 
 exports[`영업 정산관리 (SalesAdminContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 추가 입력 후 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"22000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">20,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">2,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"22000\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-vat-box\\"><div class=\\"sl-vat-row is-first\\"><span class=\\"sl-vat-label\\">공급가액</span><strong class=\\"sl-text-blue\\">20,000원</strong></div><div class=\\"sl-vat-row\\"><span class=\\"sl-vat-label\\">VAT 10%</span><strong class=\\"sl-text-green\\">2,000원</strong></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"테스트\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = 테스트",
+    "input[text] 1234-5678-9012-3456 = ",
     "input[number]  = 22000",
     "input[text] 000-00-00000 = 테스트",
     "input[text]  = 테스트",
@@ -379,11 +383,11 @@ Object {
 
 exports[`영업 정산관리 (SalesAdminContent) 법인카드 추가 / 수정 – 입력창 화면 + 저장 값: 추가 입력창 1`] = `
 Object {
-  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
+  "html": "<div class=\\"sl-modal sl-modal-receipt\\"><div class=\\"sl-modal-header\\"><h3 class=\\"sl-modal-title\\">지출내역 추가</h3><button class=\\"sl-modal-close\\">✕</button></div><form class=\\"sl-modal-form\\"><div class=\\"sl-field\\"><label>날짜</label><input type=\\"date\\" value=\\"2026-10-22\\"></div><div class=\\"sl-field\\"><label>카테고리</label><select><option value=\\"식대\\">식대</option><option value=\\"주차\\">주차</option><option value=\\"기타\\">기타</option></select></div><div class=\\"sl-field\\"><label>신용카드 번호</label><input inputmode=\\"numeric\\" placeholder=\\"1234-5678-9012-3456\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>총금액 *</label><div class=\\"sl-unit-input is-money\\"><input required=\\"\\" type=\\"number\\" value=\\"\\"><span class=\\"sl-unit\\">원</span></div></div><div class=\\"sl-field\\"><label>사업자번호 <span class=\\"sl-optional\\">(선택)</span></label><input placeholder=\\"000-00-00000\\" type=\\"text\\" value=\\"\\"></div><div class=\\"sl-field\\"><label>상호 <span class=\\"sl-optional\\">(선택)</span></label><input type=\\"text\\" value=\\"\\"></div><div class=\\"sl-modal-btns\\"><button type=\\"button\\" class=\\"sl-btn-outline\\">취소</button><button type=\\"submit\\" class=\\"sl-btn-primary\\">추가</button></div></form></div>",
   "values": Array [
     "input[date]  = 2026-10-22",
     "select[select-one]  = 식대",
-    "input[text]  = ",
+    "input[text] 1234-5678-9012-3456 = ",
     "input[number]  = ",
     "input[text] 000-00-00000 = ",
     "input[text]  = ",

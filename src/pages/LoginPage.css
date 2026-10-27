@@ -96,6 +96,27 @@ body {
   color: #bbb;
 }
 
+/* 로그인 유지 체크 */
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+.remember-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #111;
+}
+.remember-hint {
+  font-size: 11px;
+  color: #999;
+}
+
 .error-msg {
   font-size: 13px;
   color: #d32f2f;

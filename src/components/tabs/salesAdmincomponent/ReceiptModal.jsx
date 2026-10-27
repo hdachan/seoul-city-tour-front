@@ -1,4 +1,4 @@
-import { fmtWon } from "./salesShared";
+import { fmtWon, formatCard } from "./salesShared";
 import "./sales.css";
 
 // 💳 법인카드 지출내역 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
@@ -20,6 +20,12 @@ export default function ReceiptModal({
   const supply = total ? Math.round(total / 1.1) : 0;
   const vat = total ? total - supply : 0;
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  // 관리자 카테고리 + 맨 끝에 항상 "기타" (자세한 내용은 비고에)
+  //   수정 중인 기록의 카테고리가 지금 목록에 없으면(삭제됨) 그것도 보여줌
+  const names = categories.map((c) => c.name).filter((n) => n !== "기타");
+  if (form.category && form.category !== "기타" && !names.includes(form.category))
+    names.push(form.category);
+  const categoryNames = [...names, "기타"];
 
   return (
     <div className="sl-modal-bg">
@@ -43,21 +49,33 @@ export default function ReceiptModal({
           </div>
           <div className="sl-field">
             <label>카테고리</label>
-            <select value={form.category || ""} onChange={set("category")}>
-              {categories.length === 0 ? (
-                <option value="">없음</option>
-              ) : (
-                categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))
-              )}
+            <select
+              value={form.category || ""}
+              onChange={(e) =>
+                // 기타가 아니면 비고 칸이 없으니 비고도 비움
+                setForm((f) => ({
+                  ...f,
+                  category: e.target.value,
+                  note: e.target.value === "기타" ? f.note : "",
+                }))
+              }
+            >
+              {categoryNames.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </div>
           <div className="sl-field">
             <label>신용카드 번호</label>
-            <input type="text" value={form.content || ""} onChange={set("content")} />
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="1234-5678-9012-3456"
+              value={form.content || ""}
+              onChange={(e) => setForm((f) => ({ ...f, content: formatCard(e.target.value) }))}
+            />
           </div>
           <div className="sl-field">
             <label>총금액 *</label>
@@ -100,6 +118,14 @@ export default function ReceiptModal({
             </label>
             <input type="text" value={form.companyName || ""} onChange={set("companyName")} />
           </div>
+          {form.category === "기타" && (
+            <div className="sl-field">
+              <label>
+                비고 <span className="sl-optional">(선택)</span>
+              </label>
+              <input type="text" value={form.note || ""} onChange={set("note")} />
+            </div>
+          )}
           {error && <p className="sl-field-error">⚠ {error}</p>}
           <div className="sl-modal-btns">
             <button type="button" className="sl-btn-outline" onClick={onClose}>

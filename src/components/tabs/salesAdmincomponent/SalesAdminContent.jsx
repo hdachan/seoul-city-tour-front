@@ -10,6 +10,7 @@ import SalesDrivingStats from "./SalesDrivingStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
 import StartMeterModal from "./StartMeterModal";
+import CardModal from "./CardModal";
 import {
   downloadDrivingExcel,
   printDriving,
@@ -76,6 +77,7 @@ export default function SalesAdminContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [startMeterUser, setStartMeterUser] = useState(null); // 시작 미터기 수정 중인 사람
+  const [cardUser, setCardUser] = useState(null); // 카드번호 수정 중인 사람
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
 
@@ -355,11 +357,12 @@ export default function SalesAdminContent() {
     setEditTarget(null);
     setReceiptForm({
       date: selectedDate,
-      category: activeCats[0]?.name || "",
-      content: "",
+      category: activeCats[0]?.name || "기타",
+      content: selectedUser?.cardNumber || "",
       amount: "",
       businessNumber: "",
       companyName: "",
+      note: "",
     });
     setShowReceiptModal(true);
   };
@@ -374,6 +377,7 @@ export default function SalesAdminContent() {
       amount: row.totalAmount || "",
       businessNumber: row.businessNumber,
       companyName: row.companyName,
+      note: row.note || "",
     });
     setShowReceiptModal(true);
   };
@@ -542,9 +546,23 @@ export default function SalesAdminContent() {
                 }}
                 onWeekLock={handleWeekLock}
                 onStartMeter={setStartMeterUser}
+                onCard={setCardUser}
               />
             ))}
           </div>
+          {cardUser && (
+            <CardModal
+              name={cardUser.name}
+              initial={cardUser.cardNumber}
+              onClose={() => setCardUser(null)}
+              onSave={async (card) => {
+                await api.saveCard(cardUser.username, card);
+                setSuccess(`${cardUser.name} 카드번호 ${card} 저장`);
+                setCardUser(null);
+                reloadSummary();
+              }}
+            />
+          )}
           {startMeterUser && (
             <StartMeterModal
               name={startMeterUser.name}
@@ -804,7 +822,7 @@ function CategoryPanel({ categories, newCatName, setNewCatName, onAdd, onDelete 
 }
 
 // ──── 정산 목록 카드 (한 사람 요약 + 주 단위 잠금) ────
-function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter }) {
+function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onCard }) {
   const countClass = (n, color) => `sl-card-value ${n > 0 ? color : "sl-text-none"}`;
   return (
     <div
@@ -812,7 +830,6 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter }) {
     >
       <div className="sl-card-body" onClick={onOpen}>
         <div className="sl-card-name">{u.name}</div>
-        {u.cardNumber && <div className="sl-card-number">{u.cardNumber}</div>}
         <div className="sl-card-stats">
           <div className="sl-card-line">
             <span className="sl-muted">운행일지</span>
@@ -842,6 +859,20 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter }) {
               }`}
             >
               {u.startMeter ? `${fmt(u.startMeter)}km` : u.startMeterNeeded ? "미입력" : "-"} ✏️
+            </span>
+          </button>
+          {/* 카드번호 (누르면 수정) */}
+          <button
+            type="button"
+            className="sl-card-line sl-start-line"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCard(u);
+            }}
+          >
+            <span className="sl-muted">카드번호</span>
+            <span className={`sl-card-value ${u.cardNumber ? "sl-text-dark" : "sl-text-red"}`}>
+              {u.cardNumber || "미등록"} ✏️
             </span>
           </button>
           {u.totalDist > 0 && (
@@ -1037,13 +1068,14 @@ function ReceiptTable({ receipts, showMenu, renderMenu }) {
             <th className="sl-num">VAT</th>
             <th>사업자</th>
             <th>상호</th>
+            <th>비고</th>
             {showMenu && <th></th>}
           </tr>
         </thead>
         <tbody>
           {receipts.length === 0 ? (
             <tr>
-              <td colSpan={9} className="sl-empty-cell is-tall">
+              <td colSpan={10} className="sl-empty-cell is-tall">
                 내역 없음
               </td>
             </tr>
@@ -1062,6 +1094,7 @@ function ReceiptTable({ receipts, showMenu, renderMenu }) {
                 <td className="sl-num sl-cell-vat">{r.vat ? fmtWon(r.vat) : "-"}</td>
                 <td className="sl-small">{r.businessNumber || "-"}</td>
                 <td className="sl-cell-ellipsis is-narrow sl-small">{r.companyName || "-"}</td>
+                <td className="sl-cell-ellipsis sl-small">{r.note || "-"}</td>
                 {showMenu && <td className="sl-cell-menu">{renderMenu(r)}</td>}
               </tr>
             ))
@@ -1076,7 +1109,7 @@ function ReceiptTable({ receipts, showMenu, renderMenu }) {
               <td className="sl-num sl-nowrap sl-text-blue">{fmtWon(sum("totalAmount"))}</td>
               <td className="sl-num sl-nowrap sl-text-sub">{fmtWon(sum("supplyAmount"))}</td>
               <td className="sl-num sl-nowrap sl-text-green">{fmtWon(sum("vat"))}</td>
-              <td colSpan={showMenu ? 3 : 2}></td>
+              <td colSpan={showMenu ? 4 : 3}></td>
             </tr>
           </tfoot>
         )}

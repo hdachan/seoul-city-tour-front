@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { login } from '../api/auth';
+import { saveLogin, isTokenExpired } from '../utils/tokenUtils';
 import './LoginPage.css';
 
 // 프론트 입력값 정제 (XSS 1차 방어)
@@ -17,7 +18,11 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
+
+  // 이미 로그인 상태(로그인 유지 포함)면 로그인 화면 건너뜀
+  if (sessionStorage.getItem('token') && !isTokenExpired()) return <Navigate to="/dashboard" replace />;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,12 +37,10 @@ function LoginPage() {
 
     setLoading(true);
     try {
-      const data = await login(cleanUsername, password);
-      // 비밀번호는 절대 저장하지 않음 - 토큰만 저장
-      sessionStorage.setItem('token',    data.token);
-      sessionStorage.setItem('username', data.username);
-      sessionStorage.setItem('name',     data.name);
+      const data = await login(cleanUsername, password, remember);
+      // 비밀번호는 절대 저장하지 않음 - 토큰만 저장 (로그인 유지면 창을 닫아도 남김)
       // role은 tokenUtils.js에서 토큰 직접 파싱하므로 저장 불필요
+      saveLogin(data, remember);
       navigate('/dashboard');
     } catch (err) {
       const status = err.response?.status;
@@ -79,6 +82,12 @@ function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               required />
           </div>
+          <label className="remember-row">
+            <input type="checkbox"
+              checked={remember}
+              onChange={e => setRemember(e.target.checked)} />
+            로그인 유지 <span className="remember-hint">(30일 · 공용 PC에서는 체크하지 마세요)</span>
+          </label>
           {error && <p className="error-msg">⚠ {error}</p>}
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? '로그인 중...' : '로그인'}

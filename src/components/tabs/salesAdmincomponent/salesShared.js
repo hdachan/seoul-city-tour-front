@@ -20,6 +20,12 @@ export const getKoreaTime = () =>
   }).format(new Date());
 
 export const TYPES = ["업무", "주유", "개인주유", "개인사용"];
+// 카드번호: 숫자만 남기고 4자리마다 - (최대 16자리) → "1234-5678-9012-3456"
+export const formatCard = (v) =>
+  String(v || "")
+    .replace(/\D/g, "")
+    .slice(0, 16)
+    .replace(/(\d{4})(?=\d)/g, "$1-");
 // 업무 도착지는 오전 / 오후 중 고름 (자세한 곳은 비고에)
 export const HALF_DAYS = ["오전", "오후"];
 export const TYPE_STYLE = {

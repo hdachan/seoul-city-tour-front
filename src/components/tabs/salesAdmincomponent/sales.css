@@ -707,12 +707,6 @@
   margin-bottom: 2px;
   color: var(--sl-text);
 }
-.sl-card-number {
-  font-size: 10px;
-  color: var(--sl-faint);
-  margin-bottom: 8px;
-  font-family: monospace;
-}
 .sl-card-stats {
   font-size: 12px;
   margin-bottom: 12px;

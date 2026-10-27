@@ -2,10 +2,12 @@ import axios from "axios";
 import client, { BASE_URL } from "./client";
 
 // ── 로그인 (POST 방식으로 변경, 토큰 발급) ──
-export const login = async (username, password) => {
+// remember: 로그인 유지 (서버가 30일짜리 토큰을 줌)
+export const login = async (username, password, remember = false) => {
   const response = await axios.post(`${BASE_URL}/auth/login`, {
     username,
     password,
+    remember,
   });
   return response.data; // { token, username, role, name }
 };

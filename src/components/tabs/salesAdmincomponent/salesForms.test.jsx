@@ -19,8 +19,8 @@ jest.mock("../../../api/sales", () => {
     "saveStartMeter",
   ];
   return {
-    salesApi: fns([...common, "getMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
-    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes"]),
+    salesApi: fns([...common, "getMyCard", "saveMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
+    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes", "saveCard"]),
   };
 });
 
@@ -537,5 +537,98 @@ describe("시작 미터기", () => {
     fireEvent.click(screen.getByText("취소"));
     expect(modal()).toBeNull();
     expect(salesAdminApi.saveStartMeter).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ───────────── 💳 카드번호 (처음 1회) ─────────────
+describe("카드번호", () => {
+  test("카드번호가 없는 사람 → 카드번호 입력창만 뜨고, 저장하면 화면이 열림", async () => {
+    salesApi.getMyCard.mockImplementation(() => ok({ cardNumber: "" }));
+    salesApi.saveMyCard.mockImplementation(() => ok({}));
+    render(<SalesContent />);
+    await screen.findByText("💳 법인카드 번호를 등록해주세요");
+    expect(document.querySelector(".sl-modal-close")).toBeNull();
+    expect(screen.queryByText("취소")).toBeNull();
+
+    // 숫자만 남고 4자리마다 - 자동
+    setValue(modal().querySelector("input"), "1234a5678");
+    expect(modal().querySelector("input").value).toBe("1234-5678");
+    // 자릿수가 모자라면 저장 안 됨
+    await submit();
+    expect(salesApi.saveMyCard).not.toHaveBeenCalled();
+    expect(screen.getByText("⚠ 카드번호 15~16자리를 입력해주세요.")).toBeInTheDocument();
+
+    setValue(modal().querySelector("input"), "11112222333344445555");
+    expect(modal().querySelector("input").value).toBe("1111-2222-3333-4444");
+    await submit();
+    expect(window.confirm).toHaveBeenCalledWith("카드번호를 1111-2222-3333-4444 로 저장할까요?");
+    expect(salesApi.saveMyCard).toHaveBeenCalledWith("1111-2222-3333-4444");
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    expect(screen.queryByText("💳 법인카드 번호를 등록해주세요")).toBeNull();
+  });
+
+  test("시작 미터기도 없으면 → 시작 미터기 먼저, 그다음 카드번호", async () => {
+    salesApi.getStartMeter.mockImplementation(() => ok({ startMeter: null, needed: true }));
+    salesApi.getMyCard.mockImplementation(() => ok({ cardNumber: "" }));
+    render(<SalesContent />);
+    await screen.findByText("🚗 처음 시작하시네요!");
+    setValue(modal().querySelector("input"), "10000");
+    await submit();
+    expect(await screen.findByText("💳 법인카드 번호를 등록해주세요")).toBeInTheDocument();
+  });
+
+  test("관리자 – 사람 카드에서 카드번호 확인 · 수정", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([
+        { username: "kim", name: "김영업", hasData: true, receiptCount: 1, cardNumber: "" },
+        { username: "lee", name: "이영업", hasData: false, receiptCount: 0, cardNumber: "1234-5678" },
+      ]),
+    );
+    salesAdminApi.saveCard.mockImplementation(() => ok({}));
+    render(<SalesAdminContent />);
+    expect(await screen.findByText("미등록 ✏️")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("1234-5678 ✏️"));
+    expect(screen.getByText("카드번호 수정 · 이영업")).toBeInTheDocument();
+    setValue(modal().querySelector("input"), "9999888877776666");
+    await submit();
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(salesAdminApi.saveCard).toHaveBeenCalledWith("lee", "9999-8888-7777-6666");
+    await waitFor(() => expect(modal()).toBeNull());
+  });
+});
+
+// ───────────── 💳 지출내역 기타 · 비고 ─────────────
+describe("지출내역 – 기타 · 비고", () => {
+  test("카테고리 맨 끝에 기타, 비고 · 카드번호가 서버로 감", async () => {
+    salesApi.getCategories.mockImplementation(() => ok([{ id: 1, name: "식대" }, { id: 2, name: "주차" }]));
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const select = modal().querySelector("select");
+    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);
+    const noteLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("비고"));
+    // 비고 칸은 기타일 때만
+    expect(noteLabel()).toBeUndefined();
+    setValue(select, "기타");
+    expect(noteLabel()).toBeDefined();
+    const inputs = modal().querySelectorAll("input[type=text]");
+    expect(inputs[0].value).toBe("1234-5678"); // 내 카드번호 미리 채움
+    setValue(modal().querySelector("input[type=number]"), "7000");
+    setValue(inputs[inputs.length - 1], "세차");
+    // 기타 → 식대 → 기타: 숨겨진 비고는 비워짐
+    setValue(select, "식대");
+    expect(noteLabel()).toBeUndefined();
+    setValue(select, "기타");
+    expect(modal().querySelectorAll("input[type=text]")[3].value).toBe("");
+    setValue(modal().querySelectorAll("input[type=text]")[3], "세차");
+    await submit();
+    expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({
+      category: "기타",
+      content: "1234-5678",
+      amount: "7000",
+      note: "세차",
+    });
   });
 });

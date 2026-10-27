@@ -8,6 +8,7 @@ import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
 import StartMeterModal from "./StartMeterModal";
+import CardModal from "./CardModal";
 import {
   downloadDrivingExcel as exportDrivingExcel,
   printDriving as exportPrintDriving,
@@ -102,6 +103,7 @@ export default function SalesContent() {
   const [success, setSuccess] = useState("");
   // 처음 쓰는 사람: 시작 미터기 입력 전까지 화면 막음
   const [needStartMeter, setNeedStartMeter] = useState(false);
+  const [needCard, setNeedCard] = useState(false); // 카드번호 미등록 → 먼저 입력
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - 1 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -193,6 +195,7 @@ export default function SalesContent() {
       setReceipts(rec.data);
       setCategories(cats.data);
       setMyCard(card.data.cardNumber);
+      setNeedCard(!card.data.cardNumber);
       // 지난달 마지막 미터기 (엑셀·인쇄 첫 운행거리용) - 실패해도 전체 영향 없음
       api
         .getPrevMeter(`${year}-${pad2(month)}-01`)
@@ -427,11 +430,12 @@ export default function SalesContent() {
         : receiptDates.includes(selectedDate)
           ? selectedDate
           : receiptDates[receiptDates.length - 1],
-      category: categories[0]?.name || "",
-      content: "",
+      category: categories[0]?.name || "기타",
+      content: myCard || "",
       amount: "",
       businessNumber: "",
       companyName: "",
+      note: "",
     });
     setShowReceiptModal(true);
   };
@@ -446,6 +450,7 @@ export default function SalesContent() {
       amount: row.totalAmount || "",
       businessNumber: row.businessNumber,
       companyName: row.companyName,
+      note: row.note || "",
     });
     setShowReceiptModal(true);
   };
@@ -567,6 +572,18 @@ export default function SalesContent() {
           setSuccess("시작 미터기가 저장되었습니다.");
           loadMonth();
           loadDay();
+        }}
+      />
+    );
+  // 카드번호가 없으면: 카드번호를 입력해야 들어갈 수 있음 (시작 미터기 다음)
+  if (needCard)
+    return (
+      <CardModal
+        onSave={async (card) => {
+          await api.saveMyCard(card);
+          setNeedCard(false);
+          setMyCard(card);
+          setSuccess("카드번호가 등록되었습니다.");
         }}
       />
     );
@@ -990,6 +1007,7 @@ export default function SalesContent() {
                     {r.vat > 0 && <Row label="VAT" value={fmtWon(r.vat)} color="#059669" />}
                     {r.businessNumber && <Row label="사업자" value={r.businessNumber} />}
                     {r.companyName && <Row label="상호" value={r.companyName} />}
+                    {r.note && <Row label="비고" value={r.note} />}
                   </div>
                 </div>
               ))
@@ -1016,13 +1034,14 @@ export default function SalesContent() {
                     <th className="sl-num">VAT</th>
                     <th>사업자</th>
                     <th>상호</th>
+                    <th>비고</th>
                     {!isLocked && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {receipts.length === 0 ? (
                     <tr className="sl-no-line">
-                      <td colSpan={9} className="sl-empty-cell is-tall">
+                      <td colSpan={10} className="sl-empty-cell is-tall">
                         내역이 없습니다.
                       </td>
                     </tr>
@@ -1043,6 +1062,7 @@ export default function SalesContent() {
                         <td className="sl-cell-ellipsis is-narrow sl-small">
                           {r.companyName || "-"}
                         </td>
+                        <td className="sl-cell-ellipsis sl-small">{r.note || "-"}</td>
                         {!isLocked && (
                           <td className="sl-cell-menu">
                             {isDateEditable(r.date) && (
@@ -1071,7 +1091,7 @@ export default function SalesContent() {
                       <td className="sl-num sl-foot-vat">
                         {fmtWon(receipts.reduce((s, r) => s + (r.vat || 0), 0))}
                       </td>
-                      <td colSpan={isLocked ? 2 : 3} className="sl-cell-bare"></td>
+                      <td colSpan={isLocked ? 3 : 4} className="sl-cell-bare"></td>
                     </tr>
                   </tfoot>
                 )}

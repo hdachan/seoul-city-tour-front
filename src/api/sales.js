@@ -7,6 +7,7 @@ export const salesApi = {
       params: { year: y, month: m },
     }),
   getMyCard: () => client.get(`/sales-form/my-card`),
+  saveMyCard: (cardNumber) => client.post(`/sales-form/my-card`, { cardNumber }),
   getCategories: () => client.get(`/sales-form/categories`),
   saveDrivingNotes: (drivingId, contents) =>
     client.post(`/sales-form/driving/${drivingId}/notes`, contents),
@@ -79,6 +80,8 @@ export const salesAdminApi = {
     }),
   saveStartMeter: (u, startMeter) =>
     client.post(`/sales-admin/start-meter`, { salesUsername: u, startMeter }),
+  saveCard: (u, cardNumber) =>
+    client.post(`/sales-admin/card`, { salesUsername: u, cardNumber }),
   addDriving: (data) => client.post(`/sales-admin/driving`, data),
   updateDriving: (id, data) => client.put(`/sales-admin/driving/${id}`, data),
   deleteDriving: (id) => client.delete(`/sales-admin/driving/${id}`),
