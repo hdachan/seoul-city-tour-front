@@ -12,7 +12,7 @@ import { salesApi, salesAdminApi } from "../../../api/sales";
 jest.mock("../../../api/sales", () => {
   const fns = (names) => Object.fromEntries(names.map((n) => [n, jest.fn()]));
   const common = [
-    "getLockStatus", "getCategories", "getPurposes", "getDestinations",
+    "getLockStatus", "getCategories", "getPurposes",
     "getDriving", "getDrivingDate", "getPrevMeter", "addDriving",
     "updateDriving", "deleteDriving", "saveDrivingNotes", "getReceipts",
     "addReceipt", "updateReceipt", "deleteReceipt", "getPersonalFuelBalance",
@@ -56,7 +56,6 @@ function setupApi(api) {
   );
   api.getCategories.mockImplementation(() => ok(CATEGORIES));
   api.getPurposes.mockImplementation(() => ok([]));
-  api.getDestinations.mockImplementation(() => ok([]));
   api.getDriving.mockImplementation(() => ok(DRIVING));
   // 마지막 인자가 날짜 (영업: (date), 관리자: (username, date))
   api.getDrivingDate.mockImplementation((...args) =>
@@ -183,6 +182,27 @@ describe("영업 정산 (SalesContent)", () => {
     await submit();
     expect(salesApi.updateDriving.mock.calls).toMatchSnapshot("updateDriving");
     expect(salesApi.saveDrivingNotes.mock.calls).toMatchSnapshot("saveDrivingNotes");
+  });
+
+  test("업무에서 비고를 적고 주유로 바꾸면 비고는 저장 안 됨", async () => {
+    await open();
+    // 추가: 비고 적고 → 주유로 바꿈
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    setValue(modal().querySelector("input.sl-note-text"), "자택");
+    fireEvent.click(typeButton("주유"));
+    modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
+    await submit();
+    expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
+    expect(salesApi.addDriving.mock.calls[0][0].notes).toEqual([{ content: "", time: "" }]);
+    expect(salesApi.saveDrivingNotes).not.toHaveBeenCalled();
+    // 수정: 업무 기록을 주유로 바꾸면 예전 비고를 지움
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    fireEvent.click(typeButton("주유"));
+    modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
+    await submit();
+    expect(salesApi.saveDrivingNotes).toHaveBeenCalledWith(expect.anything(), []);
   });
 
   test("미터기 범위 검사 – 낮으면 저장 안 됨", async () => {
@@ -394,24 +414,55 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
   });
 });
 
-// ───────────── 📊 영업 정산관리 – 도착지 추천 목록 ─────────────
-describe("영업 정산관리 – 도착지 추천 목록", () => {
-  test("입력한 글자가 들어간 예전 도착지가 뜨고, 누르면 입력됨", async () => {
-    salesAdminApi.getDestinations.mockImplementation(() => ok(["명동역6번", "명동역9번", "시청"]));
+// ───────────── 📊 영업 정산관리 – 도착지 오전 / 오후 ─────────────
+describe("영업 정산관리 – 도착지 오전 / 오후", () => {
+  const destSelect = () => modal().querySelector("select");
+  const optionTexts = () => [...destSelect().options].map((o) => o.textContent);
+  const customInput = () => modal().querySelector("input.sl-dest-custom");
+
+  test("추가: 오전 / 오후 중 골라서 저장", async () => {
     render(<SalesAdminContent />);
     fireEvent.click(await screen.findByText("김영업"));
     await screen.findByText("명동", undefined, { timeout: 3000 });
     fireEvent.click(screen.getByText("＋ 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const destInput = modal().querySelector("input[placeholder='경복궁']");
-    fireEvent.focus(destInput);
-    setValue(destInput, "명");
-    expect(screen.getByText("명동역6번")).toBeInTheDocument();
-    expect(screen.getByText("명동역9번")).toBeInTheDocument();
-    expect(screen.queryByText("시청")).toBeNull();
-    fireEvent.click(screen.getByText("명동역9번"));
-    expect(destInput.value).toBe("명동역9번");
-    expect(screen.queryByText("명동역6번")).toBeNull();
+    expect(optionTexts()).toEqual(["선택", "오전", "오후", "기타 (직접 입력)"]);
+    expect(destSelect().value).toBe("");
+    expect(customInput()).toBeNull();
+    setValue(destSelect(), "오후");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    await submit();
+    expect(salesAdminApi.addDriving.mock.calls[0][0].destination).toBe("오후");
+  });
+
+  test("추가: 기타 고르면 입력칸이 생기고 적은 도착지로 저장", async () => {
+    render(<SalesAdminContent />);
+    fireEvent.click(await screen.findByText("김영업"));
+    await screen.findByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    setValue(destSelect(), "기타");
+    expect(customInput()).not.toBeNull();
+    setValue(customInput(), "인천공항");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    await submit();
+    expect(salesAdminApi.addDriving.mock.calls[0][0].destination).toBe("인천공항");
+    // 다시 오전으로 바꾸면 입력칸 사라짐
+    fireEvent.click(screen.getByText("＋ 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    setValue(destSelect(), "기타");
+    setValue(destSelect(), "오전");
+    expect(customInput()).toBeNull();
+  });
+
+  test("수정: 예전 도착지(명동)는 기타 + 입력칸에 그대로", async () => {
+    render(<SalesAdminContent />);
+    fireEvent.click(await screen.findByText("김영업"));
+    await screen.findByText("명동", undefined, { timeout: 3000 });
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(destSelect().value).toBe("기타");
+    expect(customInput().value).toBe("명동");
   });
 });
 

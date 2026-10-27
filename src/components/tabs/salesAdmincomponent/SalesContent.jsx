@@ -57,10 +57,6 @@ export default function SalesContent() {
   const [myCard, setMyCard] = useState("");
   const [categories, setCategories] = useState([]);
   const [expandedNotes, setExpandedNotes] = useState({}); // 모바일 비고 펼치기
-  const [destinations, setDestinations] = useState([]);
-  const [destSearch, setDestSearch] = useState("");
-  const [showDestDrop, setShowDestDrop] = useState(false);
-  const destRef = useRef(null);
   const [monthDriving, setMonthDriving] = useState([]);
   const [monthStartMeter, setMonthStartMeter] = useState(0); // 지난달 마지막 미터기
   const [receipts, setReceipts] = useState([]);
@@ -202,11 +198,6 @@ export default function SalesContent() {
         .getPrevMeter(`${year}-${pad2(month)}-01`)
         .then((r) => setMonthStartMeter(r.data.prevMeter || 0))
         .catch(() => setMonthStartMeter(0));
-      // destinations는 별도 로드 (실패해도 전체 영향 없음)
-      api
-        .getDestinations()
-        .then((r) => setDestinations(r.data))
-        .catch(() => {});
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
@@ -281,8 +272,6 @@ export default function SalesContent() {
     const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
         setOpenMenu(null);
-      if (destRef.current && !destRef.current.contains(e.target))
-        setShowDestDrop(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -389,17 +378,14 @@ export default function SalesContent() {
       if (editTarget) res = await api.updateDriving(editTarget.id, payload);
       else res = await api.addDriving(payload);
 
-      // 비고 저장
+      // 비고 저장 (업무만 · 수정이면 비어 있어도 저장해서 예전 비고를 지움)
       const savedId = res?.data?.id || editTarget?.id;
-      if (
-        savedId &&
-        drivingForm.notes &&
-        drivingForm.notes.some((n) => n.content && n.content.trim())
-      ) {
-        await api.saveDrivingNotes(
-          savedId,
-          drivingForm.notes.filter((n) => n.content && n.content.trim()),
-        );
+      const notes =
+        drivingForm.type === "업무"
+          ? (drivingForm.notes || []).filter((n) => n.content && n.content.trim())
+          : [];
+      if (savedId && (editTarget || notes.length > 0)) {
+        await api.saveDrivingNotes(savedId, notes);
       }
 
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
@@ -1112,14 +1098,6 @@ export default function SalesContent() {
             distPreview,
             tooLow: meterTooLow,
             tooHigh: meterTooHigh,
-          }}
-          dest={{
-            list: destinations,
-            search: destSearch,
-            setSearch: setDestSearch,
-            show: showDestDrop,
-            setShow: setShowDestDrop,
-            ref: destRef,
           }}
         />
       )}

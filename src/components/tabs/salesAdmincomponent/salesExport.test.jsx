@@ -24,7 +24,6 @@ jest.mock("../../../api/sales", () => {
   const common = {
     getLockStatus: ok({ locked: false, weekLocks: { 1: true, 2: true, 3: true, 4: false, 5: true } }),
     getCategories: ok([]),
-    getDestinations: ok([]),
     getDriving: ok(DRIVING),
     getDrivingDate: (...args) => Promise.resolve({ data: DRIVING.filter((d) => d.date === args[args.length - 1]) }),
     getPrevMeter: ok({ prevMeter: 850 }),

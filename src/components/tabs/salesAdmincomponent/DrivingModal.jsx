@@ -1,5 +1,6 @@
+import { useState } from "react";
 import DrivingTimeFields from "./DrivingTimeFields";
-import { fmt, TYPES, TYPE_STYLE, getKoreaTime } from "./salesShared";
+import { fmt, TYPES, TYPE_STYLE, HALF_DAYS, getKoreaTime } from "./salesShared";
 import "./sales.css";
 
 const TYPE_ICON = { 업무: "💼 ", 주유: "⛽ ", 개인주유: "⛽ ", 개인사용: "🚗 " };
@@ -8,7 +9,6 @@ const TYPE_ICON = { 업무: "💼 ", 주유: "⛽ ", 개인주유: "⛽ ", 개�
 //   form / setForm   : 입력값 (화면마다 자기 상태를 넘김)
 //   dateMin/dateMax  : 고를 수 있는 날짜 범위 (없으면 제한 없음)
 //   meter            : 미터기 검사 값 { lowerMeter, nextMeter, distPreview, tooLow, tooHigh }
-//   dest             : 도착지 자동완성 { list, search, setSearch, show, setShow, ref }
 export default function DrivingModal({
   form,
   setForm,
@@ -19,13 +19,9 @@ export default function DrivingModal({
   dateMin,
   dateMax,
   meter,
-  dest,
 }) {
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const suggestions = dest.list
-    .filter((d) => d.toLowerCase().includes((dest.search || "").toLowerCase()))
-    .slice(0, 3);
 
   const notes = form.notes || [];
   const setNote = (i, key, value) => {
@@ -64,39 +60,7 @@ export default function DrivingModal({
             <>
               <DrivingTimeFields form={form} setForm={setForm} />
 
-              {/* 도착지 + 예전 도착지 추천 목록 */}
-              <div className="sl-field sl-dest-field" ref={dest.ref}>
-                <label>도착지 *</label>
-                <input
-                  type="text"
-                  placeholder="경복궁"
-                  value={form.destination || ""}
-                  autoComplete="off"
-                  required
-                  onChange={(e) => {
-                    setField("destination")(e);
-                    dest.setSearch(e.target.value);
-                    dest.setShow(true);
-                  }}
-                  onFocus={() => dest.setShow(true)}
-                />
-                {dest.show && suggestions.length > 0 && (
-                  <div className="sl-suggest">
-                    {suggestions.map((d) => (
-                      <div
-                        key={d}
-                        className="sl-suggest-item"
-                        onClick={() => {
-                          setForm((f) => ({ ...f, destination: d }));
-                          dest.setShow(false);
-                        }}
-                      >
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <DestField form={form} setForm={setForm} />
 
               <MeterField form={form} setField={setField} meter={meter} previewLabel="운행거리" />
 
@@ -195,6 +159,9 @@ export default function DrivingModal({
                       fuelCost: "",
                       fuelUnitPrice: "",
                       meterReading: "",
+                      // 비고도 비움 (업무가 아니면 화면에 안 보이는데 저장되던 문제)
+                      notes: [{ content: "", time: "" }],
+                      purpose: "",
                     }))
                   }
                 >
@@ -216,6 +183,47 @@ export default function DrivingModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// 도착지: 오전 / 오후 / 기타 (기타면 직접 입력 · 예전 기록의 다른 도착지도 기타로 보여줌)
+function DestField({ form, setForm }) {
+  const [custom, setCustom] = useState(
+    !!form.destination && !HALF_DAYS.includes(form.destination),
+  );
+  const setDest = (destination) => setForm((f) => ({ ...f, destination }));
+  return (
+    <div className="sl-field">
+      <label>도착지 *</label>
+      <select
+        value={custom ? "기타" : form.destination || ""}
+        onChange={(e) => {
+          const v = e.target.value;
+          setCustom(v === "기타");
+          setDest(v === "기타" ? "" : v);
+        }}
+        required
+      >
+        <option value="">선택</option>
+        {HALF_DAYS.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+        <option value="기타">기타 (직접 입력)</option>
+      </select>
+      {custom && (
+        <input
+          type="text"
+          className="sl-dest-custom"
+          placeholder="도착지 입력"
+          value={form.destination || ""}
+          onChange={(e) => setDest(e.target.value)}
+          required
+          autoFocus
+        />
+      )}
     </div>
   );
 }

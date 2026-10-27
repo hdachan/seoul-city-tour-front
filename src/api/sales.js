@@ -10,7 +10,6 @@ export const salesApi = {
   getCategories: () => client.get(`/sales-form/categories`),
   saveDrivingNotes: (drivingId, contents) =>
     client.post(`/sales-form/driving/${drivingId}/notes`, contents),
-  getDestinations: () => client.get(`/sales-form/destinations`),
   getDriving: (y, m) =>
     client.get(`/sales-form/driving`, {
       params: { year: y, month: m },
@@ -70,7 +69,6 @@ export const salesAdminApi = {
     client.get(`/sales-admin/driving`, {
       params: { salesUsername: u, year: y, month: m },
     }),
-  getDestinations: () => client.get(`/sales-admin/destinations`),
   getPrevMeter: (u, date) =>
     client.get(`/sales-admin/driving/prev-meter`, {
       params: { salesUsername: u, date },

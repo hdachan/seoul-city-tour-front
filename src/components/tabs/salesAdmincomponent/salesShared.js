@@ -20,6 +20,8 @@ export const getKoreaTime = () =>
   }).format(new Date());
 
 export const TYPES = ["업무", "주유", "개인주유", "개인사용"];
+// 업무 도착지는 오전 / 오후 중 고름 (자세한 곳은 비고에)
+export const HALF_DAYS = ["오전", "오후"];
 export const TYPE_STYLE = {
   업무: { bg: "#e8f0fe", color: "#1557b0" },
   주유: { bg: "#fef3c7", color: "#92400e" },

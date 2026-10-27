@@ -68,10 +68,6 @@ export default function SalesAdminContent() {
   const [newCatName, setNewCatName] = useState("");
 
   const [showDrivingModal, setShowDrivingModal] = useState(false);
-  const [destinations, setDestinations] = useState([]); // 도착지 추천 목록 (전체 영업 사원)
-  const [destSearch, setDestSearch] = useState("");
-  const [showDestDrop, setShowDestDrop] = useState(false);
-  const destRef = useRef(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [drivingForm, setDrivingForm] = useState({});
@@ -139,11 +135,6 @@ export default function SalesAdminContent() {
       .getCategories()
       .then((r) => setCategories(r.data))
       .catch(() => {});
-    // 도착지 추천 목록 (실패해도 입력에는 영향 없음)
-    api
-      .getDestinations()
-      .then((r) => setDestinations(r.data))
-      .catch(() => {});
   }, []);
   useEffect(() => {
     api
@@ -161,8 +152,6 @@ export default function SalesAdminContent() {
     const h = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
         setOpenMenu(null);
-      if (destRef.current && !destRef.current.contains(e.target))
-        setShowDestDrop(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -330,17 +319,14 @@ export default function SalesAdminContent() {
       if (editTarget) res = await api.updateDriving(editTarget.id, payload);
       else res = await api.addDriving(payload);
 
-      // 비고 저장
+      // 비고 저장 (업무만 · 수정이면 비어 있어도 저장해서 예전 비고를 지움)
       const savedId = res?.data?.id || editTarget?.id;
-      if (
-        savedId &&
-        drivingForm.notes &&
-        drivingForm.notes.some((n) => n.content && n.content.trim())
-      ) {
-        await api.saveDrivingNotes(
-          savedId,
-          drivingForm.notes.filter((n) => n.content && n.content.trim()),
-        );
+      const notes =
+        drivingForm.type === "업무"
+          ? (drivingForm.notes || []).filter((n) => n.content && n.content.trim())
+          : [];
+      if (savedId && (editTarget || notes.length > 0)) {
+        await api.saveDrivingNotes(savedId, notes);
       }
 
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
@@ -727,14 +713,6 @@ export default function SalesAdminContent() {
                 distPreview,
                 tooLow: meterTooLow,
                 tooHigh: meterTooHigh,
-              }}
-              dest={{
-                list: destinations,
-                search: destSearch,
-                setSearch: setDestSearch,
-                show: showDestDrop,
-                setShow: setShowDestDrop,
-                ref: destRef,
               }}
             />
           )}
