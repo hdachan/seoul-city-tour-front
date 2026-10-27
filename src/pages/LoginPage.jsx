@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { login } from '../api/auth';
-import { saveLogin, isTokenExpired } from '../utils/tokenUtils';
+import { saveLogin, isTokenExpired, restoreRememberedLogin } from '../utils/tokenUtils';
 import './LoginPage.css';
 
 // 프론트 입력값 정제 (XSS 1차 방어)
@@ -20,6 +20,22 @@ function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
+
+  // 로그인 화면을 열어둔 채 다른 탭에서 "로그인 유지"로 로그인했으면,
+  // 이 탭으로 돌아왔을 때 바로 들어감
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState !== 'visible') return;
+      restoreRememberedLogin();
+      if (sessionStorage.getItem('token') && !isTokenExpired()) navigate('/dashboard', { replace: true });
+    };
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    return () => {
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+    };
+  }, [navigate]);
 
   // 이미 로그인 상태(로그인 유지 포함)면 로그인 화면 건너뜀
   if (sessionStorage.getItem('token') && !isTokenExpired()) return <Navigate to="/dashboard" replace />;

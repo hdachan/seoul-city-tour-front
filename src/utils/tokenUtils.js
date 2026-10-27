@@ -61,7 +61,7 @@ export function restoreRememberedLogin() {
     const token = ls.getItem("token");
     if (!token) return;
     const payload = parseToken(token);
-    if (!payload?.exp || Date.now() / 1000 > payload.exp) {
+    if (!payload?.role || !payload?.exp || Date.now() / 1000 > payload.exp) {
       REMEMBER_KEYS.forEach((k) => ls.removeItem(k)); // 만료 → 다시 로그인
       return;
     }
@@ -72,10 +72,25 @@ export function restoreRememberedLogin() {
   });
 }
 
-// 로그아웃 (토큰 만료 시 자동 호출) - 로그인 유지도 같이 해제
+// 로그아웃 버튼 - 로그인 유지도 같이 해제
 export function clearSession() {
   sessionStorage.clear();
   safeLocal((ls) => REMEMBER_KEYS.forEach((k) => ls.removeItem(k)));
+  window.location.href = "/";
+}
+
+// 토큰 만료로 나갈 때 - 이 탭만 로그아웃
+//   (예전에 열어둔 탭의 토큰이 만료돼도, 다른 탭에서 새로 한 로그인 유지는 지우지 않음)
+//   유지된 로그인이 아직 살아 있으면 바로 그걸로 다시 들어감
+//   message: 로그인 화면으로 갈 때만 띄울 안내
+export function expireSession(message) {
+  sessionStorage.clear();
+  restoreRememberedLogin();
+  if (sessionStorage.getItem("token")) {
+    window.location.href = "/dashboard";
+    return;
+  }
+  if (message) alert(message);
   window.location.href = "/";
 }
 

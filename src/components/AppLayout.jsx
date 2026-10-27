@@ -3,6 +3,7 @@ import {
   getRoleFromToken,
   isTokenExpired,
   clearSession,
+  expireSession,
 } from "../utils/tokenUtils";
 import AdminContent from "./tabs/AdminContent";
 import RecordContent from "./tabs/RecordContent";
@@ -100,7 +101,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!role || isTokenExpired()) {
-      clearSession();
+      expireSession();
       return;
     }
     loadPermissions();
@@ -110,8 +111,7 @@ export default function AppLayout() {
     const timer = setInterval(
       () => {
         if (isTokenExpired()) {
-          alert("로그인이 만료되었습니다.");
-          clearSession();
+          expireSession("로그인이 만료되었습니다.");
         }
       },
       5 * 60 * 1000,
