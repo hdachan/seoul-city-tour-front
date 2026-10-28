@@ -864,15 +864,18 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onC
           {/* 카드번호 (누르면 수정) */}
           <button
             type="button"
-            className="sl-card-line sl-start-line"
+            className={`sl-card-line sl-start-line${u.cardNumber ? " is-stack" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               onCard(u);
             }}
           >
-            <span className="sl-muted">카드번호</span>
-            <span className={`sl-card-value ${u.cardNumber ? "sl-text-dark" : "sl-text-red"}`}>
-              {u.cardNumber || "미등록"} ✏️
+            <span className="sl-muted">카드번호{u.cardNumber && " ✏️"}</span>
+            {/* 번호는 길어서 제목 아래 한 줄로 */}
+            <span
+              className={`sl-card-value ${u.cardNumber ? "sl-text-dark sl-start-card-no" : "sl-text-red"}`}
+            >
+              {u.cardNumber || "미등록 ✏️"}
             </span>
           </button>
           {u.totalDist > 0 && (

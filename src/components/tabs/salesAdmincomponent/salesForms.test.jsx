@@ -587,7 +587,7 @@ describe("카드번호", () => {
     salesAdminApi.saveCard.mockImplementation(() => ok({}));
     render(<SalesAdminContent />);
     expect(await screen.findByText("미등록 ✏️")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("1234-5678 ✏️"));
+    fireEvent.click(screen.getByText("1234-5678"));
     expect(screen.getByText("카드번호 수정 · 이영업")).toBeInTheDocument();
     setValue(modal().querySelector("input"), "9999888877776666");
     await submit();

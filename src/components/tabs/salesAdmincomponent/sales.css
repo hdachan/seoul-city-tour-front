@@ -734,6 +734,20 @@
 .sl-start-line:hover {
   background: #f0f4ff;
 }
+.sl-start-line > span {
+  white-space: nowrap;
+}
+/* 카드번호: 제목 위 · 번호 아래 (좁은 카드에서도 번호가 안 잘림) */
+.sl-start-line.is-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.sl-start-card-no {
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+}
 .sl-text-red {
   color: var(--sl-red);
 }
@@ -774,7 +788,7 @@
 .sl-week-btn {
   flex: 1;
   min-width: 44px;
-  padding: 6px 4px;
+  padding: 6px 2px;
   border: 1.5px solid #e0e0e0;
   border-radius: 7px;
   font-size: 10px;
@@ -792,6 +806,7 @@
 .sl-week-label {
   font-size: 9px;
   margin-top: 1px;
+  white-space: nowrap; /* "12일~18일" 이 두 줄로 안 갈라지게 */
 }
 
 /* ── 표 안 칸 (두 화면 표 공용, 표 기본 칸 스타일보다 우선) ── */

@@ -16,6 +16,8 @@ import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
 import GuideFormContent from "./tabs/GuideFormContent";
 import GuideStatsContent from "./tabs/GuideStatsContent";
 import DevContent from "./tabs/DevContent";
+import RequestsContent from "./tabs/requests/RequestsContent";
+import RequestNotice from "./tabs/requests/RequestNotice";
 import { fetchTabPermissions } from "../api/auth";
 import "./AppLayout.css";
 
@@ -30,6 +32,7 @@ const ALL_TABS = [
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
   { id: "guide-stats", icon: "📊", label: "내 통계" },
   { id: "sales", icon: "💼", label: "영업 정산" },
+  { id: "requests", icon: "✉️", label: "요청사항" },
   { id: "dev", icon: "⚙️", label: "개발" },
 ];
 
@@ -78,6 +81,7 @@ export default function AppLayout() {
           "guide-admin",
           "guide-admin-stats",
           "sales-admin",
+          "requests",
         ],
         ROLE_DEV: [
           "record",
@@ -86,6 +90,7 @@ export default function AppLayout() {
           "guide-admin",
           "guide-admin-stats",
           "sales-admin",
+          "requests",
           "dev",
         ],
         ROLE_SALES: ["sales"],
@@ -153,6 +158,8 @@ export default function AppLayout() {
         return <GuideStatsContent />;
       case "sales":
         return <SalesContent />;
+      case "requests":
+        return <RequestsContent />;
       case "dev":
         return <DevContent />;
       default:
@@ -185,6 +192,8 @@ export default function AppLayout() {
           <span className="al-brand">서울시티투어</span>
         </div>
         <div className="al-header-right">
+          {/* 받은 요청사항 (팝업 + 남은 요청 버튼) */}
+          <RequestNotice />
           <span className="al-role-badge">{roleLabel}</span>
           <span className="al-username">{name}</span>
           <button className="al-logout" onClick={clearSession}>
