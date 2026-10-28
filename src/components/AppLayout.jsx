@@ -18,6 +18,7 @@ import GuideStatsContent from "./tabs/GuideStatsContent";
 import DevContent from "./tabs/DevContent";
 import RequestsContent from "./tabs/requests/RequestsContent";
 import RequestNotice from "./tabs/requests/RequestNotice";
+import PasswordModal from "./PasswordModal";
 import { fetchTabPermissions } from "../api/auth";
 import "./AppLayout.css";
 
@@ -52,6 +53,7 @@ export default function AppLayout() {
   const [active, setActive] = useState("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false); // 내 비밀번호 변경
 
   // 탭 권한은 대시보드를 열 때마다 서버에서 최신으로 받아옴
   // (개발 탭에서 권한을 바꾸면 새로고침만으로 반영)
@@ -196,11 +198,27 @@ export default function AppLayout() {
           <RequestNotice />
           <span className="al-role-badge">{roleLabel}</span>
           <span className="al-username">{name}</span>
+          <button
+            className="al-logout al-pw-btn"
+            onClick={() => setPwOpen(true)}
+            title="내 비밀번호 변경"
+          >
+            🔑<span className="al-pw-label"> 비밀번호</span>
+          </button>
           <button className="al-logout" onClick={clearSession}>
             로그아웃
           </button>
         </div>
       </header>
+      {pwOpen && (
+        <PasswordModal
+          onClose={() => setPwOpen(false)}
+          onDone={() => {
+            setPwOpen(false);
+            alert("비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 쓰세요.");
+          }}
+        />
+      )}
 
       <div className="al-body">
         {/* 데스크탑 사이드바 */}

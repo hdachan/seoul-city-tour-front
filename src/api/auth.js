@@ -12,6 +12,10 @@ export const login = async (username, password, remember = false) => {
   return response.data; // { token, username, role, name }
 };
 
+// 내 비밀번호 변경 (로그인한 누구나)
+export const changeMyPassword = (currentPassword, newPassword) =>
+  client.post(`/auth/change-password`, { currentPassword, newPassword });
+
 // 계정 관리
 export const fetchAdminUsers = () => client.get(`/admin/users`);
 export const createUser = (username, password, role, name) =>

@@ -25,10 +25,18 @@ const getRoleMeta = (roleKey, allRoles) => {
 
 // ADMIN, DEV 만 실제 데이터 접근 가능
 const ALLOWED_ROLES = ["ROLE_ADMIN", "ROLE_DEV"];
+// 관리자 · 개발자 계정은 개발자만 보고 만들고 고침 (예: 사장님 관리자 계정)
+const PRIVILEGED = ["ROLE_ADMIN", "ROLE_DEV"];
+// 화면 순서: 관리자 → 개발자 → 나머지
+const roleOrder = (roleKey) => {
+  const i = PRIVILEGED.indexOf(roleKey);
+  return i === -1 ? PRIVILEGED.length : i;
+};
 
 export default function AdminContent() {
   const currentRole = getRoleFromToken();
   const isAllowed = ALLOWED_ROLES.includes(currentRole);
+  const isDev = currentRole === "ROLE_DEV";
 
   const [users, setUsers] = useState([]);
   const [allRoles, setAllRoles] = useState([]);
@@ -142,7 +150,10 @@ export default function AdminContent() {
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`'${user.name || user.username}' 계정을 삭제할까요?`))
+    const warn = PRIVILEGED.includes(user.role)
+      ? `\n${getRoleMeta(user.role, allRoles).label} 계정입니다. 이 계정으로는 더 이상 로그인할 수 없습니다.`
+      : "";
+    if (!window.confirm(`'${user.name || user.username}' 계정을 삭제할까요?${warn}`))
       return;
     try {
       await deleteUser(user.id);
@@ -161,11 +172,12 @@ export default function AdminContent() {
     grouped[u.role].users.push(u);
   });
 
-  const selectableRoles = allRoles.filter(
-    (r) =>
-      r.roleKey !== "ROLE_ADMIN" &&
-      r.roleKey !== "ROLE_DEV" &&
-      r.active !== false,
+  // 개발자는 관리자 · 개발자 역할도 고를 수 있음
+  const selectableRoles = allRoles
+    .filter((r) => (isDev || !PRIVILEGED.includes(r.roleKey)) && r.active !== false)
+    .sort((a, b) => roleOrder(a.roleKey) - roleOrder(b.roleKey));
+  const sections = Object.entries(grouped).sort(
+    ([a], [b]) => roleOrder(a) - roleOrder(b),
   );
 
   return (
@@ -215,7 +227,7 @@ export default function AdminContent() {
       </div>
 
       {/* 역할별 섹션 */}
-      {Object.entries(grouped).map(([roleKey, { meta, users: roleUsers }]) => (
+      {sections.map(([roleKey, { meta, users: roleUsers }]) => (
         <div
           key={roleKey}
           style={{
@@ -249,6 +261,11 @@ export default function AdminContent() {
             <span style={{ fontSize: "12px", color: "#aaa" }}>
               {roleUsers.length}명
             </span>
+            {PRIVILEGED.includes(roleKey) && (
+              <span style={{ fontSize: "11px", color: "#b45309", marginLeft: "auto" }}>
+                🔒 개발자만 보임
+              </span>
+            )}
           </div>
           <table
             style={{
@@ -277,6 +294,7 @@ export default function AdminContent() {
                     <span style={{ fontWeight: 500, color: "#1a1a2e" }}>
                       {u.name || "-"}
                     </span>
+                    {u.me && <span style={meBadgeStyle}>나</span>}
                   </td>
                   <td
                     style={{
@@ -299,12 +317,15 @@ export default function AdminContent() {
                       <button onClick={() => openEdit(u)} style={editBtnStyle}>
                         수정
                       </button>
-                      <button
-                        onClick={() => handleDelete(u)}
-                        className="delete-btn"
-                      >
-                        삭제
-                      </button>
+                      {/* 내 계정은 삭제 불가 */}
+                      {!u.me && (
+                        <button
+                          onClick={() => handleDelete(u)}
+                          className="delete-btn"
+                        >
+                          삭제
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -356,6 +377,12 @@ export default function AdminContent() {
                     </option>
                   ))}
                 </select>
+                {PRIVILEGED.includes(addForm.role) && (
+                  <p style={privilegedNoteStyle}>
+                    ⚠ {getRoleMeta(addForm.role, allRoles).label} 계정은 모든 정산 화면을 보고 고칠 수
+                    있어요. 믿을 수 있는 사람에게만 만들어주세요.
+                  </p>
+                )}
               </div>
               <div className="field">
                 <label>이름</label>
@@ -455,6 +482,7 @@ export default function AdminContent() {
                 <label>역할</label>
                 <select
                   value={editForm.role}
+                  disabled={editTarget.me}
                   onChange={(e) =>
                     setEditForm({ ...editForm, role: e.target.value })
                   }
@@ -513,6 +541,21 @@ const thStyle = {
   letterSpacing: "0.4px",
 };
 const tdStyle = { padding: "11px 16px" };
+const meBadgeStyle = {
+  marginLeft: "6px",
+  padding: "1px 6px",
+  borderRadius: "99px",
+  background: "#e8f0fe",
+  color: "#1557b0",
+  fontSize: "10px",
+  fontWeight: 700,
+};
+const privilegedNoteStyle = {
+  margin: "6px 0 0",
+  fontSize: "12px",
+  color: "#b45309",
+  lineHeight: 1.5,
+};
 const editBtnStyle = {
   padding: "5px 12px",
   background: "#f0f4ff",

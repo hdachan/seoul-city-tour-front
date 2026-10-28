@@ -594,6 +594,10 @@
   .al-username {
     display: none;
   }
+  /* 휴대폰: 비밀번호 버튼은 🔑 만 */
+  .al-pw-label {
+    display: none;
+  }
 
   /* 테이블 스크롤 */
   .gf-table-wrap {
