@@ -399,7 +399,7 @@ export default function AdminContent() {
                 <label>아이디 *</label>
                 <input
                   type="text"
-                  placeholder="영문+숫자 4~20자"
+                  placeholder="한글 · 영문 · 숫자 2~20자"
                   value={addForm.username}
                   onChange={(e) =>
                     setAddForm({ ...addForm, username: e.target.value })

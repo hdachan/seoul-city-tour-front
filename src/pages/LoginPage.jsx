@@ -46,7 +46,7 @@ function LoginPage() {
 
     // 프론트 입력값 검증
     if (!username || !password) { setError('아이디와 비밀번호를 입력해주세요.'); return; }
-    if (username.length < 4 || username.length > 20) { setError('아이디는 4~20자로 입력해주세요.'); return; }
+    if (username.length < 2 || username.length > 20) { setError('아이디는 2~20자로 입력해주세요.'); return; }
     if (password.length < 4) { setError('비밀번호는 4자 이상이어야 합니다.'); return; }
 
     const cleanUsername = sanitizeInput(username);
