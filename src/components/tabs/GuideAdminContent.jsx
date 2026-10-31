@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import GuideCategoryTab from "./GuidadminecategoryTab/GuideCategoryTab";
+import { isPrivateTour } from "../../utils/guideTour";
 import {
   fetchAdminLockStatus,
   toggleMonthLock,
@@ -113,6 +114,7 @@ export default function GuideAdminContent() {
     data: null,
   });
   const [incomeForm, setIncomeForm] = useState({});
+  const isPrivateIncome = isPrivateTour(incomeForm.tourName); // 금액 = 총액, 인원 한 칸
   const [expenseForm, setExpenseForm] = useState({});
   const [dailyFeeForm, setDailyFeeForm] = useState({});
 
@@ -1478,12 +1480,16 @@ export default function GuideAdminContent() {
                     <label>투어이름</label>
                     <select
                       value={incomeForm.tourName || ""}
-                      onChange={(e) =>
-                        setIncomeForm({
-                          ...incomeForm,
-                          tourName: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        // 프라이빗투어로 바꾸면 숨는 아이/유아 값은 비움
+                        setIncomeForm(
+                          isPrivateTour(name)
+                            ? { ...incomeForm, tourName: name, child: "", childAmount: "", infant: "" }
+                            : { ...incomeForm, tourName: name },
+                        );
+                        if (isPrivateTour(name)) setShowExtraPersons(false);
+                      }}
                     >
                       <option value="">선택하세요</option>
                       {tourNames.map((t) => (
@@ -1586,7 +1592,7 @@ export default function GuideAdminContent() {
                         </div>
                       </div>
                       <div className="field">
-                        <label>어른 (명)</label>
+                        <label>{isPrivateIncome ? "인원 (명)" : "어른 (명)"}</label>
                         <input
                           type="number"
                           placeholder="명"
@@ -1599,7 +1605,7 @@ export default function GuideAdminContent() {
                           }
                         />
                       </div>
-                      <div className="field">
+                      <div className="field" style={isPrivateIncome ? { display: "none" } : undefined}>
                         <label>아이 (명)</label>
                         <input
                           type="number"
@@ -1613,7 +1619,7 @@ export default function GuideAdminContent() {
                           }
                         />
                       </div>
-                      <div className="field">
+                      <div className="field" style={isPrivateIncome ? { display: "none" } : undefined}>
                         <label>유아 (명)</label>
                         <input
                           type="number"
@@ -1634,7 +1640,7 @@ export default function GuideAdminContent() {
                     <div>
                       <div
                         style={{
-                          display: "flex",
+                          display: isPrivateIncome ? "none" : "flex",
                           justifyContent: "flex-end",
                           marginBottom: "6px",
                         }}
@@ -1658,7 +1664,7 @@ export default function GuideAdminContent() {
                         </button>
                       </div>
                       <div className="field">
-                        <label>어른</label>
+                        <label>{isPrivateIncome ? "인원" : "어른"}</label>
                         <input
                           type="number"
                           placeholder="명"
@@ -1671,7 +1677,7 @@ export default function GuideAdminContent() {
                           }
                         />
                       </div>
-                      {showExtraPersons && (
+                      {showExtraPersons && !isPrivateIncome && (
                         <div style={{ marginTop: "8px" }}>
                           <div className="field">
                             <label>아이 인원</label>
@@ -1717,7 +1723,7 @@ export default function GuideAdminContent() {
                       <div>
                         <div
                           style={{
-                            display: "flex",
+                            display: isPrivateIncome ? "none" : "flex",
                             justifyContent: "flex-end",
                             marginBottom: "6px",
                           }}
@@ -1748,7 +1754,7 @@ export default function GuideAdminContent() {
                           }}
                         >
                           <div className="field">
-                            <label>금액 (1인)</label>
+                            <label>{isPrivateIncome ? "금액 (총액)" : "금액 (1인)"}</label>
                             <input
                               type="number"
                               value={incomeForm.amount || ""}
@@ -1761,7 +1767,7 @@ export default function GuideAdminContent() {
                             />
                           </div>
                           <div className="field">
-                            <label>어른</label>
+                            <label>{isPrivateIncome ? "인원" : "어른"}</label>
                             <input
                               type="number"
                               placeholder="명"
@@ -1775,7 +1781,7 @@ export default function GuideAdminContent() {
                             />
                           </div>
                         </div>
-                        {showExtraPersons && (
+                        {showExtraPersons && !isPrivateIncome && (
                           <div style={{ marginTop: "8px" }}>
                             <div
                               style={{
@@ -1862,9 +1868,9 @@ export default function GuideAdminContent() {
                         >
                           <div style={{ color: "#555", fontSize: "12px" }}>
                             <div>
-                              어른{" "}
-                              {Number(incomeForm.amount || 0).toLocaleString()}
-                              원 × {incomeForm.adult || 0}명
+                              {isPrivateIncome
+                                ? `프라이빗 ${incomeForm.adult || 0}명 (총액 그대로)`
+                                : `어른 ${Number(incomeForm.amount || 0).toLocaleString()}원 × ${incomeForm.adult || 0}명`}
                             </div>
                             {Number(incomeForm.child || 0) > 0 && (
                               <div>
@@ -1883,11 +1889,12 @@ export default function GuideAdminContent() {
                             style={{ color: "#059669", fontSize: "15px" }}
                           >
                             ={" "}
-                            {(
-                              Number(incomeForm.amount || 0) *
-                                Number(incomeForm.adult || 0) +
-                              Number(incomeForm.childAmount || 0) *
-                                Number(incomeForm.child || 0)
+                            {(isPrivateIncome
+                              ? Number(incomeForm.amount || 0)
+                              : Number(incomeForm.amount || 0) *
+                                  Number(incomeForm.adult || 0) +
+                                Number(incomeForm.childAmount || 0) *
+                                  Number(incomeForm.child || 0)
                             ).toLocaleString()}
                             원
                           </strong>

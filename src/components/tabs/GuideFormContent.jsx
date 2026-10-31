@@ -19,6 +19,7 @@ import {
 import "./GuideFormContent.css";
 import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
+import { isPrivateTour } from "../../utils/guideTour";
 
 const TAX_RATE = 0.033;
 const today = () => toDateStr(new Date());
@@ -387,9 +388,13 @@ export default function GuideFormContent() {
     }
   };
 
+  // 프라이빗투어: 적은 금액 = 총액 (인원을 곱하지 않음, 서버 계산과 같음)
+  const isPrivate = isPrivateTour(incomeForm.tourName);
   const previewIncomeTotal = () =>
-    Number(incomeForm.amount || 0) * Number(incomeForm.adult || 0) +
-    Number(incomeForm.childAmount || 0) * Number(incomeForm.child || 0);
+    isPrivate
+      ? Number(incomeForm.amount || 0)
+      : Number(incomeForm.amount || 0) * Number(incomeForm.adult || 0) +
+        Number(incomeForm.childAmount || 0) * Number(incomeForm.child || 0);
   const previewExpenseTotal = () =>
     Number(expenseForm.amount || 0) * Number(expenseForm.headcount || 0);
 
@@ -737,7 +742,9 @@ export default function GuideFormContent() {
                     >
                       <div style={{ fontSize: "12px", color: "#888" }}>
                         {Number(r.amount) > 0 && (
-                          <div>어른 {fmt(r.amount)}</div>
+                          <div>
+                            {isPrivateTour(r.tourName) ? "총액" : "어른"} {fmt(r.amount)}
+                          </div>
                         )}
                         {Number(r.childAmount) > 0 && (
                           <div>
@@ -746,7 +753,7 @@ export default function GuideFormContent() {
                         )}
                         {r.adult ? (
                           <div>
-                            어른 {r.adult}
+                            {isPrivateTour(r.tourName) ? "인원" : "어른"} {r.adult}
                             {r.child ? ` / 아이 ${r.child}` : ""}
                             {r.infant ? ` / 유아 ${r.infant}` : ""}명
                           </div>
@@ -868,7 +875,9 @@ export default function GuideFormContent() {
                         <td className="td-center">
                           {r.adult ? (
                             <div style={{ lineHeight: 1.6 }}>
-                              <div>어른 {r.adult}명</div>
+                              <div>
+                                {isPrivateTour(r.tourName) ? "인원" : "어른"} {r.adult}명
+                              </div>
                               {(r.child > 0 || r.infant > 0) && (
                                 <div
                                   style={{ fontSize: "11px", color: "#888" }}
@@ -1236,7 +1245,14 @@ export default function GuideFormContent() {
                 <select
                   value={incomeForm.tourName}
                   onChange={(e) => {
-                    setIncomeForm({ ...incomeForm, tourName: e.target.value });
+                    const name = e.target.value;
+                    // 프라이빗투어로 바꾸면 숨는 아이/유아 값은 비움 (안 보이는 값이 저장되지 않게)
+                    setIncomeForm(
+                      isPrivateTour(name)
+                        ? { ...incomeForm, tourName: name, child: "", childAmount: "", infant: "" }
+                        : { ...incomeForm, tourName: name },
+                    );
+                    if (isPrivateTour(name)) setShowExtraPersons(false);
                     const selected = tourNames.find(
                       (t) => t.name === e.target.value,
                     );
@@ -1358,7 +1374,7 @@ export default function GuideFormContent() {
                     </div>
                   </div>
                   <div className="field">
-                    <label>어른 (명)</label>
+                    <label>{isPrivate ? "인원 (명)" : "어른 (명)"}</label>
                     <input
                       type="number"
                       placeholder="명"
@@ -1368,6 +1384,8 @@ export default function GuideFormContent() {
                       }
                     />
                   </div>
+                  {!isPrivate && (
+                  <>
                   <div className="field">
                     <label>아이 (명)</label>
                     <input
@@ -1390,6 +1408,8 @@ export default function GuideFormContent() {
                       }
                     />
                   </div>
+                  </>
+                  )}
                 </div>
               )}
               {/* 완불 - 어른 기본 + 아이/유아 토글 */}
@@ -1397,7 +1417,7 @@ export default function GuideFormContent() {
                 <div>
                   <div
                     style={{
-                      display: "flex",
+                      display: isPrivate ? "none" : "flex",
                       justifyContent: "flex-end",
                       marginBottom: "6px",
                     }}
@@ -1421,7 +1441,7 @@ export default function GuideFormContent() {
                     </button>
                   </div>
                   <div className="field">
-                    <label>어른</label>
+                    <label>{isPrivate ? "인원" : "어른"}</label>
                     <input
                       type="number"
                       placeholder="명"
@@ -1431,7 +1451,7 @@ export default function GuideFormContent() {
                       }
                     />
                   </div>
-                  {showExtraPersons && (
+                  {showExtraPersons && !isPrivate && (
                     <div
                       style={{
                         display: "flex",
@@ -1489,7 +1509,7 @@ export default function GuideFormContent() {
                   <>
                     <div
                       style={{
-                        display: "flex",
+                        display: isPrivate ? "none" : "flex",
                         justifyContent: "flex-end",
                         marginBottom: "6px",
                       }}
@@ -1520,7 +1540,7 @@ export default function GuideFormContent() {
                       }}
                     >
                       <div className="field">
-                        <label>금액 (1인)</label>
+                        <label>{isPrivate ? "금액 (총액)" : "금액 (1인)"}</label>
                         <input
                           type="number"
                           placeholder="금액"
@@ -1534,7 +1554,7 @@ export default function GuideFormContent() {
                         />
                       </div>
                       <div className="field">
-                        <label>어른</label>
+                        <label>{isPrivate ? "인원" : "어른"}</label>
                         <input
                           type="number"
                           placeholder="명"
@@ -1548,7 +1568,7 @@ export default function GuideFormContent() {
                         />
                       </div>
                     </div>
-                    {showExtraPersons && (
+                    {showExtraPersons && !isPrivate && (
                       <div
                         style={{
                           display: "flex",
@@ -1639,16 +1659,22 @@ export default function GuideFormContent() {
                             }}
                           >
                             <span style={{ color: "#555" }}>
-                              어른{" "}
-                              {Number(incomeForm.amount || 0).toLocaleString()}
-                              원×
-                              {incomeForm.adult || 0}명
-                              {Number(incomeForm.child || 0) > 0
-                                ? ` + 아이 ${Number(incomeForm.childAmount || 0).toLocaleString()}원×${incomeForm.child}명`
-                                : ""}
-                              {Number(incomeForm.infant || 0) > 0
-                                ? ` + 유아 ${incomeForm.infant}명(무료)`
-                                : ""}
+                              {isPrivate ? (
+                                `프라이빗 ${incomeForm.adult || 0}명 (총액 그대로)`
+                              ) : (
+                                <>
+                                  어른{" "}
+                                  {Number(incomeForm.amount || 0).toLocaleString()}
+                                  원×
+                                  {incomeForm.adult || 0}명
+                                  {Number(incomeForm.child || 0) > 0
+                                    ? ` + 아이 ${Number(incomeForm.childAmount || 0).toLocaleString()}원×${incomeForm.child}명`
+                                    : ""}
+                                  {Number(incomeForm.infant || 0) > 0
+                                    ? ` + 유아 ${incomeForm.infant}명(무료)`
+                                    : ""}
+                                </>
+                              )}
                             </span>
                             <strong
                               style={{ color: "#059669", fontSize: "15px" }}
