@@ -7,6 +7,7 @@ import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
+import { openDraft, clearDraft } from "../../../utils/drivingDraft";
 import StartMeterModal from "./StartMeterModal";
 import CardModal from "./CardModal";
 import {
@@ -78,6 +79,7 @@ export default function SalesContent() {
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
 
+  const [drivingDraft, setDrivingDraft] = useState(null);
   const [drivingForm, setDrivingForm] = useState({
     date: TODAY,
     type: "업무",
@@ -298,7 +300,7 @@ export default function SalesContent() {
   };
 
   // 운행일지 모달
-  const openAdd = async () => {
+  const openAdd = async (type = "업무") => {
     if (!canEditDay) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -315,22 +317,26 @@ export default function SalesContent() {
     setLastMeter(
       todayMeters.length > 0 ? Math.max(...todayMeters) : prev.data.prevMeter,
     );
+    const draft = openDraft(username, type, selectedDate);
+    setDrivingDraft(draft);
     setDrivingForm({
       startDate: selectedDate,
       endDate: "",
-      type: "업무",
+      type,
       destination: "",
-      departureTime: getKoreaTime(),
-      arrivalTime: getKoreaTime(),
+      departureTime: "",
+      arrivalTime: "",
       meterReading: "",
       fuelAmount: "",
       fuelCost: "",
       fuelUnitPrice: "",
+      ...draft.form,
     });
     setShowModal(true);
   };
   const openEdit = (row) => {
     setError("");
+    setDrivingDraft(null);
     setEditTarget(row);
     setOpenMenu(null);
     const notes =
@@ -391,6 +397,7 @@ export default function SalesContent() {
         await api.saveDrivingNotes(savedId, notes);
       }
 
+      if (drivingDraft) clearDraft(drivingDraft);
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
       setShowModal(false);
       loadMonth();
@@ -711,9 +718,14 @@ export default function SalesContent() {
               </>
             )}
             {canEditDay && (
-              <button className="sl-btn-primary" onClick={openAdd}>
-                ＋ 추가
-              </button>
+              <>
+                <button className="sl-btn-primary" onClick={() => openAdd("업무")}>
+                  ＋ 운행 추가
+                </button>
+                <button className="sl-btn-primary" onClick={() => openAdd("주유")}>
+                  ⛽ 주유 추가
+                </button>
+              </>
             )}
             {!canEditDay && !isLocked && (
               <span className="sl-readonly-note">
@@ -1105,6 +1117,7 @@ export default function SalesContent() {
       {showModal && (
         <DrivingModal
           form={drivingForm}
+          draft={drivingDraft}
           setForm={setDrivingForm}
           isEdit={!!editTarget}
           error={error}

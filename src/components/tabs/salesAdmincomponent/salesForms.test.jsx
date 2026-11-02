@@ -84,6 +84,7 @@ class FixedDate extends RealDate {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   global.Date = FixedDate;
   jest.clearAllMocks();
   setupApi(salesApi);
@@ -137,18 +138,28 @@ describe("영업 정산 (SalesContent)", () => {
 
   test("운행일지 추가 – 입력창 화면 (구분별)", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("업무");
-    for (const t of ["주유", "개인주유", "개인사용", "업무"]) {
+    // 운행 창에는 주유가 없음
+    expect(typeButton("주유")).toBeUndefined();
+    for (const t of ["개인사용", "업무"]) {
       fireEvent.click(typeButton(t));
       expect(modalState()).toMatchSnapshot(t);
     }
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    fireEvent.click(screen.getByText("⛽ 주유 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(modalState()).toMatchSnapshot("주유");
+    // 주유 창에는 운행 구분이 없음
+    expect(typeButton("업무")).toBeUndefined();
+    fireEvent.click(typeButton("개인주유"));
+    expect(modalState()).toMatchSnapshot("개인주유");
   });
 
   test("운행일지 추가 – 저장 시 서버로 가는 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
     await submit();
@@ -159,15 +170,14 @@ describe("영업 정산 (SalesContent)", () => {
 
   test("운행일지 개인사용 / 주유 – 저장 시 서버로 가는 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     fireEvent.click(typeButton("개인사용"));
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1050");
     expect(modalState()).toMatchSnapshot("개인사용 미터기 입력 후");
     await submit();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("⛽ 주유 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    fireEvent.click(typeButton("주유"));
     modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
     expect(modalState()).toMatchSnapshot("주유 입력 후");
     await submit();
@@ -184,30 +194,118 @@ describe("영업 정산 (SalesContent)", () => {
     expect(salesApi.saveDrivingNotes.mock.calls).toMatchSnapshot("saveDrivingNotes");
   });
 
-  test("업무에서 비고를 적고 주유로 바꾸면 비고는 저장 안 됨", async () => {
+  test("업무에서 비고를 적고 개인사용으로 바꾸면 비고는 저장 안 됨", async () => {
     await open();
-    // 추가: 비고 적고 → 주유로 바꿈
-    fireEvent.click(screen.getByText("＋ 추가"));
+    // 추가: 비고 적고 → 개인사용으로 바꿈
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(modal().querySelector("input.sl-note-text"), "자택");
-    fireEvent.click(typeButton("주유"));
-    modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
+    fireEvent.click(typeButton("개인사용"));
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1050");
     await submit();
     expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
     expect(salesApi.addDriving.mock.calls[0][0].notes).toEqual([{ content: "", time: "" }]);
     expect(salesApi.saveDrivingNotes).not.toHaveBeenCalled();
-    // 수정: 업무 기록을 주유로 바꾸면 예전 비고를 지움
+    // 수정: 업무 기록을 개인사용으로 바꾸면 예전 비고를 지움
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
-    fireEvent.click(typeButton("주유"));
-    modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
+    fireEvent.click(typeButton("개인사용"));
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1050");
     await submit();
     expect(salesApi.saveDrivingNotes).toHaveBeenCalledWith(expect.anything(), []);
   });
 
+  test("입력 임시 보관 – ✕ 로 닫으면 남고, 취소 · 저장하면 지움, 운행 · 주유 따로", async () => {
+    await open();
+    const openModal = async (name) => {
+      fireEvent.click(screen.getByText(name));
+      await waitFor(() => expect(modal()).not.toBeNull());
+    };
+    const meterInput = () => modal().querySelector("input[placeholder='계량기 숫자']");
+    await openModal("＋ 운행 추가");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    setValue(meterInput(), "1100");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 주유 창에는 안 섞임
+    await openModal("⛽ 주유 추가");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 다시 열면 불러옴
+    await openModal("＋ 운행 추가");
+    expect(modal().textContent).toContain("불러왔어요");
+    expect(meterInput().value).toBe("1100");
+    // 취소 버튼이면 지움
+    fireEvent.click([...modal().querySelectorAll("button")].find((b) => b.textContent.trim() === "취소"));
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+    // 저장하면 지움
+    setValue(meterInput(), "1100");
+    await submit();
+    expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 수정 창은 보관 안 함
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    setValue(meterInput(), "1234");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+  });
+
+  test("도착 시간이 출발 시간보다 빠르면 저장 안 됨", async () => {
+    await open();
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const times = () => modal().querySelectorAll("input[type=time]");
+    setValue(times()[0], "11:00");
+    setValue(times()[1], "10:00");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    await submit();
+    expect(salesApi.addDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("도착 시간은 출발 시간(11:00)보다 빠를 수 없어요.");
+    // 비고 시간도 잠김
+    expect(modal().querySelector("input.sl-note-time").disabled).toBe(true);
+    // 고치면 저장됨 (같은 시각도 됨)
+    setValue(times()[1], "11:00");
+    await submit();
+    expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
+  });
+
+  test("비고 시간 – 출발 · 도착을 먼저 적어야 하고, 그 사이만 저장됨", async () => {
+    await open();
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const times = () => modal().querySelectorAll("input[type=time]");
+    const noteTime = () => modal().querySelector("input.sl-note-time");
+    // 처음엔 출발 · 도착이 비어 있고 비고 시간은 잠김
+    expect(times()[0].value).toBe("");
+    expect(times()[1].value).toBe("");
+    expect(noteTime().disabled).toBe(true);
+    setValue(times()[0], "09:00");
+    expect(noteTime().disabled).toBe(true);
+    setValue(times()[1], "12:00");
+    expect(noteTime().disabled).toBe(false);
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    // 범위 밖이면 저장 안 됨
+    setValue(noteTime(), "08:50");
+    await submit();
+    expect(salesApi.addDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("출발(09:00)~도착(12:00) 사이");
+    setValue(noteTime(), "12:10");
+    await submit();
+    expect(salesApi.addDriving).not.toHaveBeenCalled();
+    // 경계값은 저장됨
+    setValue(noteTime(), "12:00");
+    await submit();
+    expect(salesApi.addDriving).toHaveBeenCalledTimes(1);
+  });
+
   test("미터기 범위 검사 – 낮으면 저장 안 됨", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "950");
     await submit();
@@ -266,7 +364,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
   test("관리자가 다시 연 지난 주 → 입력 가능 (날짜는 그 주 안에서)", async () => {
     reopenWeek3();
     await openAt("2026-10-15");
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const dateInput = modal().querySelector("input[type=date]");
     expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-12", "2026-10-18", "2026-10-15"]);
@@ -284,7 +382,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
 
   test("이번 주 → 지금처럼 입력 가능 (19~25일)", async () => {
     await openAt();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const dateInput = modal().querySelector("input[type=date]");
     expect([dateInput.min, dateInput.max]).toEqual(["2026-10-19", "2026-10-25"]);
@@ -334,18 +432,28 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
 
   test("운행일지 추가 – 입력창 화면 (구분별)", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("업무");
-    for (const t of ["주유", "개인주유", "개인사용", "업무"]) {
+    // 운행 창에는 주유가 없음
+    expect(typeButton("주유")).toBeUndefined();
+    for (const t of ["개인사용", "업무"]) {
       fireEvent.click(typeButton(t));
       expect(modalState()).toMatchSnapshot(t);
     }
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    fireEvent.click(screen.getByText("⛽ 주유 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(modalState()).toMatchSnapshot("주유");
+    // 주유 창에는 운행 구분이 없음
+    expect(typeButton("업무")).toBeUndefined();
+    fireEvent.click(typeButton("개인주유"));
+    expect(modalState()).toMatchSnapshot("개인주유");
   });
 
   test("운행일지 추가 – 저장 시 서버로 가는 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
     await submit();
@@ -356,15 +464,14 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
 
   test("운행일지 개인사용 / 주유 – 저장 시 서버로 가는 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     fireEvent.click(typeButton("개인사용"));
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1050");
     expect(modalState()).toMatchSnapshot("개인사용 미터기 입력 후");
     await submit();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("⛽ 주유 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    fireEvent.click(typeButton("주유"));
     modal().querySelectorAll("input[type=number]").forEach((el, i) => setValue(el, String(10 + i)));
     expect(modalState()).toMatchSnapshot("주유 입력 후");
     await submit();
@@ -381,9 +488,97 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
     expect(salesAdminApi.saveDrivingNotes.mock.calls).toMatchSnapshot("saveDrivingNotes");
   });
 
+  test("입력 임시 보관 – ✕ 로 닫으면 남고, 취소 · 저장하면 지움, 운행 · 주유 따로", async () => {
+    await open();
+    const openModal = async (name) => {
+      fireEvent.click(screen.getByText(name));
+      await waitFor(() => expect(modal()).not.toBeNull());
+    };
+    const meterInput = () => modal().querySelector("input[placeholder='계량기 숫자']");
+    await openModal("＋ 운행 추가");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    setValue(meterInput(), "1100");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 주유 창에는 안 섞임
+    await openModal("⛽ 주유 추가");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 다시 열면 불러옴
+    await openModal("＋ 운행 추가");
+    expect(modal().textContent).toContain("불러왔어요");
+    expect(meterInput().value).toBe("1100");
+    // 취소 버튼이면 지움
+    fireEvent.click([...modal().querySelectorAll("button")].find((b) => b.textContent.trim() === "취소"));
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+    // 저장하면 지움
+    setValue(meterInput(), "1100");
+    await submit();
+    expect(salesAdminApi.addDriving).toHaveBeenCalledTimes(1);
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+    expect(modal().textContent).not.toContain("불러왔어요");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    // 수정 창은 보관 안 함
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    setValue(meterInput(), "1234");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    await openModal("＋ 운행 추가");
+    expect(meterInput().value).toBe("");
+  });
+
+  test("도착 시간이 출발 시간보다 빠르면 저장 안 됨", async () => {
+    await open();
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const times = () => modal().querySelectorAll("input[type=time]");
+    setValue(times()[0], "11:00");
+    setValue(times()[1], "10:00");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    await submit();
+    expect(salesAdminApi.addDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("도착 시간은 출발 시간(11:00)보다 빠를 수 없어요.");
+    // 비고 시간도 잠김
+    expect(modal().querySelector("input.sl-note-time").disabled).toBe(true);
+    // 고치면 저장됨 (같은 시각도 됨)
+    setValue(times()[1], "11:00");
+    await submit();
+    expect(salesAdminApi.addDriving).toHaveBeenCalledTimes(1);
+  });
+
+  test("비고 시간 – 출발 · 도착을 먼저 적어야 하고, 그 사이만 저장됨", async () => {
+    await open();
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const times = () => modal().querySelectorAll("input[type=time]");
+    const noteTime = () => modal().querySelector("input.sl-note-time");
+    // 처음엔 출발 · 도착이 비어 있고 비고 시간은 잠김
+    expect(times()[0].value).toBe("");
+    expect(times()[1].value).toBe("");
+    expect(noteTime().disabled).toBe(true);
+    setValue(times()[0], "09:00");
+    expect(noteTime().disabled).toBe(true);
+    setValue(times()[1], "12:00");
+    expect(noteTime().disabled).toBe(false);
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "1100");
+    // 범위 밖이면 저장 안 됨
+    setValue(noteTime(), "08:50");
+    await submit();
+    expect(salesAdminApi.addDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("출발(09:00)~도착(12:00) 사이");
+    setValue(noteTime(), "12:10");
+    await submit();
+    expect(salesAdminApi.addDriving).not.toHaveBeenCalled();
+    // 경계값은 저장됨
+    setValue(noteTime(), "12:00");
+    await submit();
+    expect(salesAdminApi.addDriving).toHaveBeenCalledTimes(1);
+  });
+
   test("미터기 범위 검사 – 낮으면 저장 안 됨", async () => {
     await open();
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "950");
     await submit();
@@ -424,7 +619,7 @@ describe("영업 정산관리 – 도착지 오전 / 오후", () => {
     render(<SalesAdminContent />);
     fireEvent.click(await screen.findByText("김영업"));
     await screen.findByText("명동", undefined, { timeout: 3000 });
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(optionTexts()).toEqual(["선택", "오전", "오후", "기타 (직접 입력)"]);
     expect(destSelect().value).toBe("");
@@ -439,7 +634,7 @@ describe("영업 정산관리 – 도착지 오전 / 오후", () => {
     render(<SalesAdminContent />);
     fireEvent.click(await screen.findByText("김영업"));
     await screen.findByText("명동", undefined, { timeout: 3000 });
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(destSelect(), "기타");
     expect(customInput()).not.toBeNull();
@@ -448,7 +643,7 @@ describe("영업 정산관리 – 도착지 오전 / 오후", () => {
     await submit();
     expect(salesAdminApi.addDriving.mock.calls[0][0].destination).toBe("인천공항");
     // 다시 오전으로 바꾸면 입력칸 사라짐
-    fireEvent.click(screen.getByText("＋ 추가"));
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
     setValue(destSelect(), "기타");
     setValue(destSelect(), "오전");

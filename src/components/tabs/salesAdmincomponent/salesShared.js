@@ -19,7 +19,9 @@ export const getKoreaTime = () =>
     hour12: false,
   }).format(new Date());
 
-export const TYPES = ["업무", "주유", "개인주유", "개인사용"];
+// 운행 추가 / 주유 추가 창에서 고르는 구분 (DB 값은 그대로)
+export const DRIVE_TYPES = ["업무", "개인사용"];
+export const FUEL_TYPES = ["주유", "개인주유"];
 // 카드번호: 숫자만 남기고 4자리마다 - (최대 16자리) → "1234-5678-9012-3456"
 export const formatCard = (v) =>
   String(v || "")

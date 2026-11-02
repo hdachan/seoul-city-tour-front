@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DrivingTimeFields from "./DrivingTimeFields";
-import { fmt, TYPES, TYPE_STYLE, HALF_DAYS, getKoreaTime } from "./salesShared";
+import { fmt, DRIVE_TYPES, FUEL_TYPES, TYPE_STYLE, HALF_DAYS } from "./salesShared";
+import { saveDraft, clearDraft } from "../../../utils/drivingDraft";
 import "./sales.css";
 
 const TYPE_ICON = { 업무: "💼 ", 주유: "⛽ ", 개인주유: "⛽ ", 개인사용: "🚗 " };
+
+// 출발 · 도착 시간을 다 적었고 순서가 맞아야 비고 시간을 적을 수 있음
+const timesReady = (form) =>
+  !!form.departureTime && !!form.arrivalTime && form.departureTime <= form.arrivalTime;
+
+// 출발 · 도착 · 비고 시간 검사 (업무만) - 문제 없으면 ""
+const timeError = (form) => {
+  if (form.type !== "업무") return "";
+  if (form.departureTime && form.arrivalTime && form.departureTime > form.arrivalTime)
+    return `도착 시간은 출발 시간(${form.departureTime})보다 빠를 수 없어요.`;
+  const times = (form.notes || []).map((n) => n.time).filter(Boolean);
+  if (times.length === 0) return "";
+  if (!timesReady(form)) return "비고 시간을 적으려면 출발 · 도착 시간을 먼저 입력해주세요.";
+  if (times.some((t) => t < form.departureTime || t > form.arrivalTime))
+    return `비고 시간은 출발(${form.departureTime})~도착(${form.arrivalTime}) 사이로 입력해주세요.`;
+  return "";
+};
 
 // 📋 운행일지 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm   : 입력값 (화면마다 자기 상태를 넘김)
 //   dateMin/dateMax  : 고를 수 있는 날짜 범위 (없으면 제한 없음)
 //   meter            : 미터기 검사 값 { lowerMeter, nextMeter, distPreview, tooLow, tooHigh }
+//   draft            : 입력 중인 값 임시 보관 정보 (새로 추가할 때만, 수정이면 없음)
 export default function DrivingModal({
   form,
   setForm,
@@ -19,9 +38,29 @@ export default function DrivingModal({
   dateMin,
   dateMax,
   meter,
+  draft,
 }) {
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+
+  // 주유 · 개인주유는 주유 창, 업무 · 개인사용은 운행 창 (예전 기록을 고칠 때도 같음)
+  const isFuel = FUEL_TYPES.includes(form.type);
+  const types = isFuel ? FUEL_TYPES : DRIVE_TYPES;
+
+  // 입력할 때마다 임시 보관 (✕ 로 닫아도 남고, 취소 버튼은 지움)
+  useEffect(() => {
+    if (draft) saveDraft(draft, form);
+  }, [draft, form]);
+  const handleCancel = () => {
+    if (draft) clearDraft(draft);
+    onClose();
+  };
+
+  const inputError = timeError(form);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!inputError) onSubmit(e);
+  };
 
   const notes = form.notes || [];
   const setNote = (i, key, value) => {
@@ -34,12 +73,17 @@ export default function DrivingModal({
     <div className="sl-modal-bg">
       <div className="sl-modal sl-modal-driving">
         <div className="sl-modal-header">
-          <h3 className="sl-modal-title">운행일지 {isEdit ? "수정" : "추가"}</h3>
+          <h3 className="sl-modal-title">
+            {isFuel ? "주유" : "운행일지"} {isEdit ? "수정" : "추가"}
+          </h3>
           <button className="sl-modal-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <form onSubmit={onSubmit} className="sl-modal-form">
+        <form onSubmit={handleSubmit} className="sl-modal-form">
+          {draft?.restored && (
+            <p className="sl-hint is-info">전에 입력하던 내용을 불러왔어요.</p>
+          )}
           {/* 날짜 - 모든 구분 하루 단위 */}
           <div className="sl-field">
             <label>날짜 *</label>
@@ -81,12 +125,18 @@ export default function DrivingModal({
                     ＋ 추가
                   </button>
                 </label>
+                {!(form.departureTime && form.arrivalTime) && (
+                  <p className="sl-hint is-info">
+                    출발 · 도착 시간을 먼저 입력하면 비고 시간을 적을 수 있어요.
+                  </p>
+                )}
                 {(form.notes || [{ content: "", time: "" }]).map((note, i) => (
                   <div key={i} className="sl-note-row">
                     <input
                       type="time"
                       className="sl-note-time"
                       value={note.time || ""}
+                      disabled={!timesReady(form)}
                       onChange={(e) => setNote(i, "time", e.target.value)}
                     />
                     <input
@@ -141,7 +191,7 @@ export default function DrivingModal({
           <div className="sl-field">
             <label>구분 *</label>
             <div className="sl-type-row">
-              {TYPES.map((t) => (
+              {types.map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -152,9 +202,8 @@ export default function DrivingModal({
                       ...f,
                       type: t,
                       destination: "",
-                      // 업무로 바꾸면 출발/도착 시간을 지금 시각으로 다시 채움
-                      departureTime: t === "업무" ? getKoreaTime() : "",
-                      arrivalTime: t === "업무" ? getKoreaTime() : "",
+                      departureTime: "",
+                      arrivalTime: "",
                       fuelAmount: "",
                       fuelCost: "",
                       fuelUnitPrice: "",
@@ -172,9 +221,9 @@ export default function DrivingModal({
             </div>
           </div>
 
-          {error && <p className="sl-field-error">⚠ {error}</p>}
+          {(inputError || error) && <p className="sl-field-error">⚠ {inputError || error}</p>}
           <div className="sl-modal-btns">
-            <button type="button" className="sl-btn-outline" onClick={onClose}>
+            <button type="button" className="sl-btn-outline" onClick={handleCancel}>
               취소
             </button>
             <button type="submit" className="sl-btn-primary">

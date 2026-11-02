@@ -341,6 +341,10 @@
   width: 130px;
   flex-shrink: 0;
 }
+.sl-field .sl-note-time:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
 .sl-note-text {
   flex: 1;
 }

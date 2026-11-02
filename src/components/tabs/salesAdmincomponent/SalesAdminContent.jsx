@@ -9,6 +9,7 @@ import "./sales.css";
 import SalesDrivingStats from "./SalesDrivingStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
+import { openDraft, clearDraft } from "../../../utils/drivingDraft";
 import StartMeterModal from "./StartMeterModal";
 import CardModal from "./CardModal";
 import {
@@ -24,7 +25,6 @@ import {
   TYPE_STYLE,
   getWeeksOfMonth,
   calcDistances,
-  getKoreaTime,
 } from "./salesShared";
 
 export default function SalesAdminContent() {
@@ -71,6 +71,7 @@ export default function SalesAdminContent() {
   const [showDrivingModal, setShowDrivingModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [drivingDraft, setDrivingDraft] = useState(null);
   const [drivingForm, setDrivingForm] = useState({});
   const [receiptForm, setReceiptForm] = useState({});
 
@@ -240,7 +241,7 @@ export default function SalesAdminContent() {
   };
 
   // 운행일지 모달
-  const openDrivingAdd = async () => {
+  const openDrivingAdd = async (type = "업무") => {
     setError("");
     setEditTarget(null);
     // 오늘 마지막 미터기 갱신
@@ -253,25 +254,28 @@ export default function SalesAdminContent() {
         todayMeters.length > 0 ? Math.max(...todayMeters) : prevMeter,
       );
     } catch {}
-    const koreaTime = getKoreaTime();
+    const draft = openDraft(selectedUser.username, type, selectedDate);
+    setDrivingDraft(draft);
     setDrivingForm({
       startDate: selectedDate,
       endDate: "",
-      type: "업무",
+      type,
       destination: "",
-      departureTime: koreaTime,
-      arrivalTime: koreaTime,
+      departureTime: "",
+      arrivalTime: "",
       meterReading: "",
       purpose: "",
       notes: [{ content: "", time: "" }],
       fuelAmount: "",
       fuelCost: "",
       fuelUnitPrice: "",
+      ...draft.form,
     });
     setShowDrivingModal(true);
   };
   const openDrivingEdit = (row) => {
     setError("");
+    setDrivingDraft(null);
     setEditTarget(row);
     setOpenMenu(null);
     setDrivingForm({
@@ -331,6 +335,7 @@ export default function SalesAdminContent() {
         await api.saveDrivingNotes(savedId, notes);
       }
 
+      if (drivingDraft) clearDraft(drivingDraft);
       setSuccess(editTarget ? "수정되었습니다." : "추가되었습니다.");
       setShowDrivingModal(false);
       loadDetail();
@@ -638,9 +643,14 @@ export default function SalesAdminContent() {
                 </>
               )}
               {!isLocked && activeTab === "driving" && (
-                <button className="sl-btn-primary" onClick={openDrivingAdd}>
-                  ＋ 추가
-                </button>
+                <>
+                  <button className="sl-btn-primary" onClick={() => openDrivingAdd("업무")}>
+                    ＋ 운행 추가
+                  </button>
+                  <button className="sl-btn-primary" onClick={() => openDrivingAdd("주유")}>
+                    ⛽ 주유 추가
+                  </button>
+                </>
               )}
               {!isLocked && activeTab === "receipt" && (
                 <button className="sl-btn-primary" onClick={openReceiptAdd}>
@@ -720,6 +730,7 @@ export default function SalesAdminContent() {
           {showDrivingModal && (
             <DrivingModal
               form={drivingForm}
+              draft={drivingDraft}
               setForm={setDrivingForm}
               isEdit={!!editTarget}
               error={error}

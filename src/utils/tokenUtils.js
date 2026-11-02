@@ -3,6 +3,7 @@
  * 프론트에서 sessionStorage의 role만 믿지 않고
  * 토큰 자체에서 role을 직접 추출해서 사용
  */
+import { clearAllDrafts } from "./drivingDraft";
 
 // JWT payload 디코딩 (서명 검증은 백엔드에서)
 export function parseToken(token) {
@@ -76,6 +77,7 @@ export function restoreRememberedLogin() {
 export function clearSession() {
   sessionStorage.clear();
   safeLocal((ls) => REMEMBER_KEYS.forEach((k) => ls.removeItem(k)));
+  clearAllDrafts();
   window.location.href = "/";
 }
 
