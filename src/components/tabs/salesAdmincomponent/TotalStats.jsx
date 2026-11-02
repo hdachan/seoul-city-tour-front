@@ -41,6 +41,8 @@ export default function TotalStats({
   const personalFuelL = sumOf("personalFuelL");
   const companyFuelC = sumOf("companyFuelC");
   const personalFuelC = sumOf("personalFuelC");
+  const receiptTotal = sumOf("receiptTotal");
+  const receiptCount = sumOf("receiptCount");
 
   // 총합 아래 작은 글씨 (법인·업무 / 개인)
   const Split = ({ a, b, aLabel, bLabel, align = "right" }) => (
@@ -256,7 +258,7 @@ export default function TotalStats({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
           gap: "12px",
         }}
       >
@@ -296,6 +298,14 @@ export default function TotalStats({
             ],
             color: "#7c3aed",
             bg: "#faf5ff",
+            icon: "💰",
+          },
+          {
+            label: "법인카드 지출",
+            value: fmtWon(receiptTotal),
+            sub: [`${fmt(receiptCount)}건`],
+            color: "#0f766e",
+            bg: "#f0fdfa",
             icon: "💳",
           },
         ].map((s) => (
@@ -410,6 +420,11 @@ export default function TotalStats({
                         {fmtWon(u.totalFuelC)}
                       </div>
                     )}
+                    {u.receiptTotal > 0 && (
+                      <div style={{ fontSize: "11px", color: "#0f766e" }}>
+                        💳 {fmtWon(u.receiptTotal)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* 잔디 달력 */}
@@ -505,7 +520,7 @@ export default function TotalStats({
             background: "#fff",
             borderRadius: "12px",
             border: "1px solid #e8eaed",
-            overflow: "hidden",
+            overflowX: "auto",
           }}
         >
           <table
@@ -528,6 +543,7 @@ export default function TotalStats({
                   "총 주유량",
                   "평균 연비",
                   "총 주유금액",
+                  "법인카드 지출",
                 ].map((h, i) => (
                   <th
                     key={h}
@@ -548,7 +564,7 @@ export default function TotalStats({
               {summary.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     style={{
                       textAlign: "center",
                       padding: "2.5rem",
@@ -644,6 +660,20 @@ export default function TotalStats({
                           />
                         )}
                       </td>
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          textAlign: "right",
+                          color: "#0f766e",
+                        }}
+                      >
+                        {u.receiptTotal > 0 ? fmtWon(u.receiptTotal) : "-"}
+                        {u.receiptCount > 0 && (
+                          <div style={{ fontSize: "10.5px", fontWeight: 400, color: "#888" }}>
+                            {fmt(u.receiptCount)}건
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -722,6 +752,19 @@ export default function TotalStats({
                     bLabel="개인"
                     b={fmtWon(personalFuelC)}
                   />
+                </td>
+                <td
+                  style={{
+                    padding: "10px 14px",
+                    textAlign: "right",
+                    fontWeight: 700,
+                    color: "#0f766e",
+                  }}
+                >
+                  {fmtWon(receiptTotal)}
+                  <div style={{ fontSize: "10.5px", fontWeight: 400, color: "#888" }}>
+                    {fmt(receiptCount)}건
+                  </div>
                 </td>
               </tr>
             </tfoot>

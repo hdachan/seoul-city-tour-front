@@ -742,11 +742,6 @@
   white-space: nowrap;
 }
 /* 카드번호: 제목 위 · 번호 아래 (좁은 카드에서도 번호가 안 잘림) */
-.sl-start-line.is-stack {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
 .sl-start-card-no {
   font-size: 12px;
   letter-spacing: 0.2px;

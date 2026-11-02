@@ -776,13 +776,17 @@ describe("카드번호", () => {
     salesAdminApi.getSummary.mockImplementation(() =>
       ok([
         { username: "kim", name: "김영업", hasData: true, receiptCount: 1, cardNumber: "" },
-        { username: "lee", name: "이영업", hasData: false, receiptCount: 0, cardNumber: "1234-5678" },
+        { username: "lee", name: "이영업", hasData: false, receiptCount: 2, receiptTotal: 150000, cardNumber: "1234-5678" },
       ]),
     );
     salesAdminApi.saveCard.mockImplementation(() => ok({}));
     render(<SalesAdminContent />);
     expect(await screen.findByText("미등록 ✏️")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("1234-5678"));
+    expect(screen.getByText("2건 · 150,000원")).toBeInTheDocument();
+    // 평소엔 접혀서 끝 4자리만, 누르면 전체 번호
+    expect(screen.queryByText(/1234-5678/)).toBeNull();
+    fireEvent.click(screen.getByText("···· 5678 ▾"));
+    fireEvent.click(screen.getByText("1234-5678 ✏️"));
     expect(screen.getByText("카드번호 수정 · 이영업")).toBeInTheDocument();
     setValue(modal().querySelector("input"), "9999888877776666");
     await submit();
