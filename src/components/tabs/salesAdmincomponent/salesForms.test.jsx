@@ -807,6 +807,7 @@ describe("지출내역 – 기타 · 비고", () => {
     await waitFor(() => expect(modal()).not.toBeNull());
     const select = modal().querySelector("select");
     expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);
+    expect(modal().textContent).toContain("주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.");
     const noteLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("비고"));
     // 비고 칸은 기타일 때만
     expect(noteLabel()).toBeUndefined();

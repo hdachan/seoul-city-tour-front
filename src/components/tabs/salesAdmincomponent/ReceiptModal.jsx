@@ -66,6 +66,9 @@ export default function ReceiptModal({
                 </option>
               ))}
             </select>
+            <p className="sl-hint is-info">
+              주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.
+            </p>
           </div>
           <div className="sl-field">
             <label>신용카드 번호</label>
