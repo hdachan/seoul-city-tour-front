@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import TotalStats from "./TotalStats";
 import { salesAdminApi as api } from "../../../api/sales";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import { toDateStr } from "../../../utils/dateUtils";
@@ -34,8 +33,6 @@ export default function SalesAdminContent() {
   const [mainTab, setMainTab] = useState("list");
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("driving");
-  const pendingTabRef = useRef(null); // 로드 후 이동할 탭
-  const [fromTotal, setFromTotal] = useState(false); // 전체 통계 > 사람별 통계에서 들어왔는지 (뒤로가기 위치)
 
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -175,11 +172,6 @@ export default function SalesAdminContent() {
         .getPrevMeter(selectedUser.username, `${year}-${pad2(month)}-01`)
         .then((r) => setMonthStartMeter(r.data.prevMeter || 0))
         .catch(() => setMonthStartMeter(0));
-      // pendingTab 처리
-      if (pendingTabRef.current) {
-        setActiveTab(pendingTabRef.current);
-        pendingTabRef.current = null;
-      }
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
@@ -471,7 +463,6 @@ export default function SalesAdminContent() {
       <div className="sl-tab-bar sl-tab-bar-main">
         {[
           { id: "list", label: "📊 정산 목록" },
-          { id: "total", label: "📈 전체 통계" },
           { id: "category", label: "🏷 카테고리" },
         ].map((t) => (
           <button
@@ -496,25 +487,6 @@ export default function SalesAdminContent() {
         <div className="sl-alert sl-alert-success" onClick={() => setSuccess("")}>
           {success}
         </div>
-      )}
-
-      {/* ──── 전체 통계 ──── */}
-      {mainTab === "total" && (
-        <TotalStats
-          summary={summary}
-          year={year}
-          month={month}
-          years={years}
-          months={months}
-          onYearChange={setYear}
-          onMonthChange={setMonth}
-          onUserClick={(u) => {
-            pendingTabRef.current = "stats";
-            setFromTotal(true);
-            setSelectedUser(u);
-            setMainTab("list");
-          }}
-        />
       )}
 
       {/* ──── 카테고리 ──── */}
@@ -544,7 +516,6 @@ export default function SalesAdminContent() {
                 user={u}
                 weeks={getWeeksOfMonth(year, month)}
                 onOpen={() => {
-                  setFromTotal(false);
                   setSelectedUser(u);
                   setSelectedDate(toDateStr(now));
                   setActiveTab("driving");
@@ -593,10 +564,9 @@ export default function SalesAdminContent() {
               onClick={() => {
                 setSelectedUser(null);
                 setDayDriving([]);
-                if (fromTotal) setMainTab("total");
               }}
             >
-              {fromTotal ? "← 전체 통계" : "← 목록"}
+              ← 목록
             </button>
             {yearMonthSelects}
             <span className="sl-filter-name">{selectedUser.name}</span>

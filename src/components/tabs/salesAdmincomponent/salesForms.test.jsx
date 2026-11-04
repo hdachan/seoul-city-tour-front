@@ -7,6 +7,7 @@
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import SalesContent from "./SalesContent";
 import SalesAdminContent from "./SalesAdminContent";
+import SalesAdminStatsTab from "./SalesAdminStatsTab";
 import { salesApi, salesAdminApi } from "../../../api/sales";
 
 jest.mock("../../../api/sales", () => {
@@ -793,6 +794,34 @@ describe("카드번호", () => {
     expect(window.confirm).not.toHaveBeenCalled();
     expect(salesAdminApi.saveCard).toHaveBeenCalledWith("lee", "9999-8888-7777-6666");
     await waitFor(() => expect(modal()).toBeNull());
+  });
+});
+
+// ───────────── 📈 영업 정산 통계 탭 ─────────────
+describe("영업 정산 통계 탭", () => {
+  test("영업 정산관리에는 전체 통계가 없음", async () => {
+    render(<SalesAdminContent />);
+    await screen.findByText("김영업");
+    expect(screen.getByText("📊 정산 목록")).toBeInTheDocument();
+    expect(screen.queryByText("📈 전체 통계")).toBeNull();
+  });
+
+  test("전체 통계 → 이름 누르면 그 사람 통계 → 돌아오기", async () => {
+    render(<SalesAdminStatsTab />);
+    const names = await screen.findAllByText("김영업");
+    expect(salesAdminApi.getSummary).toHaveBeenCalledWith(2026, 10);
+    fireEvent.click(names[names.length - 1]);
+    expect(await screen.findByText("김영업님 · 2026년 10월 통계")).toBeInTheDocument();
+    expect(salesAdminApi.getDriving).toHaveBeenCalledWith("kim", 2026, 10);
+    fireEvent.click(screen.getByText("← 전체 통계"));
+    expect(screen.queryByText("김영업님 · 2026년 10월 통계")).toBeNull();
+    expect(screen.getAllByText("김영업").length).toBeGreaterThan(0);
+  });
+
+  test("불러오지 못하면 안내", async () => {
+    salesAdminApi.getSummary.mockImplementation(() => Promise.reject(new Error("403")));
+    render(<SalesAdminStatsTab />);
+    expect(await screen.findByText(/데이터를 불러오지 못했습니다/)).toBeInTheDocument();
   });
 });
 
