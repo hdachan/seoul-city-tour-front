@@ -39,6 +39,9 @@ const ALL_TABS = [
   { id: "dev", icon: "⚙️", label: "개발" },
 ];
 
+// 처음 열리는 탭 = 권한 있는 탭 중 메뉴 맨 위
+const firstTabOf = (tabs) => ALL_TABS.find((t) => tabs.includes(t.id))?.id || "";
+
 const ROLE_LABEL = {
   ROLE_ADMIN: "관리자",
   ROLE_SALES: "영업",
@@ -66,13 +69,13 @@ export default function AppLayout() {
       const tabs = res.data.allowedTabs || [];
       sessionStorage.setItem("allowedTabs", JSON.stringify(tabs));
       setAllowedTabIds(tabs);
-      setActive(tabs[0] || "");
+      setActive(firstTabOf(tabs));
     } catch {
       try {
         const stored = JSON.parse(sessionStorage.getItem("allowedTabs"));
         if (Array.isArray(stored) && stored.length > 0) {
           setAllowedTabIds(stored);
-          setActive(stored[0]);
+          setActive(firstTabOf(stored));
           return;
         }
       } catch {}
@@ -104,7 +107,7 @@ export default function AppLayout() {
       };
       const tabs = fallback[role] || [];
       setAllowedTabIds(tabs);
-      setActive(tabs[0] || "");
+      setActive(firstTabOf(tabs));
     } finally {
       setLoading(false);
     }
