@@ -797,6 +797,28 @@ describe("카드번호", () => {
   });
 });
 
+// ───────────── 📊 월간 통계 – 법인카드 ─────────────
+describe("월간 통계 – 법인카드", () => {
+  test("법인카드 · 개인사용 · 총금액", async () => {
+    salesApi.getReceipts.mockImplementation(() =>
+      ok([
+        { id: 1, date: "2026-10-22", category: "식대", totalAmount: 11000 },
+        { id: 2, date: "2026-10-22", category: "개인사용", totalAmount: 5000, note: "하이패스" },
+        { id: 3, date: "2026-10-22", category: "기타", totalAmount: 7000 },
+      ]),
+    );
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("📊 월간 통계"));
+    const card = async (label) =>
+      (await screen.findByText((t) => t.endsWith(label))).parentElement.textContent;
+    expect(await card("법인카드 (개인사용 제외)")).toContain("18,000원");
+    expect(await card("총금액")).toContain("23,000원");
+    const personal = (await screen.findAllByText(/개인사용$/)).map((e) => e.parentElement.textContent);
+    expect(personal.some((t) => t.includes("5,000원"))).toBe(true);
+  });
+});
+
 // ───────────── 📈 영업 정산 통계 탭 ─────────────
 describe("영업 정산 통계 탭", () => {
   test("영업 정산관리에는 전체 통계가 없음", async () => {

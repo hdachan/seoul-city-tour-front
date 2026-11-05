@@ -12,6 +12,7 @@ export default function SalesMonthlyStats({
   month,
   driving,
   getPersonalFuelBalance,
+  receipts,
 }) {
   const [balance, setBalance] = useState(undefined); // undefined = 로딩 중, null = 실패
 
@@ -33,6 +34,13 @@ export default function SalesMonthlyStats({
   const companyFuel = sumBy("주유", "fuelCost");
   const personalFuel = sumBy("개인주유", "fuelCost");
   const personalFuelL = sumBy("개인주유", "fuelAmount");
+  // 법인카드 지출내역 합계 (receipts 를 넘긴 화면에서만 표시)
+  const receiptSum = (list) =>
+    list.reduce((s, r) => s + (Number(r.totalAmount) || 0), 0);
+  const receiptTotal = receiptSum(receipts || []);
+  const receiptPersonal = receiptSum(
+    (receipts || []).filter((r) => r.category === "개인사용"),
+  );
   const fmtL = (n) =>
     Number(n || 0).toLocaleString(undefined, {
       minimumFractionDigits: 1,
@@ -80,10 +88,12 @@ export default function SalesMonthlyStats({
         <div style={{ fontSize: "15px", fontWeight: 700, color: "#1a1a1a" }}>
           {title}
         </div>
-        <div style={{ fontSize: "13px", color: "#888" }}>
-          합계 {fmt(total)}
-          {unit}
-        </div>
+        {total !== undefined && (
+          <div style={{ fontSize: "13px", color: "#888" }}>
+            합계 {fmt(total)}
+            {unit}
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -141,6 +151,35 @@ export default function SalesMonthlyStats({
           extra={`${fmtL(personalFuelL)} L`}
         />
       </Section>
+
+      {receipts && (
+        <Section title="💳 법인카드">
+          <Card
+            icon="🏢"
+            label="법인카드 (개인사용 제외)"
+            value={receiptTotal - receiptPersonal}
+            unit="원"
+            color="#0f766e"
+            bg="#ecfdf5"
+          />
+          <Card
+            icon="🙋"
+            label="개인사용"
+            value={receiptPersonal}
+            unit="원"
+            color="#6d28d9"
+            bg="#ede9fe"
+          />
+          <Card
+            icon="🧾"
+            label="총금액"
+            value={receiptTotal}
+            unit="원"
+            color="#1557b0"
+            bg="#e8f0fe"
+          />
+        </Section>
+      )}
 
       <PersonalFuelPanel balance={balance} />
     </div>

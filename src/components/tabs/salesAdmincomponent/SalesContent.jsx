@@ -681,6 +681,7 @@ export default function SalesContent() {
           month={month}
           driving={monthDriving}
           getPersonalFuelBalance={api.getPersonalFuelBalance}
+          receipts={receipts}
         />
       )}
 
