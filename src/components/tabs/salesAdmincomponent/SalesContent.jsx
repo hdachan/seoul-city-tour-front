@@ -24,6 +24,7 @@ import {
   getWeeksOfMonth,
   calcDistances,
   getKoreaTime,
+  defaultCategory,
   sumDist,
 } from "./salesShared";
 
@@ -437,7 +438,7 @@ export default function SalesContent() {
         : receiptDates.includes(selectedDate)
           ? selectedDate
           : receiptDates[receiptDates.length - 1],
-      category: categories[0]?.name || "기타",
+      category: defaultCategory(categories),
       content: myCard || "",
       amount: "",
       businessNumber: "",

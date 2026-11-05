@@ -87,3 +87,6 @@ export const calcDistances = (list, startMeter = 0) => {
   return map;
 };
 
+// 지출내역 기본 카테고리 = 입력창 목록 맨 위 (기타 · 개인사용은 목록 아래쪽이라 제외)
+export const defaultCategory = (categories) =>
+  categories.map((c) => c.name).find((n) => n !== "기타" && n !== "개인사용") || "기타";

@@ -827,6 +827,35 @@ describe("영업 정산 통계 탭", () => {
 
 // ───────────── 💳 지출내역 기타 · 비고 ─────────────
 describe("지출내역 – 기타 · 비고", () => {
+  test("개인사용 카테고리는 기타 뒤 맨 아래", async () => {
+    salesApi.getCategories.mockImplementation(() =>
+      ok([{ id: 1, name: "개인사용" }, { id: 2, name: "식대" }, { id: 3, name: "주차" }]),
+    );
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const select = modal().querySelector("select");
+    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타", "개인사용"]);
+    expect(select.value).toBe("식대"); // 개인사용이 먼저 와도 기본 선택은 목록 맨 위
+
+    // 개인사용: 카테고리 바로 밑에 이유 칸 (필수, 비고로 저장)
+    const reasonLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("개인사용 이유"));
+    expect(reasonLabel()).toBeUndefined();
+    setValue(select, "개인사용");
+    expect(select.parentElement.contains(reasonLabel())).toBe(true);
+    const reason = reasonLabel().parentElement.querySelector("input");
+    setValue(modal().querySelector("input[type=number]"), "7000");
+    expect(modalForm().checkValidity()).toBe(false); // 비어 있으면 저장 안 됨
+    setValue(reason, "   ");
+    expect(modalForm().checkValidity()).toBe(false); // 띄어쓰기만도 안 됨
+    setValue(reason, "개인 식사");
+    expect(modalForm().checkValidity()).toBe(true);
+    await submit();
+    expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({ category: "개인사용", note: "개인 식사" });
+  });
+
   test("카테고리 맨 끝에 기타, 비고 · 카드번호가 서버로 감", async () => {
     salesApi.getCategories.mockImplementation(() => ok([{ id: 1, name: "식대" }, { id: 2, name: "주차" }]));
     render(<SalesContent />);

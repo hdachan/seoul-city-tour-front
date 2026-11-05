@@ -25,7 +25,12 @@ export default function ReceiptModal({
   const names = categories.map((c) => c.name).filter((n) => n !== "기타");
   if (form.category && form.category !== "기타" && !names.includes(form.category))
     names.push(form.category);
-  const categoryNames = [...names, "기타"];
+  // 개인사용은 기타 뒤 맨 아래
+  const categoryNames = [
+    ...names.filter((n) => n !== "개인사용"),
+    "기타",
+    ...names.filter((n) => n === "개인사용"),
+  ];
 
   return (
     <div className="sl-modal-bg">
@@ -52,11 +57,11 @@ export default function ReceiptModal({
             <select
               value={form.category || ""}
               onChange={(e) =>
-                // 기타가 아니면 비고 칸이 없으니 비고도 비움
+                // 기타 · 개인사용이 아니면 비고 칸이 없으니 비고도 비움
                 setForm((f) => ({
                   ...f,
                   category: e.target.value,
-                  note: e.target.value === "기타" ? f.note : "",
+                  note: ["기타", "개인사용"].includes(e.target.value) ? f.note : "",
                 }))
               }
             >
@@ -66,6 +71,21 @@ export default function ReceiptModal({
                 </option>
               ))}
             </select>
+            {/* 개인사용은 이유 필수 (기타의 비고와 같은 칸에 저장) */}
+            {form.category === "개인사용" && (
+              <div className="sl-field">
+                <label>개인사용 이유 *</label>
+                <input
+                  type="text"
+                  placeholder="어떤 이유로 사용했는지 적어주세요"
+                  value={form.note || ""}
+                  onChange={set("note")}
+                  pattern=".*\S.*"
+                  title="개인사용 이유를 적어주세요"
+                  required
+                />
+              </div>
+            )}
             <p className="sl-hint is-info">
               주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.
             </p>

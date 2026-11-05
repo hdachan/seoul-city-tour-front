@@ -24,6 +24,7 @@ import {
   TYPE_STYLE,
   getWeeksOfMonth,
   calcDistances,
+  defaultCategory,
 } from "./salesShared";
 
 export default function SalesAdminContent() {
@@ -354,7 +355,7 @@ export default function SalesAdminContent() {
     setEditTarget(null);
     setReceiptForm({
       date: selectedDate,
-      category: activeCats[0]?.name || "기타",
+      category: defaultCategory(activeCats),
       content: selectedUser?.cardNumber || "",
       amount: "",
       businessNumber: "",
