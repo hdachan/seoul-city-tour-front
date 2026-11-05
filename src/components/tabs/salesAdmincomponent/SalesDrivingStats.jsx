@@ -113,8 +113,6 @@ export default function SalesDrivingStats({ username, name, year, month }) {
       };
     });
 
-  const totalReceipt = receipts.reduce((s, r) => s + toNum(r.totalAmount), 0);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 헤더 */}
@@ -130,35 +128,14 @@ export default function SalesDrivingStats({ username, name, year, month }) {
         </h3>
       </div>
 
-      {/* 영업 정산 > 월간 통계와 같은 화면 (주행거리 · 주유비용 · 개인주유 정산) */}
+      {/* 영업 정산 > 월간 통계와 같은 화면 (주행거리 · 주유비용 · 법인카드 · 개인주유 정산) */}
       <SalesMonthlyStats
         year={year}
         month={month}
         driving={driving}
         getPersonalFuelBalance={getPersonalFuelBalance}
+        receipts={receipts}
       />
-
-      {/* 법인카드 총액 */}
-      {totalReceipt > 0 && (
-        <div
-          style={{
-            background: "#eff6ff",
-            borderRadius: "12px",
-            border: "1px solid #bfdbfe",
-            padding: "14px 18px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#1557b0" }}>
-            💳 법인카드 지출
-          </span>
-          <span style={{ fontSize: "20px", fontWeight: 800, color: "#1557b0" }}>
-            {fmtWon(totalReceipt)}
-          </span>
-        </div>
-      )}
 
       {/* 일별 상세 */}
       <div>

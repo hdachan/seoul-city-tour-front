@@ -8,6 +8,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import SalesContent from "./SalesContent";
 import SalesAdminContent from "./SalesAdminContent";
 import SalesAdminStatsTab from "./SalesAdminStatsTab";
+import SalesDrivingStats from "./SalesDrivingStats";
 import { salesApi, salesAdminApi } from "../../../api/sales";
 
 jest.mock("../../../api/sales", () => {
@@ -815,6 +816,27 @@ describe("월간 통계 – 법인카드", () => {
     expect(await card("법인카드 (개인사용 제외)")).toContain("18,000원");
     expect(await card("총금액")).toContain("23,000원");
     const personal = (await screen.findAllByText(/개인사용$/)).map((e) => e.parentElement.textContent);
+    expect(personal.some((t) => t.includes("5,000원"))).toBe(true);
+  });
+});
+
+// ───────────── 관리자 – 사람별 통계 법인카드 ─────────────
+describe("관리자 사람별 통계 – 법인카드", () => {
+  test("법인카드 · 개인사용 · 총금액", async () => {
+    salesAdminApi.getReceipts.mockImplementation(() =>
+      ok([
+        { id: 1, date: "2026-10-22", category: "식대", totalAmount: 11000 },
+        { id: 2, date: "2026-10-22", category: "개인사용", totalAmount: 5000 },
+      ]),
+    );
+    render(<SalesDrivingStats username="kim" name="김영업" year={2026} month={10} />);
+    const card = async (label) =>
+      (await screen.findByText((t) => t.endsWith(label))).parentElement.textContent;
+    expect(await card("법인카드 (개인사용 제외)")).toContain("11,000원");
+    expect(await card("총금액")).toContain("16,000원");
+    expect(salesAdminApi.getReceipts).toHaveBeenCalledWith("kim", 2026, 10);
+    expect(screen.queryByText("💳 법인카드 지출")).toBeNull(); // 예전 총액 칸은 합쳐짐
+    const personal = screen.getAllByText((t) => t.endsWith("개인사용")).map((e) => e.parentElement.textContent);
     expect(personal.some((t) => t.includes("5,000원"))).toBe(true);
   });
 });
