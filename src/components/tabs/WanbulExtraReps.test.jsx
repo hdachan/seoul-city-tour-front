@@ -40,8 +40,8 @@ test("보내는 값: 첫 번째 칸 + 추가한 사람, 프라이빗은 아이 /
     memo: "메모",
     note: "",
     reps: [
-      { representativeName: "John", adult: "2", child: 0, infant: 0 },
-      { representativeName: "Kim", adult: "3", child: "1", infant: 0 },
+      { representativeName: "John", adult: "2", child: 0, infant: 0, options: [] },
+      { representativeName: "Kim", adult: "3", child: "1", infant: 0, options: [] },
     ],
   });
   expect(wanbulPayload(form, true).reps[1]).toEqual({
@@ -49,6 +49,7 @@ test("보내는 값: 첫 번째 칸 + 추가한 사람, 프라이빗은 아이 /
     adult: "3",
     child: 0,
     infant: 0,
+    options: [],
   });
 });
 

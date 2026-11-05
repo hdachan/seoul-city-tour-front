@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import GuideCategoryTab from "./GuidadminecategoryTab/GuideCategoryTab";
 import { isPrivateTour } from "../../utils/guideTour";
-import LockedDate from "./LockedDate";
+import LockedDate, { weekdayOf } from "./LockedDate";
+import IncomeOptions, {
+  IncomeTotalBox,
+  OptionList,
+  clearOptions,
+  optionsError,
+  useTourOptions,
+} from "./IncomeOptions";
 import WanbulExtraReps, {
   extraRepsError,
   hasExtraReps,
@@ -18,6 +25,7 @@ import {
   deleteExpenseCategory,
   fetchAdminGuideIncome,
   addAdminIncome,
+  fetchGuideTourOptions,
   addAdminWanbulIncome,
   updateAdminIncome,
   deleteAdminIncome,
@@ -121,6 +129,7 @@ export default function GuideAdminContent() {
   });
   const [incomeForm, setIncomeForm] = useState({});
   const isPrivateIncome = isPrivateTour(incomeForm.tourName); // 금액 = 총액, 인원 한 칸
+  const tourOptions = useTourOptions(incomeForm.tourName, fetchGuideTourOptions);
   const [expenseForm, setExpenseForm] = useState({});
   const [dailyFeeForm, setDailyFeeForm] = useState({});
 
@@ -226,6 +235,7 @@ export default function GuideAdminContent() {
     setIncomeForm({
       tourName: row.tourName,
       representativeName: row.representativeName,
+      options: row.options || [],
       paymentType: row.paymentType,
       amount: row.amount || "",
       headcount: row.headcount || "",
@@ -245,6 +255,11 @@ export default function GuideAdminContent() {
     e.preventDefault();
     setIncomeError("");
     setError("");
+    const optError = optionsError(incomeForm.options, incomeForm.paymentType);
+    if (optError) {
+      setIncomeError(optError);
+      return;
+    }
     const manyReps = incomeModal.mode === "add" && hasExtraReps(incomeForm);
     if (manyReps) {
       const repsError = extraRepsError(incomeForm);
@@ -433,7 +448,8 @@ export default function GuideAdminContent() {
       .reduce((s, r) => s + (r.totalAmount || 0), 0) +
     filteredIncomes
       .filter((r) => r.paymentType === "그외-교차")
-      .reduce((s, r) => s + (r.cashAmount || 0), 0);
+      .reduce((s, r) => s + (r.cashAmount || 0), 0) +
+    filteredIncomes.reduce((s, r) => s + (r.optionCash || 0), 0);
   const expCashTotal = filteredExpenses
     .filter((e) => e.paymentType === "현금")
     .reduce((s, e) => s + (e.totalAmount || 0), 0);
@@ -555,6 +571,9 @@ export default function GuideAdminContent() {
               fontSize: "13px",
             }}
           />
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#555" }}>
+            {weekdayOf(selectedDate)}
+          </span>
           <button
             type="button"
             onClick={() => {
@@ -1275,6 +1294,7 @@ export default function GuideAdminContent() {
                         </td>
                         <td className="td-right total-cell">
                           {i.totalAmount ? fmt(i.totalAmount) : "-"}
+                          <OptionList options={i.options} />
                           {i.paymentType === "그외-교차" && (
                             <div
                               style={{
@@ -1490,6 +1510,7 @@ export default function GuideAdminContent() {
                             : { ...incomeForm, tourName: name },
                         );
                         if (isPrivateTour(name)) setShowExtraPersons(false);
+                        setIncomeForm(clearOptions);
                       }}
                     >
                       <option value="">선택하세요</option>
@@ -1732,6 +1753,7 @@ export default function GuideAdminContent() {
                     incomeModal.mode === "add" && (
                       <WanbulExtraReps
                         form={incomeForm}
+                        tourOptions={tourOptions}
                         setForm={setIncomeForm}
                         isPrivate={isPrivateIncome}
                       />
@@ -1866,62 +1888,6 @@ export default function GuideAdminContent() {
                       </div>
                     )}
 
-                  {/* 미리보기 */}
-                  {incomeForm.paymentType !== "완불" &&
-                    incomeForm.amount &&
-                    (incomeForm.adult || incomeForm.headcount) && (
-                      <div
-                        style={{
-                          background: "#f0fdf4",
-                          border: "1px solid #86efac",
-                          borderRadius: "8px",
-                          padding: "10px 14px",
-                          fontSize: "13px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <div style={{ color: "#555", fontSize: "12px" }}>
-                            <div>
-                              {isPrivateIncome
-                                ? `프라이빗 ${incomeForm.adult || 0}명 (총액 그대로)`
-                                : `어른 ${Number(incomeForm.amount || 0).toLocaleString()}원 × ${incomeForm.adult || 0}명`}
-                            </div>
-                            {Number(incomeForm.child || 0) > 0 && (
-                              <div>
-                                아이{" "}
-                                {Number(
-                                  incomeForm.childAmount || 0,
-                                ).toLocaleString()}
-                                원 × {incomeForm.child}명
-                              </div>
-                            )}
-                            {Number(incomeForm.infant || 0) > 0 && (
-                              <div>유아 {incomeForm.infant}명 (무료)</div>
-                            )}
-                          </div>
-                          <strong
-                            style={{ color: "#059669", fontSize: "15px" }}
-                          >
-                            ={" "}
-                            {(isPrivateIncome
-                              ? Number(incomeForm.amount || 0)
-                              : Number(incomeForm.amount || 0) *
-                                  Number(incomeForm.adult || 0) +
-                                Number(incomeForm.childAmount || 0) *
-                                  Number(incomeForm.child || 0)
-                            ).toLocaleString()}
-                            원
-                          </strong>
-                        </div>
-                      </div>
-                    )}
-
                   {/* note 필드 - 그외 + DMZ/출렁다리 */}
                   {incomeForm.paymentType === "그외" &&
                     (incomeForm.tourName || "").match(/DMZ|출렁다리/i) && (
@@ -1996,6 +1962,22 @@ export default function GuideAdminContent() {
                         )}
                       </div>
                     )}
+                  {/* 옵션 (완불 추가는 대표자 박스 안에) */}
+                  {!(incomeForm.paymentType === "완불" && incomeModal.mode === "add") && (
+                    <>
+                      <IncomeOptions
+                        options={incomeForm.options}
+                        onChange={(options) =>
+                          setIncomeForm((f) => ({ ...f, options }))
+                        }
+                        tourName={incomeForm.tourName}
+                        tourOptions={tourOptions}
+                        paymentType={incomeForm.paymentType}
+                        showSum={false}
+                      />
+                      <IncomeTotalBox form={incomeForm} isPrivate={isPrivateIncome} />
+                    </>
+                  )}
                   {/* note 필드 - 그외 + 모닝/오후/투어 */}
                   {incomeForm.paymentType === "그외" &&
                     (incomeForm.tourName || "").match(/모닝|오후|투어/i) && (

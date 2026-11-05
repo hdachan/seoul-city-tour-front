@@ -1,7 +1,9 @@
 // 완불 수입 추가: 대표자마다 같은 모양의 박스, ＋ 버튼으로 늘림 (가이드 정산 · 가이드 정산관리 공용)
 // 대표자 1은 폼의 representativeName · adult · child · infant, 2부터는 form.extraReps 에 담김.
 // 저장하면 사람마다 수입 한 건이 됨. (대표자 1만 있으면 기존처럼 한 건 저장)
-const newRep = () => ({ name: "", adult: "", child: "", infant: "", showKids: false });
+import IncomeOptions, { optionsError } from "./IncomeOptions";
+
+const newRep = () => ({ name: "", adult: "", child: "", infant: "", showKids: false, options: [] });
 
 export const hasExtraReps = (form) =>
   form.paymentType === "완불" && (form.extraReps || []).length > 0;
@@ -13,6 +15,7 @@ const repsOf = (form) => [
     child: form.child,
     infant: form.infant,
     showKids: form.showKids,
+    options: form.options,
   },
   ...(form.extraReps || []),
 ];
@@ -24,6 +27,10 @@ export const extraRepsError = (form) => {
   const count = (r) =>
     Number(r.adult || 0) + Number(r.child || 0) + Number(r.infant || 0);
   if (reps.some((r) => count(r) <= 0)) return "대표자마다 인원을 입력해주세요.";
+  for (const r of reps) {
+    const msg = optionsError(r.options, "완불");
+    if (msg) return msg;
+  }
   return null;
 };
 
@@ -37,10 +44,11 @@ export const wanbulPayload = (form, isPrivate) => ({
     adult: r.adult || 0,
     child: isPrivate ? 0 : r.child || 0,
     infant: isPrivate ? 0 : r.infant || 0,
+    options: r.options || [],
   })),
 });
 
-export default function WanbulExtraReps({ form, setForm, isPrivate }) {
+export default function WanbulExtraReps({ form, setForm, isPrivate, tourOptions = [] }) {
   const reps = repsOf(form);
   const extras = form.extraReps || [];
 
@@ -156,6 +164,14 @@ export default function WanbulExtraReps({ form, setForm, isPrivate }) {
           )}
           {r.showKids && !isPrivate && number(idx, "child", "아이 인원")}
           {r.showKids && !isPrivate && number(idx, "infant", "유아 (무료)")}
+          <IncomeOptions
+            options={r.options}
+            onChange={(options) => change(idx, "options", options)}
+            tourName={form.tourName}
+            tourOptions={tourOptions}
+            paymentType="완불"
+            label={`대표자 ${idx + 1} `}
+          />
         </div>
       ))}
       <button

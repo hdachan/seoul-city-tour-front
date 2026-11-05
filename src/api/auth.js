@@ -99,6 +99,8 @@ export const fetchGuideRecords = (year, month) =>
   client.get(
     `/guide-form/records${year ? `?year=${year}&month=${month}` : ""}`
   );
+export const fetchGuideTourOptions = (tourName) =>
+  client.get(`/guide-form/tour-options`, { params: { tourName } });
 export const addGuideRecord = (data) =>
   client.post(`/guide-form/records`, data);
 export const addGuideWanbulRecords = (data) =>
@@ -143,6 +145,12 @@ export const fetchAdminGuideIncome = (guideUsername, year, month) =>
   client.get(`/guide-admin/income`, {
     params: { guideUsername, year, month },
   });
+export const fetchAdminTourOptionsById = (tourNameId) =>
+  client.get(`/guide-admin/tour-options`, { params: { tourNameId } });
+export const addAdminTourOption = (tourNameId, name) =>
+  client.post(`/guide-admin/tour-options`, { tourNameId, name });
+export const deleteAdminTourOption = (id) =>
+  client.delete(`/guide-admin/tour-options/${id}`);
 export const addAdminIncome = (data) =>
   client.post(`/guide-admin/income`, data);
 export const addAdminWanbulIncome = (data) =>

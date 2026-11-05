@@ -1,4 +1,5 @@
 import { useState } from "react";
+import TourOptionEditor from "./TourOptionEditor";
 import {
   fetchTourNames,
   addTourName,
@@ -96,7 +97,14 @@ export default function GuideCategoryTab({
                 ) : (
                   tourNames.map((t) => (
                     <tr key={t.id}>
-                      <td style={{ fontWeight: 500 }}>{t.name}</td>
+                      <td style={{ fontWeight: 500 }}>
+                        {t.name}
+                        <TourOptionEditor
+                          tour={t}
+                          setSuccess={setSuccess}
+                          setError={setError}
+                        />
+                      </td>
                       <td>
                         <button
                           className="delete-btn"

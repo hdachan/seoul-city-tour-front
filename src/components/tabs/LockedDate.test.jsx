@@ -1,10 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import LockedDate, { withWeekday } from "./LockedDate";
+import LockedDate, { weekdayOf, withWeekday } from "./LockedDate";
 
 test("날짜 뒤에 요일 표시", () => {
   expect(withWeekday("2026-10-15")).toBe("2026-10-15 (목)");
   expect(withWeekday("2026-11-01")).toBe("2026-11-01 (일)");
   expect(withWeekday("2026-11-07")).toBe("2026-11-07 (토)");
+});
+
+test("캘린더 옆 요일", () => {
+  expect(weekdayOf("2026-11-05")).toBe("목");
+  expect(weekdayOf("")).toBe("");
 });
 
 test("날짜가 없거나 이상하면 그대로", () => {
