@@ -579,7 +579,7 @@ export default function SalesAdminContent() {
             <div className="sl-tab-bar sl-tab-bar-flush">
               {[
                 { id: "driving", label: "📋 운행일지" },
-                { id: "receipt", label: "💳 법인카드" },
+                { id: "receipt", label: "💳 카드 사용" },
                 { id: "stats", label: "📊 통계" },
               ].map((t) => (
                 <button

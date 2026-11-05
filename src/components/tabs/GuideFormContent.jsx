@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
+import LockedDate from "./LockedDate";
+import WanbulExtraReps, {
+  extraRepsError,
+  hasExtraReps,
+  wanbulPayload,
+} from "./WanbulExtraReps";
 import {
   fetchTourNames,
   fetchExpenseCategories,
   fetchGuideLockStatus,
   fetchGuideRecords,
   addGuideRecord,
+  addGuideWanbulRecords,
   updateGuideRecord,
   deleteGuideRecord,
   fetchGuideExpense,
@@ -179,7 +186,7 @@ export default function GuideFormContent() {
 
   // ── 수입 모달 열기 ──
   const openIncomeAdd = () => {
-    setIncomeForm(emptyIncome);
+    setIncomeForm({ ...emptyIncome, date: selectedDate });
     setIncomeModal({ mode: "add" });
   };
   const openIncomeEdit = (row) => {
@@ -226,8 +233,24 @@ export default function GuideFormContent() {
       setIncomeError("금액과 인원을 입력해주세요.");
       return;
     }
+    const manyReps = incomeModal.mode === "add" && hasExtraReps(incomeForm);
+    if (manyReps) {
+      const repsError = extraRepsError(incomeForm);
+      if (repsError) {
+        setIncomeError(repsError);
+        return;
+      }
+    }
     try {
-      if (incomeModal.mode === "add") {
+      if (manyReps) {
+        await addGuideWanbulRecords(
+          wanbulPayload(
+            { ...incomeForm, date: incomeForm.date || today() },
+            isPrivate,
+          ),
+        );
+        setSuccess("수입이 추가되었습니다.");
+      } else if (incomeModal.mode === "add") {
         const noteVal =
           incomeForm.note === "기타"
             ? incomeForm.noteCustom || "기타"
@@ -270,7 +293,7 @@ export default function GuideFormContent() {
   // ── 지출 모달 열기 ──
   const openExpenseAdd = () => {
     setExpenseCategories([]); // 먼저 초기화
-    setExpenseForm(emptyExpense);
+    setExpenseForm({ ...emptyExpense, date: selectedDate });
     setExpenseModal({ mode: "add" });
   };
   const openExpenseEdit = (row) => {
@@ -341,7 +364,7 @@ export default function GuideFormContent() {
 
   // ── 일비 모달 열기 ──
   const openFeeAdd = () => {
-    setDailyFeeForm(emptyFee);
+    setDailyFeeForm({ ...emptyFee, date: selectedDate });
     setDailyFeeModal({ mode: "add" });
   };
   const openFeeEdit = (row) => {
@@ -1216,29 +1239,7 @@ export default function GuideFormContent() {
             <form onSubmit={handleSubmitIncome} className="modal-form">
               <div className="field">
                 <label>날짜</label>
-                {(() => {
-                  const { min, max } = getWeekRange();
-                  return (
-                    <input
-                      type="date"
-                      value={incomeForm.date || today()}
-                      min={min}
-                      max={max}
-                      onChange={(e) =>
-                        setIncomeForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "1.5px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  );
-                })()}
+                <LockedDate value={incomeForm.date || selectedDate} />
               </div>
               <div className="field">
                 <label>투어이름 *</label>
@@ -1270,20 +1271,22 @@ export default function GuideFormContent() {
                   ))}
                 </select>
               </div>
-              <div className="field">
-                <label>대표자이름</label>
-                <input
-                  type="text"
-                  placeholder="대표자 이름"
-                  value={incomeForm.representativeName}
-                  onChange={(e) =>
-                    setIncomeForm({
-                      ...incomeForm,
-                      representativeName: e.target.value,
-                    })
-                  }
-                />
-              </div>
+              {!(incomeForm.paymentType === "완불" && incomeModal.mode === "add") && (
+                <div className="field">
+                  <label>대표자이름</label>
+                  <input
+                    type="text"
+                    placeholder="대표자 이름"
+                    value={incomeForm.representativeName}
+                    onChange={(e) =>
+                      setIncomeForm({
+                        ...incomeForm,
+                        representativeName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
               <div className="field">
                 <label>결제유형 *</label>
                 <SelectBtn
@@ -1417,7 +1420,10 @@ export default function GuideFormContent() {
                 <div>
                   <div
                     style={{
-                      display: isPrivate ? "none" : "flex",
+                      display:
+                        isPrivate || incomeModal.mode === "add"
+                          ? "none"
+                          : "flex",
                       justifyContent: "flex-end",
                       marginBottom: "6px",
                     }}
@@ -1440,69 +1446,82 @@ export default function GuideFormContent() {
                         : "＋ 아이/유아 추가"}
                     </button>
                   </div>
-                  <div className="field">
-                    <label>{isPrivate ? "인원" : "어른"}</label>
-                    <input
-                      type="number"
-                      placeholder="명"
-                      value={incomeForm.adult || ""}
-                      onChange={(e) =>
-                        setIncomeForm((f) => ({ ...f, adult: e.target.value }))
-                      }
-                    />
-                  </div>
-                  {showExtraPersons && !isPrivate && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                        marginTop: "8px",
-                      }}
-                    >
+                  {incomeModal.mode !== "add" && (
+                    <>
                       <div className="field">
-                        <label>아이 인원</label>
+                        <label>{isPrivate ? "인원" : "어른"}</label>
                         <input
                           type="number"
                           placeholder="명"
-                          value={incomeForm.child || ""}
+                          value={incomeForm.adult || ""}
                           onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              child: e.target.value,
-                            }))
+                            setIncomeForm((f) => ({ ...f, adult: e.target.value }))
                           }
                         />
                       </div>
-                      <div className="field">
-                        <label>
-                          유아{" "}
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "#aaa",
-                              fontWeight: 400,
-                            }}
-                          >
-                            (무료)
-                          </span>
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="명"
-                          value={incomeForm.infant || ""}
-                          onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              infant: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
+                      {showExtraPersons && !isPrivate && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "10px",
+                            marginTop: "8px",
+                          }}
+                        >
+                          <div className="field">
+                            <label>아이 인원</label>
+                            <input
+                              type="number"
+                              placeholder="명"
+                              value={incomeForm.child || ""}
+                              onChange={(e) =>
+                                setIncomeForm((f) => ({
+                                  ...f,
+                                  child: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>
+                              유아{" "}
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#aaa",
+                                  fontWeight: 400,
+                                }}
+                              >
+                                (무료)
+                              </span>
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="명"
+                              value={incomeForm.infant || ""}
+                              onChange={(e) =>
+                                setIncomeForm((f) => ({
+                                  ...f,
+                                  infant: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
+              {/* 완불 - 대표자 여러 명 (추가할 때만, 사람마다 한 건으로 저장) */}
+              {incomeForm.paymentType === "완불" &&
+                incomeModal.mode === "add" && (
+                  <WanbulExtraReps
+                    form={incomeForm}
+                    setForm={setIncomeForm}
+                    isPrivate={isPrivate}
+                  />
+                )}
               {/* 현금/카드 - 금액 + 어른 기본 + 아이/유아 토글 */}
               {incomeForm.paymentType !== "완불" &&
                 incomeForm.paymentType !== "그외-교차" && (
@@ -1753,29 +1772,7 @@ export default function GuideFormContent() {
             <form onSubmit={handleSubmitExpense} className="modal-form">
               <div className="field">
                 <label>날짜</label>
-                {(() => {
-                  const { min, max } = getWeekRange();
-                  return (
-                    <input
-                      type="date"
-                      value={expenseForm.date || today()}
-                      min={min}
-                      max={max}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "1.5px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  );
-                })()}
+                <LockedDate value={expenseForm.date || selectedDate} />
               </div>
               <div className="field">
                 <label>투어 선택</label>
@@ -1933,13 +1930,7 @@ export default function GuideFormContent() {
             <form onSubmit={handleSubmitFee} className="modal-form">
               <div className="field">
                 <label>날짜 *</label>
-                <input
-                  type="date"
-                  value={dailyFeeForm.date}
-                  onChange={(e) =>
-                    setDailyFeeForm({ ...dailyFeeForm, date: e.target.value })
-                  }
-                />
+                <LockedDate value={dailyFeeForm.date || selectedDate} />
               </div>
               <div className="field">
                 <label>일비 금액 *</label>

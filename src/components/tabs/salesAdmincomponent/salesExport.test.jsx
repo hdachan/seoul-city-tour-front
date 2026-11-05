@@ -97,7 +97,7 @@ async function collect(openReceiptTab) {
 async function salesOutput() {
   render(<SalesContent />);
   await screen.findAllByText("명동", undefined, { timeout: 3000 });
-  return collect(() => fireEvent.click(screen.getByText("💳 법인카드")));
+  return collect(() => fireEvent.click(screen.getByText("💳 카드 사용")));
 }
 
 test("영업 정산 – 엑셀 · 인쇄 결과", async () => {
@@ -113,7 +113,7 @@ test("영업 정산관리 – 같은 사람 · 같은 달이면 영업 정산과
   fireEvent.click(await screen.findByText("김영업"));
   await screen.findAllByText("명동", undefined, { timeout: 3000 });
   const admin = await collect(() =>
-    fireEvent.click(screen.getAllByText("💳 법인카드").find((el) => el.tagName === "BUTTON")),
+    fireEvent.click(screen.getAllByText("💳 카드 사용").find((el) => el.tagName === "BUTTON")),
   );
   expect(admin).toEqual(sales);
   expect(printed).toHaveLength(4);

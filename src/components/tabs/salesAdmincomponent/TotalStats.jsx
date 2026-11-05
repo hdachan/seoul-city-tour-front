@@ -43,6 +43,7 @@ export default function TotalStats({
   const personalFuelC = sumOf("personalFuelC");
   const receiptTotal = sumOf("receiptTotal");
   const receiptCount = sumOf("receiptCount");
+  const receiptPersonal = sumOf("receiptPersonal");
 
   // 총합 아래 작은 글씨 (법인·업무 / 개인)
   const Split = ({ a, b, aLabel, bLabel, align = "right" }) => (
@@ -303,7 +304,11 @@ export default function TotalStats({
           {
             label: "법인카드 지출",
             value: fmtWon(receiptTotal),
-            sub: [`${fmt(receiptCount)}건`],
+            sub: [
+              `법인 ${fmtWon(receiptTotal - receiptPersonal)}`,
+              `개인 ${fmtWon(receiptPersonal)}`,
+              `${fmt(receiptCount)}건`,
+            ],
             color: "#0f766e",
             bg: "#f0fdfa",
             icon: "💳",
@@ -345,6 +350,7 @@ export default function TotalStats({
               >
                 <span>{s.sub[0]}</span>
                 <span style={{ color: "#6d28d9" }}>{s.sub[1]}</span>
+                {s.sub[2] && <span>{s.sub[2]}</span>}
               </div>
             )}
           </div>
@@ -378,11 +384,18 @@ export default function TotalStats({
             return (
               <div
                 key={u.username}
+                role="button"
+                tabIndex={0}
+                onClick={() => onUserClick && onUserClick(u)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && onUserClick) onUserClick(u);
+                }}
                 style={{
                   background: "#fff",
                   borderRadius: "12px",
                   border: `1.5px solid ${allGood ? "#86efac" : "#fed7aa"}`,
                   padding: "14px 16px",
+                  cursor: onUserClick ? "pointer" : "default",
                 }}
               >
                 <div
@@ -402,7 +415,6 @@ export default function TotalStats({
                       gap: "6px",
                     }}
                   >
-                    <span>{allGood ? "✅" : "⚠️"}</span>
                     <span>{u.name}</span>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -668,6 +680,14 @@ export default function TotalStats({
                         }}
                       >
                         {u.receiptTotal > 0 ? fmtWon(u.receiptTotal) : "-"}
+                        {u.receiptTotal > 0 && (
+                          <Split
+                            aLabel="법인"
+                            a={fmtWon(u.receiptTotal - (u.receiptPersonal || 0))}
+                            bLabel="개인"
+                            b={fmtWon(u.receiptPersonal)}
+                          />
+                        )}
                         {u.receiptCount > 0 && (
                           <div style={{ fontSize: "10.5px", fontWeight: 400, color: "#888" }}>
                             {fmt(u.receiptCount)}건
@@ -762,6 +782,12 @@ export default function TotalStats({
                   }}
                 >
                   {fmtWon(receiptTotal)}
+                  <Split
+                    aLabel="법인"
+                    a={fmtWon(receiptTotal - receiptPersonal)}
+                    bLabel="개인"
+                    b={fmtWon(receiptPersonal)}
+                  />
                   <div style={{ fontSize: "10.5px", fontWeight: 400, color: "#888" }}>
                     {fmt(receiptCount)}건
                   </div>

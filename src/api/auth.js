@@ -101,6 +101,8 @@ export const fetchGuideRecords = (year, month) =>
   );
 export const addGuideRecord = (data) =>
   client.post(`/guide-form/records`, data);
+export const addGuideWanbulRecords = (data) =>
+  client.post(`/guide-form/records/wanbul`, data);
 export const updateGuideRecord = (id, data) =>
   client.put(`/guide-form/records/${id}`, data);
 export const deleteGuideRecord = (id) =>
@@ -143,6 +145,8 @@ export const fetchAdminGuideIncome = (guideUsername, year, month) =>
   });
 export const addAdminIncome = (data) =>
   client.post(`/guide-admin/income`, data);
+export const addAdminWanbulIncome = (data) =>
+  client.post(`/guide-admin/income/wanbul`, data);
 export const updateAdminIncome = (id, data) =>
   client.put(`/guide-admin/income/${id}`, data);
 export const deleteAdminIncome = (id) =>

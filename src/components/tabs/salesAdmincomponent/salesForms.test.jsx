@@ -317,7 +317,7 @@ describe("영업 정산 (SalesContent)", () => {
 
   test("법인카드 추가 / 수정 – 입력창 화면 + 저장 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 지출내역"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("추가 입력창");
@@ -395,7 +395,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
       ok([...RECEIPTS, { ...RECEIPTS[0], id: 6, date: "2026-10-06", content: "지난주" }]),
     );
     await openAt();
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     await screen.findByText("＋ 지출내역");
     // 지출 2건(오늘 · 잠긴 주) 중 오늘 것만 메뉴가 있음 (PC 표 + 모바일 카드 = 2개)
     expect(screen.getAllByText("···")).toHaveLength(2);
@@ -411,7 +411,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
       ok({ locked: false, weekLocks: { 1: false, 2: true, 3: true, 4: false, 5: true } }),
     );
     await openAt();
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 지출내역"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const dateInput = modal().querySelector("input[type=date]");
@@ -590,7 +590,7 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
 
   test("법인카드 추가 / 수정 – 입력창 화면 + 저장 값", async () => {
     await open();
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 지출내역"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("추가 입력창");
@@ -862,6 +862,19 @@ describe("영업 정산 통계 탭", () => {
     expect(screen.getAllByText("김영업").length).toBeGreaterThan(0);
   });
 
+  test("입력 현황 카드 누르면 상세, 체크 이모티콘 없음, 법인카드 법인 / 개인", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([{ username: "kim", name: "김영업", receiptTotal: 16000, receiptPersonal: 5000, receiptCount: 2, enteredDates: [] }]),
+    );
+    const { container } = render(<SalesAdminStatsTab />);
+    await screen.findAllByText("김영업");
+    expect(container.textContent).not.toMatch(/✅|⚠️/);
+    expect(screen.getAllByText((t) => t.includes("법인 11,000원")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((t) => t.includes("개인 5,000원")).length).toBeGreaterThan(0);
+    fireEvent.click(container.querySelector("[role=button]"));
+    expect(await screen.findByText("김영업님 · 2026년 10월 통계")).toBeInTheDocument();
+  });
+
   test("불러오지 못하면 안내", async () => {
     salesAdminApi.getSummary.mockImplementation(() => Promise.reject(new Error("403")));
     render(<SalesAdminStatsTab />);
@@ -877,7 +890,7 @@ describe("지출내역 – 기타 · 비고", () => {
     );
     render(<SalesContent />);
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 지출내역"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const select = modal().querySelector("select");
@@ -904,7 +917,7 @@ describe("지출내역 – 기타 · 비고", () => {
     salesApi.getCategories.mockImplementation(() => ok([{ id: 1, name: "식대" }, { id: 2, name: "주차" }]));
     render(<SalesContent />);
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
-    fireEvent.click(screen.getByText("💳 법인카드"));
+    fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 지출내역"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const select = modal().querySelector("select");

@@ -153,7 +153,7 @@ export default function SalesMonthlyStats({
       </Section>
 
       {receipts && (
-        <Section title="💳 법인카드">
+        <Section title="💳 카드 사용">
           <Card
             icon="🏢"
             label="법인카드 (개인사용 제외)"

@@ -661,7 +661,7 @@ export default function SalesContent() {
       <div className="sl-tab-bar">
         {[
           { id: "driving", label: "📋 운행일지" },
-          { id: "receipt", label: "💳 법인카드" },
+          { id: "receipt", label: "💳 카드 사용" },
           { id: "stats", label: "📊 월간 통계" },
         ].map((t) => (
           <button

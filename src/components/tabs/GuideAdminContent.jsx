@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import GuideCategoryTab from "./GuidadminecategoryTab/GuideCategoryTab";
 import { isPrivateTour } from "../../utils/guideTour";
+import LockedDate from "./LockedDate";
+import WanbulExtraReps, {
+  extraRepsError,
+  hasExtraReps,
+  wanbulPayload,
+} from "./WanbulExtraReps";
 import {
   fetchAdminLockStatus,
   toggleMonthLock,
@@ -12,6 +18,7 @@ import {
   deleteExpenseCategory,
   fetchAdminGuideIncome,
   addAdminIncome,
+  addAdminWanbulIncome,
   updateAdminIncome,
   deleteAdminIncome,
   fetchAdminGuideExpense,
@@ -27,7 +34,6 @@ import {
 import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
 
-const today = () => toDateStr(new Date());
 
 const SelectBtn = ({ options, value, onChange, badgeFn }) => (
   <div style={{ display: "flex", gap: "8px" }}>
@@ -239,8 +245,22 @@ export default function GuideAdminContent() {
     e.preventDefault();
     setIncomeError("");
     setError("");
+    const manyReps = incomeModal.mode === "add" && hasExtraReps(incomeForm);
+    if (manyReps) {
+      const repsError = extraRepsError(incomeForm);
+      if (repsError) {
+        setIncomeError(repsError);
+        return;
+      }
+    }
     try {
-      if (incomeModal.mode === "add") {
+      if (manyReps) {
+        await addAdminWanbulIncome({
+          ...wanbulPayload(incomeForm, isPrivateIncome),
+          guideUsername: selectedGuide.username,
+        });
+        setSuccess("추가되었습니다.");
+      } else if (incomeModal.mode === "add") {
         await addAdminIncome({
           ...incomeForm,
           guideUsername: selectedGuide.username,
@@ -254,7 +274,7 @@ export default function GuideAdminContent() {
       loadDetail();
       reloadSummary();
     } catch (err) {
-      setError(err.response?.data?.error || "처리 실패");
+      setIncomeError(err.response?.data?.error || "처리 실패");
     }
   };
   const handleDeleteIncome = async (id) => {
@@ -359,7 +379,7 @@ export default function GuideAdminContent() {
   };
 
   const openFeeAdd = () => {
-    setDailyFeeForm({ amount: "", date: today() });
+    setDailyFeeForm({ amount: "", date: selectedDate });
     setDailyFeeModal({ mode: "add" });
   };
   const openFeeEdit = (row) => {
@@ -1455,26 +1475,7 @@ export default function GuideAdminContent() {
                 <form onSubmit={handleSubmitIncome} className="modal-form">
                   <div className="field">
                     <label>날짜</label>
-                    <input
-                      type="date"
-                      value={incomeForm.date || selectedDate}
-                      onChange={(e) => {
-                        const d = new Date(e.target.value);
-                        setIncomeForm((f) => ({ ...f, date: e.target.value }));
-                        setYear(d.getFullYear());
-                        setMonth(d.getMonth() + 1);
-                        setSelectedDate(e.target.value);
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        border: "1.5px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "13px",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
+                    <LockedDate value={incomeForm.date || selectedDate} />
                   </div>
                   <div className="field">
                     <label>투어이름</label>
@@ -1499,19 +1500,21 @@ export default function GuideAdminContent() {
                       ))}
                     </select>
                   </div>
-                  <div className="field">
-                    <label>대표자이름</label>
-                    <input
-                      type="text"
-                      value={incomeForm.representativeName || ""}
-                      onChange={(e) =>
-                        setIncomeForm({
-                          ...incomeForm,
-                          representativeName: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                  {!(incomeForm.paymentType === "완불" && incomeModal.mode === "add") && (
+                    <div className="field">
+                      <label>대표자이름</label>
+                      <input
+                        type="text"
+                        value={incomeForm.representativeName || ""}
+                        onChange={(e) =>
+                          setIncomeForm({
+                            ...incomeForm,
+                            representativeName: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
                   <div className="field">
                     <label>결제유형</label>
                     <SelectBtn
@@ -1640,7 +1643,10 @@ export default function GuideAdminContent() {
                     <div>
                       <div
                         style={{
-                          display: isPrivateIncome ? "none" : "flex",
+                          display:
+                            isPrivateIncome || incomeModal.mode === "add"
+                              ? "none"
+                              : "flex",
                           justifyContent: "flex-end",
                           marginBottom: "6px",
                         }}
@@ -1663,59 +1669,73 @@ export default function GuideAdminContent() {
                             : "＋ 아이/유아 추가"}
                         </button>
                       </div>
-                      <div className="field">
-                        <label>{isPrivateIncome ? "인원" : "어른"}</label>
-                        <input
-                          type="number"
-                          placeholder="명"
-                          value={incomeForm.adult || ""}
-                          onChange={(e) =>
-                            setIncomeForm((f) => ({
-                              ...f,
-                              adult: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                      {showExtraPersons && !isPrivateIncome && (
-                        <div style={{ marginTop: "8px" }}>
+                      {incomeModal.mode !== "add" && (
+                        <>
                           <div className="field">
-                            <label>아이 인원</label>
+                            <label>{isPrivateIncome ? "인원" : "어른"}</label>
                             <input
                               type="number"
                               placeholder="명"
-                              value={incomeForm.child || ""}
+                              value={incomeForm.adult || ""}
                               onChange={(e) =>
                                 setIncomeForm((f) => ({
                                   ...f,
-                                  child: e.target.value,
+                                  adult: e.target.value,
                                 }))
                               }
                             />
                           </div>
-                          <div className="field" style={{ marginTop: "8px" }}>
-                            <label>
-                              유아{" "}
-                              <span style={{ fontSize: "10px", color: "#aaa" }}>
-                                (무료)
-                              </span>
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="명"
-                              value={incomeForm.infant || ""}
-                              onChange={(e) =>
-                                setIncomeForm((f) => ({
-                                  ...f,
-                                  infant: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                        </div>
+                          {showExtraPersons && !isPrivateIncome && (
+                            <div style={{ marginTop: "8px" }}>
+                              <div className="field">
+                                <label>아이 인원</label>
+                                <input
+                                  type="number"
+                                  placeholder="명"
+                                  value={incomeForm.child || ""}
+                                  onChange={(e) =>
+                                    setIncomeForm((f) => ({
+                                      ...f,
+                                      child: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="field" style={{ marginTop: "8px" }}>
+                                <label>
+                                  유아{" "}
+                                  <span style={{ fontSize: "10px", color: "#aaa" }}>
+                                    (무료)
+                                  </span>
+                                </label>
+                                <input
+                                  type="number"
+                                  placeholder="명"
+                                  value={incomeForm.infant || ""}
+                                  onChange={(e) =>
+                                    setIncomeForm((f) => ({
+                                      ...f,
+                                      infant: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
+
+                  {/* 완불 - 대표자 여러 명 (추가할 때만, 사람마다 한 건으로 저장) */}
+                  {incomeForm.paymentType === "완불" &&
+                    incomeModal.mode === "add" && (
+                      <WanbulExtraReps
+                        form={incomeForm}
+                        setForm={setIncomeForm}
+                        isPrivate={isPrivateIncome}
+                      />
+                    )}
 
                   {/* 현금/카드/그외 - 금액 + 어른 기본 + 아이/유아 토글 */}
                   {incomeForm.paymentType !== "완불" &&
@@ -2031,22 +2051,7 @@ export default function GuideAdminContent() {
                 <form onSubmit={handleSubmitExpense} className="modal-form">
                   <div className="field">
                     <label>날짜</label>
-                    <input
-                      type="date"
-                      value={expenseForm.date || selectedDate}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        border: "1.5px solid #e0e0e0",
-                        borderRadius: "8px",
-                        fontSize: "13px",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
+                    <LockedDate value={expenseForm.date || selectedDate} />
                   </div>
                   <div className="field">
                     <label>투어 선택</label>
@@ -2183,16 +2188,7 @@ export default function GuideAdminContent() {
                 <form onSubmit={handleSubmitFee} className="modal-form">
                   <div className="field">
                     <label>날짜</label>
-                    <input
-                      type="date"
-                      value={dailyFeeForm.date || today()}
-                      onChange={(e) =>
-                        setDailyFeeForm({
-                          ...dailyFeeForm,
-                          date: e.target.value,
-                        })
-                      }
-                    />
+                    <LockedDate value={dailyFeeForm.date || selectedDate} />
                   </div>
                   <div className="field">
                     <label>금액</label>
