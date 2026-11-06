@@ -1,17 +1,21 @@
 // 수입 입력창의 옵션 줄 (가이드 정산 · 가이드 정산관리 공용)
 // 옵션은 투어 카테고리에서 만들고, 금액은 여기서 직접 적음. 한 건에 여러 개 고를 수 있음.
 // 기타는 모든 투어에 기본으로 있고, 내용을 직접 적음 (적은 내용이 옵션 이름으로 저장됨).
-// 완불 · 그외 · 그외-교차 는 옵션마다 현금 / 카드를 고르고, 현금 · 카드 수입은 그 결제유형을 따름.
-import { useEffect, useState } from "react";
+// 옵션마다 현금 / 카드 / 교차(현금 + 카드 나눠 냄)를 고름. 처음 값은 수입 결제유형을 따름
+// (현금 · 그외-현금 → 현금, 카드 · 그외-카드 → 카드, 그외-교차 → 교차, 완불 · 그외 → 직접 고름).
+// 직접 누르기 전까지는 수입 결제유형을 바꾸면 옵션도 따라 바뀜.
+import { useEffect, useRef, useState } from "react";
 
 const ETC = "기타";
+const PAYS = ["현금", "카드", "교차"];
 
 // 직접 적는 줄: 기타를 골랐거나, 목록에 없는 이름 (기타로 저장된 것 · 카테고리에서 지운 옵션)
 const isCustom = (o, tourOptions) =>
   o.custom || (!!o.optionName && !tourOptions.includes(o.optionName));
 
-const needsPay = (paymentType) =>
-  ["완불", "그외", "그외-교차"].includes(paymentType);
+// 수입 결제유형에 맞는 옵션 결제 처음 값 (완불 · 그외는 "")
+export const defaultPay = (paymentType) =>
+  ({ 현금: "현금", "그외-현금": "현금", 카드: "카드", "그외-카드": "카드", "그외-교차": "교차" })[paymentType] || "";
 
 export const optionsSum = (options = []) =>
   options.reduce((s, o) => s + Number(o.amount || 0), 0);
@@ -20,11 +24,21 @@ export const optionsSum = (options = []) =>
 export const optionsError = (options = [], paymentType) => {
   if (options.some((o) => o.custom && !(o.optionName || "").trim())) return "기타 내용을 입력해주세요.";
   if (options.some((o) => !(o.optionName || "").trim())) return "옵션을 선택해주세요.";
+  if (options.some((o) => !PAYS.includes(o.paymentType) && !defaultPay(paymentType)))
+    return "옵션마다 현금 / 카드 / 교차를 골라주세요.";
+  if (options.some((o) => o.paymentType === "교차" && Number(o.amount || 0) <= 0))
+    return "교차 옵션의 현금 / 카드 금액을 입력해주세요.";
   if (options.some((o) => Number(o.amount || 0) <= 0)) return "옵션금액을 입력해주세요.";
-  if (needsPay(paymentType) && options.some((o) => !["현금", "카드"].includes(o.paymentType)))
-    return "옵션마다 현금 / 카드를 골라주세요.";
   return null;
 };
+
+const won = (n) => `${Number(n || 0).toLocaleString()}원`;
+
+// "점심 10,000원 (현금)" · 교차는 "점심 10,000원 (교차: 현금 4,000원 / 카드 6,000원)"
+export const optionLabel = (o) =>
+  o.paymentType === "교차"
+    ? `${o.optionName} ${won(o.amount)} (교차: 현금 ${won(o.cashAmount)} / 카드 ${won(o.cardAmount)})`
+    : `${o.optionName} ${won(o.amount)} (${o.paymentType})`;
 
 // 투어를 바꾸면 그 투어 옵션이 아니므로 비움
 export const clearOptions = (form) => ({
@@ -65,11 +79,37 @@ const payBtn = (active) => ({
 });
 
 export default function IncomeOptions({ options = [], onChange, tourName, tourOptions = [], paymentType, label = "", showSum = true }) {
+  // 수입 결제유형이 바뀌면 직접 안 누른 옵션은 따라 바뀜
+  const prevPay = useRef(paymentType);
+  useEffect(() => {
+    if (prevPay.current === paymentType) return;
+    prevPay.current = paymentType;
+    const next = defaultPay(paymentType);
+    if (options.some((o) => !o.payTouched && o.paymentType !== next))
+      onChange(options.map((o) => (o.payTouched ? o : { ...o, paymentType: next })));
+  }, [paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!tourName && options.length === 0) return null;
   const names = tourOptions.filter((n) => n !== ETC);
-  const choosePay = needsPay(paymentType);
   const change = (idx, key, value) =>
     onChange(options.map((o, i) => (i === idx ? { ...o, [key]: value } : o)));
+  // 교차 금액: 현금 + 카드 = 옵션금액
+  const changeSplit = (idx, key, value) =>
+    onChange(
+      options.map((o, i) => {
+        if (i !== idx) return o;
+        const next = { ...o, [key]: value };
+        return { ...next, amount: Number(next.cashAmount || 0) + Number(next.cardAmount || 0) || "" };
+      }),
+    );
+  const choosePay = (idx, p) =>
+    onChange(
+      options.map((o, i) => {
+        if (i !== idx) return o;
+        if (p === "교차") return { ...o, paymentType: p, payTouched: true, cashAmount: o.amount || "", cardAmount: "" };
+        return { ...o, paymentType: p, payTouched: true };
+      }),
+    );
   const pick = (idx, value) =>
     onChange(
       options.map((o, i) =>
@@ -110,26 +150,47 @@ export default function IncomeOptions({ options = [], onChange, tourName, tourOp
                 style={{ flex: "1 1 120px", minWidth: 0 }}
               />
             )}
-            <input
-              type="number"
-              aria-label={`${label}옵션금액 ${idx + 1}`}
-              placeholder="옵션금액"
-              value={o.amount || ""}
-              onChange={(e) => change(idx, "amount", e.target.value)}
-              style={{ flex: "1 1 90px", minWidth: 0 }}
-            />
-            {choosePay &&
-              ["현금", "카드"].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  aria-pressed={o.paymentType === p}
-                  onClick={() => change(idx, "paymentType", p)}
-                  style={payBtn(o.paymentType === p)}
-                >
-                  {p}
-                </button>
-              ))}
+            {o.paymentType === "교차" ? (
+              <>
+                {[
+                  ["cashAmount", "현금"],
+                  ["cardAmount", "카드"],
+                ].map(([key, name]) => (
+                  <span key={key} style={{ display: "flex", alignItems: "center", gap: "4px", flex: "1 1 110px", minWidth: 0 }}>
+                    <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>{name}</span>
+                    <input
+                      type="number"
+                      aria-label={`${label}옵션 ${name} ${idx + 1}`}
+                      placeholder={`${name} 금액`}
+                      value={o[key] || ""}
+                      onChange={(e) => changeSplit(idx, key, e.target.value)}
+                      style={{ flex: 1, minWidth: 0 }}
+                    />
+                  </span>
+                ))}
+              </>
+            ) : (
+              <input
+                type="number"
+                aria-label={`${label}옵션금액 ${idx + 1}`}
+                placeholder="옵션금액"
+                value={o.amount || ""}
+                onChange={(e) => change(idx, "amount", e.target.value)}
+                style={{ flex: "1 1 90px", minWidth: 0 }}
+              />
+            )}
+            {PAYS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={o.paymentType === p}
+                aria-label={`${label}옵션 ${idx + 1} ${p}`}
+                onClick={() => choosePay(idx, p)}
+                style={payBtn(o.paymentType === p)}
+              >
+                {p}
+              </button>
+            ))}
             <button
               type="button"
               aria-label={`${label}옵션 ${idx + 1} 빼기`}
@@ -144,7 +205,7 @@ export default function IncomeOptions({ options = [], onChange, tourName, tourOp
       {tourName && (
         <button
           type="button"
-          onClick={() => onChange([...options, { optionName: "", amount: "", paymentType: "" }])}
+          onClick={() => onChange([...options, { optionName: "", amount: "", paymentType: defaultPay(paymentType) }])}
           style={{
             width: "100%",
             padding: "7px",
@@ -183,8 +244,6 @@ export default function IncomeOptions({ options = [], onChange, tourName, tourOp
   );
 }
 
-const won = (n) => `${Number(n || 0).toLocaleString()}원`;
-
 // 입력창 합계: 투어 금액 + 옵션을 한 칸에 줄마다 보여주고 맨 아래 총 합계
 export const incomeTotalLines = (form, isPrivate) => {
   const lines = [];
@@ -205,8 +264,12 @@ export const incomeTotalLines = (form, isPrivate) => {
     }
   }
   (form.options || []).forEach((o) => {
-    if (Number(o.amount || 0) > 0)
-      lines.push([`옵션 ${(o.optionName || "").trim() || "(선택 안 함)"}`, Number(o.amount)]);
+    if (Number(o.amount || 0) <= 0) return;
+    const name = `옵션 ${(o.optionName || "").trim() || "(선택 안 함)"}`;
+    lines.push([
+      o.paymentType === "교차" ? `${name} (현금 ${won(o.cashAmount)} / 카드 ${won(o.cardAmount)})` : name,
+      Number(o.amount),
+    ]);
   });
   return lines;
 };
@@ -256,9 +319,7 @@ export function OptionList({ options }) {
   return (
     <div style={{ fontSize: "11px", color: "#666", fontWeight: 400, marginTop: "2px" }}>
       {options.map((o, i) => (
-        <div key={i}>
-          {o.optionName} {Number(o.amount).toLocaleString()}원 ({o.paymentType})
-        </div>
+        <div key={i}>{optionLabel(o)}</div>
       ))}
     </div>
   );

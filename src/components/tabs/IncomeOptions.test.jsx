@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import IncomeOptions, { IncomeTotalBox, OptionList, clearOptions, incomeTotalLines, optionsError, optionsSum } from "./IncomeOptions";
+import IncomeOptions, { IncomeTotalBox, OptionList, clearOptions, defaultPay, incomeTotalLines, optionsError, optionsSum } from "./IncomeOptions";
 
 const Box = ({ paymentType, onValue }) => {
   const [options, setOptions] = useState([]);
@@ -56,36 +56,87 @@ test("옵션 합계", () => {
   expect(optionsSum()).toBe(0);
 });
 
-test("빠진 칸 안내: 옵션 · 금액 · 완불의 현금/카드", () => {
+test("빠진 칸 안내: 옵션 · 금액 · 결제 (완불 · 그외는 직접 골라야)", () => {
   const ok = { optionName: "점심", amount: "1000", paymentType: "현금" };
   expect(optionsError([ok], "완불")).toBeNull();
   expect(optionsError([{ ...ok, paymentType: "" }], "현금")).toBeNull();
   expect(optionsError([{ ...ok, optionName: "" }], "현금")).toMatch("옵션을");
   expect(optionsError([{ ...ok, amount: "" }], "현금")).toMatch("금액");
-  expect(optionsError([{ ...ok, paymentType: "" }], "완불")).toMatch("현금");
-  expect(optionsError([{ ...ok, paymentType: "" }], "그외-교차")).toMatch("현금");
+  expect(optionsError([{ ...ok, paymentType: "" }], "완불")).toMatch("교차를");
+  expect(optionsError([{ ...ok, paymentType: "" }], "그외")).toMatch("교차를");
+  expect(optionsError([{ ...ok, paymentType: "교차", amount: "" }], "현금")).toMatch("교차 옵션");
   expect(optionsError(undefined, "현금")).toBeNull();
 });
 
-test("완불은 현금 / 카드 버튼, 현금 수입은 없음, 여러 개 추가 / 빼기", () => {
+test("옵션 결제 처음 값은 수입 결제유형을 따름", () => {
+  expect(defaultPay("현금")).toBe("현금");
+  expect(defaultPay("그외-현금")).toBe("현금");
+  expect(defaultPay("카드")).toBe("카드");
+  expect(defaultPay("그외-카드")).toBe("카드");
+  expect(defaultPay("그외-교차")).toBe("교차");
+  expect(defaultPay("완불")).toBe("");
+  expect(defaultPay("그외")).toBe("");
+});
+
+test("모든 결제유형에서 현금 / 카드 / 교차 버튼, 여러 개 추가 / 빼기", () => {
   let value;
   const { unmount } = render(<Box paymentType="완불" onValue={(v) => (value = v)} />);
   fireEvent.click(screen.getByText("＋ 옵션 추가"));
   fireEvent.click(screen.getByText("＋ 옵션 추가"));
-  expect(screen.getAllByText("카드")).toHaveLength(2);
+  expect(screen.getAllByText("교차")).toHaveLength(2);
   fireEvent.change(screen.getByLabelText("옵션 1"), { target: { value: "점심" } });
   fireEvent.change(screen.getByLabelText("옵션금액 1"), { target: { value: "5000" } });
-  fireEvent.click(screen.getAllByText("카드")[0]);
-  expect(value[0]).toEqual({ optionName: "점심", custom: false, amount: "5000", paymentType: "카드" });
+  fireEvent.click(screen.getByLabelText("옵션 1 카드"));
+  expect(value[0]).toEqual({ optionName: "점심", custom: false, amount: "5000", paymentType: "카드", payTouched: true });
   expect(screen.getByText("옵션 합계")).toBeInTheDocument();
   expect(screen.getByText("5,000원")).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText("옵션 2 빼기"));
   expect(value).toHaveLength(1);
   unmount();
 
-  render(<Box paymentType="현금" />);
+  render(<Box paymentType="현금" onValue={(v) => (value = v)} />);
   fireEvent.click(screen.getByText("＋ 옵션 추가"));
-  expect(screen.queryByText("카드")).toBeNull();
+  expect(screen.getByLabelText("옵션 1 현금")).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByLabelText("옵션 1 교차")).toBeInTheDocument();
+});
+
+test("교차: 현금 / 카드 금액 칸 두 개, 합이 옵션금액", () => {
+  let value;
+  render(<Box paymentType="현금" onValue={(v) => (value = v)} />);
+  fireEvent.click(screen.getByText("＋ 옵션 추가"));
+  fireEvent.change(screen.getByLabelText("옵션 1"), { target: { value: "점심" } });
+  fireEvent.change(screen.getByLabelText("옵션금액 1"), { target: { value: "10000" } });
+  fireEvent.click(screen.getByLabelText("옵션 1 교차"));
+  expect(screen.queryByLabelText("옵션금액 1")).toBeNull();
+  expect(screen.getByLabelText("옵션 현금 1")).toHaveValue(10000); // 적어둔 금액은 현금 칸으로
+  fireEvent.change(screen.getByLabelText("옵션 현금 1"), { target: { value: "4000" } });
+  fireEvent.change(screen.getByLabelText("옵션 카드 1"), { target: { value: "6000" } });
+  expect(value[0]).toMatchObject({ paymentType: "교차", cashAmount: "4000", cardAmount: "6000", amount: 10000 });
+  expect(optionsError(value, "현금")).toBeNull();
+  expect(screen.getByText("10,000원")).toBeInTheDocument();
+  expect(incomeTotalLines({ paymentType: "현금", options: value }, false)).toEqual([["옵션 점심 (현금 4,000원 / 카드 6,000원)", 10000]]);
+});
+
+test("수입 결제유형을 바꾸면 직접 안 누른 옵션만 따라 바뀜", () => {
+  let value;
+  const Switch = () => {
+    const [pay, setPay] = useState("현금");
+    const [options, setOptions] = useState([]);
+    value = options;
+    return (
+      <>
+        <button onClick={() => setPay("카드")}>카드로</button>
+        <IncomeOptions options={options} onChange={setOptions} tourName="DMZ" tourOptions={["점심"]} paymentType={pay} />
+      </>
+    );
+  };
+  render(<Switch />);
+  fireEvent.click(screen.getByText("＋ 옵션 추가"));
+  fireEvent.click(screen.getByText("＋ 옵션 추가"));
+  fireEvent.click(screen.getByLabelText("옵션 2 교차"));
+  fireEvent.click(screen.getByText("카드로"));
+  expect(value[0].paymentType).toBe("카드");
+  expect(value[1].paymentType).toBe("교차");
 });
 
 test("투어를 안 고르면 칸이 안 나오고, 옵션 없는 투어도 기타는 고를 수 있음", () => {
@@ -147,7 +198,15 @@ test("투어를 바꾸면 대표자 박스 옵션까지 비움", () => {
   expect(clearOptions(form)).toEqual({ tourName: "A", options: [], extraReps: [{ name: "Kim", options: [] }] });
 });
 
-test("표에 옵션 이름 · 금액 · 결제 표시", () => {
-  render(<OptionList options={[{ optionName: "점심", amount: 10000, paymentType: "현금" }]} />);
+test("표에 옵션 이름 · 금액 · 결제 표시 (교차는 나눈 금액)", () => {
+  render(
+    <OptionList
+      options={[
+        { optionName: "점심", amount: 10000, paymentType: "현금" },
+        { optionName: "케이블카", amount: 10000, paymentType: "교차", cashAmount: 4000, cardAmount: 6000 },
+      ]}
+    />,
+  );
   expect(screen.getByText("점심 10,000원 (현금)")).toBeInTheDocument();
+  expect(screen.getByText("케이블카 10,000원 (교차: 현금 4,000원 / 카드 6,000원)")).toBeInTheDocument();
 });

@@ -442,14 +442,8 @@ export default function GuideAdminContent() {
   const filteredExpenses = expenses.filter((e) => e.date === selectedDate);
   const filteredDailyFees = dailyFees.filter((d) => d.date === selectedDate);
 
-  const cashTotal =
-    filteredIncomes
-      .filter((r) => r.paymentType === "현금" || r.paymentType === "그외-현금")
-      .reduce((s, r) => s + (r.totalAmount || 0), 0) +
-    filteredIncomes
-      .filter((r) => r.paymentType === "그외-교차")
-      .reduce((s, r) => s + (r.cashAmount || 0), 0) +
-    filteredIncomes.reduce((s, r) => s + (r.optionCash || 0), 0);
+  // 현금으로 받은 돈 (투어 금액 + 옵션 현금 · 교차 현금 몫). 서버가 cashIn 으로 계산해서 줌
+  const cashTotal = filteredIncomes.reduce((s, r) => s + (r.cashIn || 0), 0);
   const expCashTotal = filteredExpenses
     .filter((e) => e.paymentType === "현금")
     .reduce((s, e) => s + (e.totalAmount || 0), 0);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchAdminStats, fetchAdminDailyStats } from "../../../api/auth";
+import { fetchAdminStats, fetchAdminDailyStats, fetchAdminOptionStats } from "../../../api/auth";
+import OptionStatsTable from "./OptionStatsTable";
 
 const fmt = (n) => Number(n).toLocaleString();
 
@@ -12,6 +13,7 @@ export default function GuideAdminStatsTab() {
   const [month, setMonth] = useState(thisMonth);
   const [stats, setStats] = useState([]);
   const [dailyStats, setDailyStats] = useState([]);
+  const [optionStats, setOptionStats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,10 +23,12 @@ export default function GuideAdminStatsTab() {
     Promise.all([
       fetchAdminStats(year, month),
       fetchAdminDailyStats(year, month),
+      fetchAdminOptionStats(year, month).catch(() => ({ data: [] })),
     ])
-      .then(([r1, r2]) => {
+      .then(([r1, r2, r3]) => {
         setStats(r1.data);
         setDailyStats(r2.data);
+        setOptionStats(r3.data);
       })
       .catch(() => setError("데이터를 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -473,6 +477,9 @@ export default function GuideAdminStatsTab() {
           </div>
         </div>
       )}
+
+      {/* 옵션별 통계 */}
+      {!loading && <OptionStatsTable rows={optionStats} />}
     </div>
   );
 }

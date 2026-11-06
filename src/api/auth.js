@@ -74,6 +74,8 @@ export const fetchGuideStats = (username, year, month) =>
   client.get(`/guide-form/stats`, { params: { username, year, month } });
 export const fetchAdminDailyStats = (year, month) =>
   client.get(`/guide-admin/stats/daily`, { params: { year, month } });
+export const fetchAdminOptionStats = (year, month) =>
+  client.get(`/guide-admin/stats/options`, { params: { year, month } });
 export const fetchAdminStats = (year, month) =>
   client.get(`/guide-admin/stats`, {
     params: { year, month },
