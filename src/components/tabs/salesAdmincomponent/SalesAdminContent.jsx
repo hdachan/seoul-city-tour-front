@@ -69,6 +69,7 @@ export default function SalesAdminContent() {
   const [showDrivingModal, setShowDrivingModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [receiptMode, setReceiptMode] = useState("법인"); // 지출내역 입력창: 개인(개인사용 고정) / 법인(개인사용 빼고)
   const [drivingDraft, setDrivingDraft] = useState(null);
   const [drivingForm, setDrivingForm] = useState({});
   const [receiptForm, setReceiptForm] = useState({});
@@ -350,21 +351,23 @@ export default function SalesAdminContent() {
   };
 
   // 법인카드 모달
-  const openReceiptAdd = () => {
+  const openReceiptAdd = (mode) => {
     setError("");
     setEditTarget(null);
     setReceiptForm({
       date: selectedDate,
-      category: defaultCategory(activeCats),
+      category: mode === "개인" ? "개인사용" : defaultCategory(activeCats),
       content: selectedUser?.cardNumber || "",
       amount: "",
       businessNumber: "",
       companyName: "",
       note: "",
     });
+    setReceiptMode(mode);
     setShowReceiptModal(true);
   };
   const openReceiptEdit = (row) => {
+    setReceiptMode(row.category === "개인사용" ? "개인" : "법인");
     setError("");
     setEditTarget(row);
     setOpenMenu(null);
@@ -624,9 +627,14 @@ export default function SalesAdminContent() {
                 </>
               )}
               {!isLocked && activeTab === "receipt" && (
-                <button className="sl-btn-primary" onClick={openReceiptAdd}>
-                  ＋ 지출내역
-                </button>
+                <>
+                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("개인")}>
+                    ＋ 개인
+                  </button>
+                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("법인")}>
+                    ＋ 법인
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -721,6 +729,7 @@ export default function SalesAdminContent() {
               form={receiptForm}
               setForm={setReceiptForm}
               isEdit={!!editTarget}
+              mode={receiptMode}
               categories={activeCats}
               error={error}
               onClose={() => setShowReceiptModal(false)}

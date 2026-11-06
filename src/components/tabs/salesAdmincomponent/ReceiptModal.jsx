@@ -4,10 +4,12 @@ import "./sales.css";
 // 💳 법인카드 지출내역 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm  : 입력값 (화면마다 자기 상태를 넘김)
 //   dateMin/dateMax : 고를 수 있는 날짜 범위 (없으면 제한 없음)
+//   mode            : "개인" → 카테고리 개인사용 고정 / "법인" → 목록에서 개인사용 빼고 (없으면 전부)
 export default function ReceiptModal({
   form,
   setForm,
   isEdit,
+  mode,
   categories,
   error,
   onClose,
@@ -23,20 +25,27 @@ export default function ReceiptModal({
   // 관리자 카테고리 + 맨 끝에 항상 "기타" (자세한 내용은 비고에)
   //   수정 중인 기록의 카테고리가 지금 목록에 없으면(삭제됨) 그것도 보여줌
   const names = categories.map((c) => c.name).filter((n) => n !== "기타");
-  if (form.category && form.category !== "기타" && !names.includes(form.category))
+  if (
+    form.category &&
+    form.category !== "기타" &&
+    !names.includes(form.category)
+  )
     names.push(form.category);
   // 개인사용은 기타 뒤 맨 아래
   const categoryNames = [
     ...names.filter((n) => n !== "개인사용"),
     "기타",
-    ...names.filter((n) => n === "개인사용"),
+    ...(mode === "법인" ? [] : names.filter((n) => n === "개인사용")),
   ];
+  const personal = mode === "개인";
 
   return (
     <div className="sl-modal-bg">
       <div className="sl-modal sl-modal-receipt">
         <div className="sl-modal-header">
-          <h3 className="sl-modal-title">지출내역 {isEdit ? "수정" : "추가"}</h3>
+          <h3 className="sl-modal-title">
+            {mode ? `${mode} ` : ""}지출내역 {isEdit ? "수정" : "추가"}
+          </h3>
           <button className="sl-modal-close" onClick={onClose}>
             ✕
           </button>
@@ -54,23 +63,36 @@ export default function ReceiptModal({
           </div>
           <div className="sl-field">
             <label>카테고리</label>
-            <select
-              value={form.category || ""}
-              onChange={(e) =>
-                // 기타 · 개인사용이 아니면 비고 칸이 없으니 비고도 비움
-                setForm((f) => ({
-                  ...f,
-                  category: e.target.value,
-                  note: ["기타", "개인사용"].includes(e.target.value) ? f.note : "",
-                }))
-              }
-            >
-              {categoryNames.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+            {personal ? (
+              // 개인: 카테고리는 개인사용 고정 (못 바꿈)
+              <input
+                type="text"
+                value="개인사용"
+                readOnly
+                disabled
+                aria-label="카테고리"
+              />
+            ) : (
+              <select
+                value={form.category || ""}
+                onChange={(e) =>
+                  // 기타 · 개인사용이 아니면 비고 칸이 없으니 비고도 비움
+                  setForm((f) => ({
+                    ...f,
+                    category: e.target.value,
+                    note: ["기타", "개인사용"].includes(e.target.value)
+                      ? f.note
+                      : "",
+                  }))
+                }
+              >
+                {categoryNames.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            )}
             {/* 개인사용은 이유 필수 (기타의 비고와 같은 칸에 저장) */}
             {form.category === "개인사용" && (
               <div className="sl-field">
@@ -97,7 +119,9 @@ export default function ReceiptModal({
               inputMode="numeric"
               placeholder="1234-5678-9012-3456"
               value={form.content || ""}
-              onChange={(e) => setForm((f) => ({ ...f, content: formatCard(e.target.value) }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, content: formatCard(e.target.value) }))
+              }
             />
           </div>
           <div className="sl-field">
@@ -139,14 +163,22 @@ export default function ReceiptModal({
             <label>
               상호 <span className="sl-optional">(선택)</span>
             </label>
-            <input type="text" value={form.companyName || ""} onChange={set("companyName")} />
+            <input
+              type="text"
+              value={form.companyName || ""}
+              onChange={set("companyName")}
+            />
           </div>
           {form.category === "기타" && (
             <div className="sl-field">
               <label>
                 비고 <span className="sl-optional">(선택)</span>
               </label>
-              <input type="text" value={form.note || ""} onChange={set("note")} />
+              <input
+                type="text"
+                value={form.note || ""}
+                onChange={set("note")}
+              />
             </div>
           )}
           {error && <p className="sl-field-error">⚠ {error}</p>}

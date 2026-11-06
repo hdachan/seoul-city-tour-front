@@ -77,6 +77,7 @@ export default function SalesContent() {
   const [showModal, setShowModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [receiptMode, setReceiptMode] = useState("법인"); // 지출내역 입력창: 개인(개인사용 고정) / 법인(개인사용 빼고)
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
 
@@ -425,7 +426,7 @@ export default function SalesContent() {
 
   // 법인카드 모달 (입력 가능한 날짜: 이번 달 중 열린 주, 이번 주 일요일까지)
   const receiptDates = dateOptions.filter(isDateEditable);
-  const openReceiptAdd = () => {
+  const openReceiptAdd = (mode) => {
     if (receiptDates.length === 0) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -438,16 +439,18 @@ export default function SalesContent() {
         : receiptDates.includes(selectedDate)
           ? selectedDate
           : receiptDates[receiptDates.length - 1],
-      category: defaultCategory(categories),
+      category: mode === "개인" ? "개인사용" : defaultCategory(categories),
       content: myCard || "",
       amount: "",
       businessNumber: "",
       companyName: "",
       note: "",
     });
+    setReceiptMode(mode);
     setShowReceiptModal(true);
   };
   const openReceiptEdit = (row) => {
+    setReceiptMode(row.category === "개인사용" ? "개인" : "법인");
     setError("");
     setEditTarget(row);
     setOpenMenu(null);
@@ -985,9 +988,14 @@ export default function SalesContent() {
                 </>
               )}
               {!isLocked && receiptDates.length > 0 && (
-                <button className="sl-btn-primary" onClick={openReceiptAdd}>
-                  ＋ 지출내역
-                </button>
+                <>
+                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("개인")}>
+                    ＋ 개인
+                  </button>
+                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("법인")}>
+                    ＋ 법인
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -1143,6 +1151,7 @@ export default function SalesContent() {
           form={receiptForm}
           setForm={setReceiptForm}
           isEdit={!!editTarget}
+          mode={receiptMode}
           categories={categories}
           error={error}
           onClose={() => setShowReceiptModal(false)}

@@ -318,7 +318,7 @@ describe("영업 정산 (SalesContent)", () => {
   test("법인카드 추가 / 수정 – 입력창 화면 + 저장 값", async () => {
     await open();
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("추가 입력창");
     const inputs = modal().querySelectorAll("input");
@@ -396,10 +396,10 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     );
     await openAt();
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    await screen.findByText("＋ 지출내역");
+    await screen.findByText("＋ 법인");
     // 지출 2건(오늘 · 잠긴 주) 중 오늘 것만 메뉴가 있음 (PC 표 + 모바일 카드 = 2개)
     expect(screen.getAllByText("···")).toHaveLength(2);
-    fireEvent.click(screen.getByText("＋ 지출내역"));
+    fireEvent.click(screen.getByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const dateInput = modal().querySelector("input[type=date]");
     expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-19", "2026-10-25", "2026-10-22"]);
@@ -412,7 +412,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     );
     await openAt();
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const dateInput = modal().querySelector("input[type=date]");
     expect([dateInput.min, dateInput.max]).toEqual(["2026-10-01", "2026-10-25"]);
@@ -591,7 +591,7 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
   test("법인카드 추가 / 수정 – 입력창 화면 + 저장 값", async () => {
     await open();
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("추가 입력창");
     const inputs = modal().querySelectorAll("input");
@@ -884,24 +884,32 @@ describe("영업 정산 통계 탭", () => {
 
 // ───────────── 💳 지출내역 기타 · 비고 ─────────────
 describe("지출내역 – 기타 · 비고", () => {
-  test("개인사용 카테고리는 기타 뒤 맨 아래", async () => {
+  test("＋ 법인은 개인사용 없이, ＋ 개인은 개인사용 고정 + 이유 필수", async () => {
     salesApi.getCategories.mockImplementation(() =>
       ok([{ id: 1, name: "개인사용" }, { id: 2, name: "식대" }, { id: 3, name: "주차" }]),
     );
     render(<SalesContent />);
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const select = modal().querySelector("select");
-    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타", "개인사용"]);
+    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);
     expect(select.value).toBe("식대"); // 개인사용이 먼저 와도 기본 선택은 목록 맨 위
+    expect(modal().textContent).toContain("법인 지출내역 추가");
+    fireEvent.click(modal().querySelector(".sl-modal-close"));
+    await waitFor(() => expect(modal()).toBeNull());
 
-    // 개인사용: 카테고리 바로 밑에 이유 칸 (필수, 비고로 저장)
+    // ＋ 개인: 카테고리 개인사용 고정 (고르는 칸 없음), 바로 밑에 이유 칸 (필수, 비고로 저장)
+    fireEvent.click(screen.getByText("＋ 개인"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(modal().querySelector("select")).toBeNull();
+    const fixed = modal().querySelector('[aria-label="카테고리"]');
+    expect(fixed).toHaveValue("개인사용");
+    expect(fixed).toBeDisabled();
+    expect(modal().textContent).toContain("개인 지출내역 추가");
     const reasonLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("개인사용 이유"));
-    expect(reasonLabel()).toBeUndefined();
-    setValue(select, "개인사용");
-    expect(select.parentElement.contains(reasonLabel())).toBe(true);
+    expect(fixed.parentElement.contains(reasonLabel())).toBe(true);
     const reason = reasonLabel().parentElement.querySelector("input");
     setValue(modal().querySelector("input[type=number]"), "7000");
     expect(modalForm().checkValidity()).toBe(false); // 비어 있으면 저장 안 됨
@@ -918,7 +926,7 @@ describe("지출내역 – 기타 · 비고", () => {
     render(<SalesContent />);
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
     fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 지출내역"));
+    fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
     const select = modal().querySelector("select");
     expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);

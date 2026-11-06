@@ -442,7 +442,7 @@ export default function GuideAdminContent() {
   const filteredExpenses = expenses.filter((e) => e.date === selectedDate);
   const filteredDailyFees = dailyFees.filter((d) => d.date === selectedDate);
 
-  // 현금으로 받은 돈 (투어 금액 + 옵션 현금 · 교차 현금 몫). 서버가 cashIn 으로 계산해서 줌
+  // 투어 금액 중 현금으로 받은 돈 (옵션은 빼고, 옵션은 🎟️ 옵션별 통계에서 따로 봄). 서버가 cashIn 으로 계산해서 줌
   const cashTotal = filteredIncomes.reduce((s, r) => s + (r.cashIn || 0), 0);
   const expCashTotal = filteredExpenses
     .filter((e) => e.paymentType === "현금")

@@ -133,22 +133,30 @@ export default function TotalStats({
 
   // 인쇄
   const printReport = () => {
-    // 인쇄도 개인 제외 (업무 거리 / 법인 주유만)
-    const rows = summary
-      .map((u) => {
-        const dist = u.workDist || 0;
-        const fuelL = u.companyFuelL || 0;
-        const fuelC = u.companyFuelC || 0;
-        const avg = fuelL > 0 ? (dist / fuelL).toFixed(1) + "km" : "";
-        return `<tr>
-        <td>${u.name}</td>
+    // 운행 · 주유 · 평균은 업무 / 법인 기준, 개인 칸은 따로 (개인 거리 · 개인 주유금액), 맨 아래 총계
+    const cells = (dist, pDist, fuelL, fuelC, pFuelC) => `
         <td>${dist > 0 ? fmt(dist) + "km" : ""}</td>
+        <td>${pDist > 0 ? fmt(pDist) + "km" : ""}</td>
         <td>${fuelL > 0 ? fuelL.toFixed(0) + " ℓ" : ""}</td>
-        <td>${avg}</td>
+        <td>${fuelL > 0 ? (dist / fuelL).toFixed(1) + "km" : ""}</td>
         <td>${fuelC > 0 ? fmt(fuelC) : ""}</td>
-      </tr>`;
-      })
+        <td>${pFuelC > 0 ? fmt(pFuelC) : ""}</td>`;
+    const rows = summary
+      .map(
+        (u) => `<tr>
+        <td>${u.name}</td>${cells(
+          u.workDist || 0,
+          u.personalDist || 0,
+          u.companyFuelL || 0,
+          u.companyFuelC || 0,
+          u.personalFuelC || 0,
+        )}
+      </tr>`,
+      )
       .join("");
+    const totalRow = `<tr class="total">
+        <td>총 계</td>${cells(workDist, personalDist, companyFuelL, companyFuelC, personalFuelC)}
+      </tr>`;
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
     <style>
@@ -156,8 +164,11 @@ export default function TotalStats({
       body { font-family: '맑은 고딕', sans-serif; padding: 15mm 20mm; }
       .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
       h2 { font-size: 20pt; font-weight: bold; letter-spacing: 2px; }
-      .approval { border-collapse: collapse; font-size: 10pt; }
-      .approval td { border: 1px solid #000; width: 60px; height: 50px; text-align: center; vertical-align: top; padding: 4px; }
+      .approval { border-collapse: collapse; font-size: 12pt; }
+      .approval td { border: 1px solid #000; width: 95px; text-align: center; padding: 6px; }
+      .approval tr:first-child td { height: 32px; font-weight: bold; vertical-align: middle; }
+      .approval tr:last-child td { height: 75px; }
+      table.main tr.total td { font-weight: bold; background: #f0f0f0; }
       table.main { width: 100%; border-collapse: collapse; font-size: 11pt; margin-top: 10px; }
       table.main th { border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; background: #f8f8f8; }
       table.main td { border: 1px solid #000; padding: 10px 8px; text-align: center; height: 40px; }
@@ -174,11 +185,13 @@ export default function TotalStats({
       <thead><tr>
         <th>성 명</th>
         <th>${month}월 운행 내역(km)</th>
+        <th>개인(km)</th>
         <th>총 주유 내역</th>
         <th>평균거리(km/L)</th>
         <th>총 주유 금액</th>
+        <th>개인 주유 금액</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>${rows}${totalRow}</tbody>
     </table>
     <script>window.onload=()=>{window.print();window.close();}</script>
     </body></html>`;
