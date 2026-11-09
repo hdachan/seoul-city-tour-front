@@ -35,6 +35,8 @@ import "./GuideFormContent.css";
 import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
 import { isPrivateTour } from "../../utils/guideTour";
+import { wholeNumberProps } from "../../utils/wholeNumberInput";
+import IncomeSortToggle, { DEFAULT_INCOME_SORT, sortIncomes } from "./IncomeSortToggle";
 
 const TAX_RATE = 0.033;
 const today = () => toDateStr(new Date());
@@ -42,17 +44,8 @@ const today = () => toDateStr(new Date());
 // 가이드 정산 설명서 링크 (여기만 바꾸면 됨)
 const GUIDE_MANUAL_URL =
   "https://aquamarine-armchair-686.notion.site/3e2d8a6d432180bd967bd8cc2796059e#3e2d8a6d432180af8142d7294867fe88";
-const getWeekRange = () => {
-  const now = new Date();
-  const max = toDateStr(now);
-  const min = new Date(now);
-  min.setDate(now.getDate() - 6);
-  return { min: toDateStr(min), max };
-};
-const isInWeekRange = (date) => {
-  const { min, max } = getWeekRange();
-  return date >= min && date <= max;
-};
+// 입력은 오늘까지 (지난 날짜는 달이 잠기기 전까지 가능, 잠금은 서버가 달 기준으로 알려줌)
+const isNotFuture = (date) => date <= toDateStr(new Date());
 
 const SelectBtn = ({ options, value, onChange, badgeFn }) => (
   <div style={{ display: "flex", gap: "8px" }}>
@@ -431,7 +424,8 @@ export default function GuideFormContent() {
   const previewExpenseTotal = () =>
     Number(expenseForm.amount || 0) * Number(expenseForm.headcount || 0);
 
-  const filteredRecords = records.filter((r) => r.date === selectedDate);
+  const [incomeSort, setIncomeSort] = useState(DEFAULT_INCOME_SORT);
+  const filteredRecords = sortIncomes(records.filter((r) => r.date === selectedDate), incomeSort);
   const filteredExpenses = expenses.filter((e) => e.date === selectedDate);
   const filteredDailyFees = dailyFees.filter((d) => d.date === selectedDate);
 
@@ -600,7 +594,7 @@ export default function GuideFormContent() {
             </button>
           </div>
         </div>
-        {!isLocked && isInWeekRange(selectedDate) && (
+        {!isLocked && isNotFuture(selectedDate) && (
           <div style={{ display: "flex", gap: "8px" }}>
             <button className="btn-primary" onClick={openIncomeAdd}>
               ＋ 수입 추가
@@ -628,7 +622,7 @@ export default function GuideFormContent() {
             fontWeight: 500,
           }}
         >
-          🔒 이번 달은 관리자에 의해 잠겨있습니다. 수정이 불가합니다.
+          🔒 잠긴 달입니다. 입력 · 수정할 수 없습니다.
         </div>
       )}
 
@@ -692,6 +686,7 @@ export default function GuideFormContent() {
 
       {activeTab === "records" && (
         <>
+          <IncomeSortToggle value={incomeSort} onChange={setIncomeSort} />
           {isMobile ? (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "10px" }}
@@ -808,7 +803,7 @@ export default function GuideFormContent() {
                           <OptionList options={r.options} />
                       </div>
                     </div>
-                    {!isLocked && isInWeekRange(r.date) && (
+                    {!isLocked && (
                       <div
                         style={{
                           display: "flex",
@@ -1362,6 +1357,7 @@ export default function GuideFormContent() {
                       <label>현금 총액</label>
                       <input
                         type="number"
+                        {...wholeNumberProps}
                         placeholder="금액"
                         value={incomeForm.cashAmount || ""}
                         onChange={(e) =>
@@ -1376,6 +1372,7 @@ export default function GuideFormContent() {
                       <label>카드 총액</label>
                       <input
                         type="number"
+                        {...wholeNumberProps}
                         placeholder="금액"
                         value={incomeForm.cardAmount || ""}
                         onChange={(e) =>
@@ -1391,6 +1388,7 @@ export default function GuideFormContent() {
                     <label>{isPrivate ? "인원 (명)" : "어른 (명)"}</label>
                     <input
                       type="number"
+                      {...wholeNumberProps}
                       placeholder="명"
                       value={incomeForm.adult || ""}
                       onChange={(e) =>
@@ -1404,6 +1402,7 @@ export default function GuideFormContent() {
                     <label>아이 (명)</label>
                     <input
                       type="number"
+                      {...wholeNumberProps}
                       placeholder="명"
                       value={incomeForm.child || ""}
                       onChange={(e) =>
@@ -1415,6 +1414,7 @@ export default function GuideFormContent() {
                     <label>유아 (명)</label>
                     <input
                       type="number"
+                      {...wholeNumberProps}
                       placeholder="명"
                       value={incomeForm.infant || ""}
                       onChange={(e) =>
@@ -1463,6 +1463,7 @@ export default function GuideFormContent() {
                         <label>{isPrivate ? "인원" : "어른"}</label>
                         <input
                           type="number"
+                          {...wholeNumberProps}
                           placeholder="명"
                           value={incomeForm.adult || ""}
                           onChange={(e) =>
@@ -1483,6 +1484,7 @@ export default function GuideFormContent() {
                             <label>아이 인원</label>
                             <input
                               type="number"
+                              {...wholeNumberProps}
                               placeholder="명"
                               value={incomeForm.child || ""}
                               onChange={(e) =>
@@ -1508,6 +1510,7 @@ export default function GuideFormContent() {
                             </label>
                             <input
                               type="number"
+                              {...wholeNumberProps}
                               placeholder="명"
                               value={incomeForm.infant || ""}
                               onChange={(e) =>
@@ -1574,6 +1577,7 @@ export default function GuideFormContent() {
                         <label>{isPrivate ? "금액 (총액)" : "금액 (1인)"}</label>
                         <input
                           type="number"
+                          {...wholeNumberProps}
                           placeholder="금액"
                           value={incomeForm.amount}
                           onChange={(e) =>
@@ -1588,6 +1592,7 @@ export default function GuideFormContent() {
                         <label>{isPrivate ? "인원" : "어른"}</label>
                         <input
                           type="number"
+                          {...wholeNumberProps}
                           placeholder="명"
                           value={incomeForm.adult || ""}
                           onChange={(e) =>
@@ -1619,6 +1624,7 @@ export default function GuideFormContent() {
                             <label>아이 금액(1인)</label>
                             <input
                               type="number"
+                              {...wholeNumberProps}
                               placeholder="금액"
                               value={incomeForm.childAmount || ""}
                               onChange={(e) =>
@@ -1633,6 +1639,7 @@ export default function GuideFormContent() {
                             <label>아이 인원</label>
                             <input
                               type="number"
+                              {...wholeNumberProps}
                               placeholder="명"
                               value={incomeForm.child || ""}
                               onChange={(e) =>
@@ -1659,6 +1666,7 @@ export default function GuideFormContent() {
                           </label>
                           <input
                             type="number"
+                            {...wholeNumberProps}
                             placeholder="명"
                             value={incomeForm.infant || ""}
                             onChange={(e) =>
@@ -1827,6 +1835,7 @@ export default function GuideFormContent() {
                   <label>금액 (1인) *</label>
                   <input
                     type="number"
+                    {...wholeNumberProps}
                     placeholder="금액"
                     value={expenseForm.amount}
                     onChange={(e) =>
@@ -1838,6 +1847,7 @@ export default function GuideFormContent() {
                   <label>인원 *</label>
                   <input
                     type="number"
+                    {...wholeNumberProps}
                     placeholder="명"
                     value={expenseForm.headcount}
                     onChange={(e) =>
@@ -1919,6 +1929,7 @@ export default function GuideFormContent() {
                 <label>일비 금액 *</label>
                 <input
                   type="number"
+                  {...wholeNumberProps}
                   placeholder="금액 입력"
                   value={dailyFeeForm.amount}
                   onChange={(e) =>

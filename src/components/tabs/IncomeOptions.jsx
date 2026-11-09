@@ -5,6 +5,7 @@
 // (현금 · 그외-현금 → 현금, 카드 · 그외-카드 → 카드, 그외-교차 → 교차, 완불 · 그외 → 직접 고름).
 // 직접 누르기 전까지는 수입 결제유형을 바꾸면 옵션도 따라 바뀜.
 import { useEffect, useRef, useState } from "react";
+import { wholeNumberProps } from "../../utils/wholeNumberInput";
 
 const ETC = "기타";
 const PAYS = ["현금", "카드", "교차"];
@@ -160,6 +161,7 @@ export default function IncomeOptions({ options = [], onChange, tourName, tourOp
                     <span style={{ fontSize: "12px", color: "#555", whiteSpace: "nowrap" }}>{name}</span>
                     <input
                       type="number"
+                      {...wholeNumberProps}
                       aria-label={`${label}옵션 ${name} ${idx + 1}`}
                       placeholder={`${name} 금액`}
                       value={o[key] || ""}
@@ -172,6 +174,7 @@ export default function IncomeOptions({ options = [], onChange, tourName, tourOp
             ) : (
               <input
                 type="number"
+                {...wholeNumberProps}
                 aria-label={`${label}옵션금액 ${idx + 1}`}
                 placeholder="옵션금액"
                 value={o.amount || ""}

@@ -2,6 +2,7 @@
 // 대표자 1은 폼의 representativeName · adult · child · infant, 2부터는 form.extraReps 에 담김.
 // 저장하면 사람마다 수입 한 건이 됨. (대표자 1만 있으면 기존처럼 한 건 저장)
 import IncomeOptions, { optionsError } from "./IncomeOptions";
+import { wholeNumberProps } from "../../utils/wholeNumberInput";
 
 const newRep = () => ({ name: "", adult: "", child: "", infant: "", showKids: false, options: [] });
 
@@ -85,6 +86,7 @@ export default function WanbulExtraReps({ form, setForm, isPrivate, tourOptions 
       <label>{label}</label>
       <input
         type="number"
+        {...wholeNumberProps}
         placeholder="명"
         value={reps[idx][key] || ""}
         onChange={(e) => change(idx, key, e.target.value)}
