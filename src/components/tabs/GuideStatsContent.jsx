@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchGuideStats } from "../../api/auth";
+import { expenseUnit } from "../../utils/expenseUnit";
 import "./GuideStatsContent.css";
 
 const fmt = (n) => Number(n).toLocaleString();
@@ -246,7 +247,7 @@ export default function GuideStatsContent() {
                           </td>
                           <td>{e.expenseType}</td>
                           <td className="td-center">
-                            {e.headcount > 0 ? `${e.headcount}명` : "-"}
+                            {e.headcount > 0 ? `${e.headcount}${expenseUnit(e.expenseType)}` : "-"}
                           </td>
                           <td style={{ fontSize: "11px", color: "#aaa" }}>
                             {expandedExpense === i ? "▲" : "▼"}
@@ -258,7 +259,8 @@ export default function GuideStatsContent() {
                               <div>투어: {e.tourName || "-"}</div>
                               <div>결제: {e.paymentType}</div>
                               <div>
-                                금액: {fmt(e.amount)}원 × {e.headcount}명 ={" "}
+                                금액: {fmt(e.amount)}원 × {e.headcount}
+                                {expenseUnit(e.expenseType)} ={" "}
                                 {fmt(e.totalAmount)}원
                               </div>
                               {e.memo && <div>비고: {e.memo}</div>}

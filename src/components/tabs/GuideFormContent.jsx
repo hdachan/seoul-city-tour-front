@@ -36,6 +36,12 @@ import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
 import { isPrivateTour } from "../../utils/guideTour";
 import { wholeNumberProps } from "../../utils/wholeNumberInput";
+import {
+  isBookExpense,
+  expenseUnit,
+  expenseAmountLabel,
+  expenseCountLabel,
+} from "../../utils/expenseUnit";
 import IncomeSortToggle, { DEFAULT_INCOME_SORT, sortIncomes } from "./IncomeSortToggle";
 
 const TAX_RATE = 0.033;
@@ -340,7 +346,11 @@ export default function GuideFormContent() {
     setSuccess("");
     if (checkLocked()) return;
     if (!expenseForm.amount || !expenseForm.headcount) {
-      setError("금액과 인원을 입력해주세요.");
+      setError(
+        isBookExpense(expenseForm.expenseType)
+          ? "금액과 권수를 입력해주세요."
+          : "금액과 인원을 입력해주세요.",
+      );
       return;
     }
     try {
@@ -1029,7 +1039,7 @@ export default function GuideFormContent() {
                     </div>
                     <div style={{ fontSize: "12px", color: "#888" }}>
                       {fmt(e.amount)}
-                      {e.headcount ? " × " + e.headcount + "명" : ""}
+                      {e.headcount ? " × " + e.headcount + expenseUnit(e.expenseType) : ""}
                       {e.memo && (
                         <span style={{ marginLeft: "8px" }}>
                           · 비고: {e.memo}
@@ -1135,7 +1145,7 @@ export default function GuideFormContent() {
                         </td>
                         <td className="td-right">{fmt(e.amount)}</td>
                         <td className="td-center">
-                          {e.headcount ? `${e.headcount}명` : "-"}
+                          {e.headcount ? `${e.headcount}${expenseUnit(e.expenseType)}` : "-"}
                         </td>
                         <td className="td-right total-cell">
                           {e.totalAmount ? fmt(e.totalAmount) : "-"}
@@ -1832,7 +1842,7 @@ export default function GuideFormContent() {
                 }}
               >
                 <div className="field">
-                  <label>금액 (1인) *</label>
+                  <label>{expenseAmountLabel(expenseForm.expenseType)} *</label>
                   <input
                     type="number"
                     {...wholeNumberProps}
@@ -1844,11 +1854,11 @@ export default function GuideFormContent() {
                   />
                 </div>
                 <div className="field">
-                  <label>인원 *</label>
+                  <label>{expenseCountLabel(expenseForm.expenseType)} *</label>
                   <input
                     type="number"
                     {...wholeNumberProps}
-                    placeholder="명"
+                    placeholder={expenseUnit(expenseForm.expenseType)}
                     value={expenseForm.headcount}
                     onChange={(e) =>
                       setExpenseForm({

@@ -18,11 +18,7 @@ import {
   fetchAdminLockStatus,
   toggleMonthLock,
   fetchTourNames,
-  addTourName,
-  deleteTourName,
   fetchAdminExpenseCategories,
-  addExpenseCategory,
-  deleteExpenseCategory,
   fetchAdminGuideIncome,
   addAdminIncome,
   fetchGuideTourOptions,
@@ -42,6 +38,11 @@ import {
 import { toDateStr } from "../../utils/dateUtils";
 import { useDateRollover } from "../../utils/useToday";
 import { wholeNumberProps } from "../../utils/wholeNumberInput";
+import {
+  expenseUnit,
+  expenseAmountLabel,
+  expenseCountLabel,
+} from "../../utils/expenseUnit";
 import IncomeSortToggle, { DEFAULT_INCOME_SORT, sortIncomes } from "./IncomeSortToggle";
 
 
@@ -109,11 +110,8 @@ export default function GuideAdminContent() {
   });
   const [isLocked, setIsLocked] = useState(false);
   const [tourNames, setTourNames] = useState([]);
-  const [newTourName, setNewTourName] = useState("");
   const [activeMainTab, setActiveMainTab] = useState("list");
   const [expenseCategories, setExpenseCategories] = useState([]);
-  const [newExpenseCategory, setNewExpenseCategory] = useState("");
-  const [selectedTourForExpense, setSelectedTourForExpense] = useState("");
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dailyFees, setDailyFees] = useState([]);
@@ -451,6 +449,20 @@ export default function GuideAdminContent() {
     .filter((e) => e.paymentType === "현금")
     .reduce((s, e) => s + (e.totalAmount || 0), 0);
   const netTotal = cashTotal - expCashTotal;
+  // 카드 수입합계: 투어 금액 중 카드로 받은 돈 (옵션 빼고, 그외-교차는 카드 금액만)
+  const cardTotal = filteredIncomes.reduce((s, r) => s + (r.cardIn || 0), 0);
+  // 지출합계 (카드): 현금이 아닌 지출 (카드 · 법인카드)
+  const expCardTotal = filteredExpenses
+    .filter((e) => e.paymentType !== "현금")
+    .reduce((s, e) => s + (e.totalAmount || 0), 0);
+  // 옵션 현금 / 카드 합계 (교차는 현금 · 카드 금액으로 나눠서)
+  const optionPart = (key) =>
+    filteredIncomes.reduce(
+      (s, r) => s + (r.options || []).reduce((t, o) => t + Number(o[key] || 0), 0),
+      0,
+    );
+  const optionCashTotal = optionPart("cashAmount");
+  const optionCardTotal = optionPart("cardAmount");
   const totalHeadcount = filteredIncomes.reduce(
     (s, r) => s + (Number(r.headcount) || 0),
     0,
@@ -819,263 +831,16 @@ export default function GuideAdminContent() {
         </button>
       </div>
 
-      {/* 카테고리 탭 */}
-      {activeMainTab === "category" && (
-        <div>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "10px",
-              border: "1px solid #e8eaed",
-              padding: "16px",
-              marginBottom: "12px",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "14px",
-                fontWeight: 600,
-                marginBottom: "12px",
-              }}
-            >
-              투어 카테고리 추가
-            </h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newTourName.trim()) return;
-                addTourName(newTourName.trim())
-                  .then(() => {
-                    setNewTourName("");
-                    fetchTourNames().then((r) => setTourNames(r.data));
-                    setSuccess("추가되었습니다.");
-                  })
-                  .catch((err) =>
-                    setError(err.response?.data?.error || "추가 실패"),
-                  );
-              }}
-              style={{ display: "flex", gap: "8px", alignItems: "center" }}
-            >
-              <input
-                type="text"
-                placeholder="투어 이름"
-                value={newTourName}
-                onChange={(e) => setNewTourName(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "9px 12px",
-                  border: "1.5px solid #d8dce3",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-              <button type="submit" className="btn-primary">
-                추가
-              </button>
-            </form>
-          </div>
-          <div className="gf-table-wrap">
-            <table className="gf-table">
-              <thead>
-                <tr>
-                  <th>투어명</th>
-                  <th style={{ width: "70px" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {tourNames.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="empty">
-                      없음
-                    </td>
-                  </tr>
-                ) : (
-                  tourNames.map((t) => (
-                    <tr key={t.id}>
-                      <td style={{ fontWeight: 500 }}>{t.name}</td>
-                      <td>
-                        <button
-                          className="delete-btn"
-                          onClick={() => {
-                            if (window.confirm("삭제할까요?"))
-                              deleteTourName(t.id)
-                                .then(() => {
-                                  fetchTourNames().then((r) =>
-                                    setTourNames(r.data),
-                                  );
-                                  setSuccess("삭제되었습니다.");
-                                })
-                                .catch((err) =>
-                                  setError(
-                                    err.response?.data?.error || "삭제 실패",
-                                  ),
-                                );
-                          }}
-                        >
-                          삭제
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeMainTab === "expense-category" && (
-        <div>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "10px",
-              border: "1px solid #e8eaed",
-              padding: "16px",
-              marginBottom: "12px",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "14px",
-                fontWeight: 600,
-                marginBottom: "12px",
-              }}
-            >
-              지출 카테고리 추가
-            </h3>
-            <div style={{ marginBottom: "10px" }}>
-              <label
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "#444",
-                  display: "block",
-                  marginBottom: "6px",
-                }}
-              >
-                투어 선택 *
-              </label>
-              <select
-                value={selectedTourForExpense}
-                onChange={(e) => {
-                  setSelectedTourForExpense(e.target.value);
-                  fetchAdminExpenseCategories(
-                    e.target.value ? Number(e.target.value) : null,
-                  )
-                    .then((r) => setExpenseCategories(r.data))
-                    .catch(() => {});
-                }}
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  border: "1.5px solid #e0e0e0",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              >
-                <option value="">투어를 선택하세요</option>
-                {tourNames.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newExpenseCategory.trim()) return;
-                if (!selectedTourForExpense) {
-                  setError("투어를 먼저 선택해주세요.");
-                  return;
-                }
-                addExpenseCategory(
-                  newExpenseCategory.trim(),
-                  Number(selectedTourForExpense),
-                )
-                  .then(() => {
-                    setNewExpenseCategory("");
-                    fetchAdminExpenseCategories(
-                      Number(selectedTourForExpense),
-                    ).then((r) => setExpenseCategories(r.data));
-                    setSuccess("추가되었습니다.");
-                  })
-                  .catch((err) =>
-                    setError(err.response?.data?.error || "추가 실패"),
-                  );
-              }}
-              style={{ display: "flex", gap: "8px", alignItems: "center" }}
-            >
-              <input
-                type="text"
-                placeholder="카테고리 이름"
-                value={newExpenseCategory}
-                onChange={(e) => setNewExpenseCategory(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "9px 12px",
-                  border: "1.5px solid #d8dce3",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  outline: "none",
-                }}
-              />
-              <button type="submit" className="btn-primary">
-                추가
-              </button>
-            </form>
-          </div>
-          <div className="gf-table-wrap">
-            <table className="gf-table">
-              <thead>
-                <tr>
-                  <th>투어</th>
-                  <th>카테고리명</th>
-                  <th style={{ width: "70px" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenseCategories.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="empty">
-                      없음
-                    </td>
-                  </tr>
-                ) : (
-                  expenseCategories.map((c) => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 500 }}>{c.name}</td>
-                      <td>
-                        <button
-                          className="delete-btn"
-                          onClick={() => {
-                            if (window.confirm("삭제할까요?"))
-                              deleteExpenseCategory(c.id)
-                                .then(() => {
-                                  loadExpenseCategories();
-                                  setSuccess("삭제되었습니다.");
-                                })
-                                .catch((err) =>
-                                  setError(
-                                    err.response?.data?.error || "삭제 실패",
-                                  ),
-                                );
-                          }}
-                        >
-                          삭제
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* 카테고리 탭 (목록 화면과 같은 공용 화면 – 투어 옵션 포함) */}
+      <GuideCategoryTab
+        activeMainTab={activeMainTab}
+        tourNames={tourNames}
+        setTourNames={setTourNames}
+        expenseCategories={expenseCategories}
+        setExpenseCategories={setExpenseCategories}
+        setSuccess={setSuccess}
+        setError={setError}
+      />
 
       {activeMainTab === "list" && (
         <div>
@@ -1150,6 +915,42 @@ export default function GuideAdminContent() {
               >
                 {netTotal >= 0 ? "+" : ""}
                 {fmt(netTotal)}
+              </div>
+            </div>
+          </div>
+
+          {/* 카드 수입 · 카드 지출 · 옵션 현금 / 카드 (토탈 계산에는 안 들어감) */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: "12px",
+              marginTop: "-0.6rem",
+              marginBottom: "1.2rem",
+            }}
+          >
+            <div style={cardStyle("#dbeafe")}>
+              <div style={labelStyle}>카드 수입합계</div>
+              <div style={{ ...valueStyle, color: "#1e40af" }}>
+                {fmt(cardTotal)}
+              </div>
+            </div>
+            <div style={cardStyle("#fde8e8")}>
+              <div style={labelStyle}>지출합계 (카드)</div>
+              <div style={{ ...valueStyle, color: "#e53e3e" }}>
+                {fmt(expCardTotal)}
+              </div>
+            </div>
+            <div style={cardStyle("#fef3c7")}>
+              <div style={labelStyle}>옵션 현금 합계</div>
+              <div style={{ ...valueStyle, color: "#92400e" }}>
+                {fmt(optionCashTotal)}
+              </div>
+            </div>
+            <div style={cardStyle("#fef3c7")}>
+              <div style={labelStyle}>옵션 카드 합계</div>
+              <div style={{ ...valueStyle, color: "#92400e" }}>
+                {fmt(optionCardTotal)}
               </div>
             </div>
           </div>
@@ -1396,7 +1197,7 @@ export default function GuideAdminContent() {
                         </td>
                         <td className="td-right">{fmt(e.amount)}</td>
                         <td className="td-center">
-                          {e.headcount ? `${e.headcount}명` : "-"}
+                          {e.headcount ? `${e.headcount}${expenseUnit(e.expenseType)}` : "-"}
                         </td>
                         <td className="td-right total-cell">
                           {e.totalAmount ? fmt(e.totalAmount) : "-"}
@@ -2009,6 +1810,18 @@ export default function GuideAdminContent() {
                         />
                       </div>
                     )}
+                  {/* 비고 (가이드 정산 입력창과 같은 칸) */}
+                  <div className="field">
+                    <label>비고</label>
+                    <input
+                      type="text"
+                      placeholder="비고 입력 (선택)"
+                      value={incomeForm.memo || ""}
+                      onChange={(e) =>
+                        setIncomeForm((f) => ({ ...f, memo: e.target.value }))
+                      }
+                    />
+                  </div>
                   {incomeError && (
                     <p className="field-error">⚠ {incomeError}</p>
                   )}
@@ -2114,7 +1927,7 @@ export default function GuideAdminContent() {
                     }}
                   >
                     <div className="field">
-                      <label>금액 (1인)</label>
+                      <label>{expenseAmountLabel(expenseForm.expenseType)}</label>
                       <input
                         type="number"
                         {...wholeNumberProps}
@@ -2128,10 +1941,11 @@ export default function GuideAdminContent() {
                       />
                     </div>
                     <div className="field">
-                      <label>인원</label>
+                      <label>{expenseCountLabel(expenseForm.expenseType)}</label>
                       <input
                         type="number"
                         {...wholeNumberProps}
+                        placeholder={expenseUnit(expenseForm.expenseType)}
                         value={expenseForm.headcount || ""}
                         onChange={(e) =>
                           setExpenseForm({
