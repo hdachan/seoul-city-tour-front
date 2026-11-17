@@ -1,0 +1,146 @@
+/* 🔎 가이드 상세 통계 */
+.gds { padding: 8px 0; }
+.gds .zero { color: #c4c9d2; }
+
+.gds-top { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.gds select, .gds input[type="search"] {
+  padding: 8px 10px; border: 1px solid #d8dce3; border-radius: 8px; font-size: 14px; background: #fff; outline: none;
+}
+.gds input[type="search"] { flex: 1; min-width: 200px; max-width: 360px; }
+
+.gds-box { background: #fff; border: 1px solid #e8eaed; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.gds-help { font-size: 14px; color: #4b5563; font-weight: 600; margin: 4px 0 10px; }
+.gds-note { font-size: 12px; color: #9ca3af; margin: 6px 0 14px; }
+.gds-sub { font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 18px 0 8px; }
+.gds-empty { padding: 12px; text-align: center; color: #9ca3af; font-size: 13px; background: #f9fafb; border-radius: 8px; }
+
+/* 금액 색 */
+.gds .is-cash { color: #059669; }
+.gds .is-card { color: #1e40af; }
+.gds .is-opt { color: #b45309; }
+.gds .is-wanbul { color: #854d0e; }
+.gds .is-exp { color: #e53e3e; }
+.gds .is-fee { color: #6b21a8; }
+.gds .minus { color: #e53e3e !important; }
+
+/* 합계 칸 */
+.gds-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.gds-chip { display: inline-flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: #f8f9fb; border: 1px solid #eef0f3; border-radius: 10px; min-width: 100px; }
+.gds-chip > span { font-size: 12px; color: #6b7280; font-weight: 600; }
+.gds-chip > b { font-size: 15px; color: #111827; }
+.gds-chip.is-total { background: #f0fdf4; border-color: #bbf7d0; }
+.gds-chip.is-total > b { color: #059669; }
+
+/* ① 가이드 카드 */
+.gds-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.gds-gcard {
+  text-align: left; background: #fff; border: 2px solid #e8eaed; border-radius: 14px; padding: 16px;
+  cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); font: inherit;
+}
+.gds-gcard:hover { border-color: #1557b0; background: #f8fbff; }
+.gds-gcard.is-empty { background: #fafafa; color: #9ca3af; }
+.gds-gname { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.gds-gcard.is-empty .gds-gname { color: #9ca3af; }
+.gds-gsub { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+.gds-gline { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; }
+.gds-gline span { color: #6b7280; }
+.gds-gline.is-total { border-top: 1px solid #eef0f3; margin-top: 4px; padding-top: 7px; font-size: 15px; }
+.gds-gline.is-total b { color: #059669; }
+
+/* ② 가이드 이름 줄 */
+.gds-guidebar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 18px; flex-wrap: wrap; }
+.gds-back {
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1557b0; border-radius: 8px;
+  padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+
+/* 달력 */
+.gds-cal-wrap { background: #fff; border: 1px solid #e8eaed; border-radius: 12px; padding: 8px; overflow-x: auto; }
+.gds-cal { width: 100%; min-width: 700px; border-collapse: collapse; table-layout: fixed; }
+.gds-cal th { font-size: 13px; font-weight: 700; color: #6b7280; padding: 8px 0; }
+.gds-cal th.sun, .gds-dnum.sun { color: #e53e3e; }
+.gds-cal th.sat, .gds-dnum.sat { color: #1557b0; }
+.gds-cal td { border: 1px solid #eef0f3; vertical-align: top; height: 112px; padding: 6px 8px; }
+.gds-cal td.empty { background: #fafafa; }
+.gds-cal td.off { background: #fff; }
+.gds-cal td.has { cursor: pointer; background: #fbfdff; }
+.gds-cal td.has:hover { background: #eef4ff; }
+.gds-cal td.selected { outline: 3px solid #1557b0; outline-offset: -3px; background: #eef4ff; }
+.gds-dnum { font-size: 14px; font-weight: 700; color: #374151; display: flex; justify-content: space-between; align-items: center; }
+.gds-dcount { font-size: 11px; font-weight: 700; color: #fff; background: #1557b0; border-radius: 10px; padding: 1px 7px; }
+.gds-dlines { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.gds-dlines > div { display: flex; justify-content: space-between; font-size: 12px; }
+.gds-dlines span { color: #9ca3af; }
+.gds-dlines b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.gds-dlines .is-total { border-top: 1px dashed #e5e7eb; margin-top: 2px; padding-top: 2px; }
+.gds-dlines .is-total b { color: #111827; font-weight: 700; }
+
+/* ③ 그날 상세 */
+.gds-detail { margin-top: 4px; border: 2px solid #1557b0; }
+.gds-detail-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 10px; }
+.gds-list { display: flex; flex-direction: column; gap: 6px; }
+.gds-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid #eef0f3; border-radius: 10px; background: #fff; }
+.gds-item:hover { background: #f9fafb; }
+.gds-item.is-exp-row { flex-direction: column; gap: 4px; background: #fffafa; }
+.gds-no {
+  flex: 0 0 26px; height: 26px; border-radius: 50%; background: #f3f4f6; color: #6b7280;
+  font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.gds-item-body { flex: 1; min-width: 0; }
+.gds-item-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gds-rep { font-size: 15px; color: #111827; }
+.gds-meta { font-size: 13px; color: #6b7280; }
+.gds-money { margin-left: auto; font-size: 15px; color: #111827; white-space: nowrap; }
+.gds-item-sub { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 5px; font-size: 12px; }
+.gds-opt { color: #b45309; background: #fffbeb; border-radius: 6px; padding: 2px 8px; }
+.gds-memo { color: #6b7280; }
+
+.gds-pay { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.gds-pay.is-cash { background: #d1fae5; color: #065f46; }
+.gds-pay.is-card { background: #dbeafe; color: #1e40af; }
+.gds-pay.is-wanbul { background: #fef9c3; color: #854d0e; }
+.gds-pay.is-etc { background: #f3f4f6; color: #555; }
+
+/* 검색 결과 */
+.gds-hits { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
+.gds-hit { text-align: left; padding: 8px 10px; border: 1px solid #fde68a; border-radius: 8px; background: #fffbeb; font-size: 13px; cursor: pointer; }
+.gds-hit:hover { background: #fef3c7; }
+
+/* ③ 보기 버튼 (전체 / 수입 / 옵션 / 지출 / 일비) */
+.gds-views { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gds-view {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px;
+  border: 1.5px solid #d8dce3; background: #fff; color: #4b5563; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.gds-view:hover { border-color: #1557b0; }
+.gds-view.on { background: #1557b0; border-color: #1557b0; color: #fff; }
+.gds-view-count { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: #f3f4f6; color: #6b7280; }
+.gds-view.on .gds-view-count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.gds-sumline { padding: 10px 14px; background: #f8f9fb; border: 1px solid #eef0f3; border-radius: 10px; font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 10px; }
+
+/* 🎟 옵션 보기: 옵션 이름별 묶음 */
+.gds-group { border: 1px solid #fde68a; border-radius: 10px; overflow: hidden; }
+.gds-group-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 9px 12px; background: #fffbeb; font-size: 15px; }
+.gds-group-sum { margin-left: auto; display: flex; gap: 12px; font-size: 14px; }
+.gds-group-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-top: 1px solid #fef3c7; font-size: 14px; }
+.gds-no.is-small { flex-basis: 22px; height: 22px; font-size: 11px; }
+.gds-rep-sm { font-weight: 600; color: #111827; }
+.gds-money-sm { margin-left: auto; white-space: nowrap; color: #374151; }
+
+/* ① 미니 달력 (입력 현황) */
+.gds-mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #eef0f3; }
+.gds-mini-w { font-size: 10px; color: #9ca3af; text-align: center; font-weight: 600; }
+.gds-mini-w.sun { color: #e53e3e; }
+.gds-mini-w.sat { color: #1557b0; }
+.gds-mini-d {
+  height: 22px; border-radius: 4px; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.gds-mini-d.is-income { background: #22c55e; color: #fff; }
+.gds-mini-d.is-other { background: #fde68a; color: #92400e; }
+.gds-mini-d.is-none { background: #f3f4f6; color: #9ca3af; box-shadow: inset 0 0 0 1px #e5e7eb; }
+.gds-mini-d.is-future { background: #fff; color: #d1d5db; border: 1px dashed #e5e7eb; }
+.gds-mini-d.is-today { outline: 2px solid #1557b0; outline-offset: 1px; }
+.gds-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #6b7280; margin: -4px 0 10px; }
+.gds-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.gds-legend i.gds-mini-d { display: inline-block; width: 14px; height: 14px; }

@@ -11,6 +11,7 @@ import SettlementContent from "./tabs/SettlementContent";
 import GinsengContent from "./tabs/GinsengContent";
 import GuideAdminContent from "./tabs/GuideAdminContent";
 import GuideAdminStatsTab from "./tabs/GuidadminecategoryTab/GuideAdminStatsTab";
+import GuideDetailStatsTab from "./tabs/GuidadminecategoryTab/GuideDetailStatsTab";
 import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
 import SalesAdminStatsTab from "./tabs/salesAdmincomponent/SalesAdminStatsTab";
 import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
@@ -30,6 +31,7 @@ const ALL_TABS = [
   { id: "ginseng", icon: "🌿", label: "인삼 매출" },
   { id: "guide-admin", icon: "📂", label: "가이드 정산관리" },
   { id: "guide-admin-stats", icon: "📊", label: "가이드 정산 통계" },
+  { id: "guide-detail-stats", icon: "🔎", label: "가이드 상세 통계" },
   { id: "sales-admin-stats", icon: "📈", label: "영업 정산 통계" },
   { id: "sales-admin", icon: "📊", label: "영업 정산관리" },
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
@@ -87,6 +89,7 @@ export default function AppLayout() {
           "ginseng",
           "guide-admin",
           "guide-admin-stats",
+          "guide-detail-stats",
           "sales-admin",
           "sales-admin-stats",
           "requests",
@@ -97,6 +100,7 @@ export default function AppLayout() {
           "ginseng",
           "guide-admin",
           "guide-admin-stats",
+          "guide-detail-stats",
           "sales-admin",
           "sales-admin-stats",
           "requests",
@@ -159,6 +163,8 @@ export default function AppLayout() {
         return <GuideAdminContent />;
       case "guide-admin-stats":
         return <GuideAdminStatsTab />;
+      case "guide-detail-stats":
+        return <GuideDetailStatsTab />;
       case "sales-admin":
         return <SalesAdminContent />;
       case "sales-admin-stats":

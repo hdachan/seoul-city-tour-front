@@ -74,6 +74,9 @@ export const fetchGuideStats = (username, year, month) =>
   client.get(`/guide-form/stats`, { params: { username, year, month } });
 export const fetchAdminDailyStats = (year, month) =>
   client.get(`/guide-admin/stats/daily`, { params: { year, month } });
+// 🔎 가이드 상세 통계: 한 달치 모든 가이드 수입 · 지출 · 일비 { guides, incomes, expenses, dailyFees }
+export const fetchAdminDetailStats = (year, month) =>
+  client.get(`/guide-admin/stats/detail`, { params: { year, month } });
 export const fetchAdminOptionStats = (year, month) =>
   client.get(`/guide-admin/stats/options`, { params: { year, month } });
 export const fetchAdminStats = (year, month) =>
