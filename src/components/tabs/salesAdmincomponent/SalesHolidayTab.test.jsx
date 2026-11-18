@@ -1,9 +1,10 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SalesHolidayTab from "./SalesHolidayTab";
-import { salesHolidayApi } from "../../../api/sales";
+import { salesHolidayApi, salesApi } from "../../../api/sales";
 
 jest.mock("../../../api/sales", () => ({
   salesHolidayApi: { getMine: jest.fn(), save: jest.fn(), remove: jest.fn() },
+  salesApi: { getDriving: jest.fn() },
 }));
 const ok = (data) => Promise.resolve({ data });
 // jsdom 에는 PointerEvent 가 없어 pointerType 이 안 넘어감 → 테스트용으로 채움
@@ -31,6 +32,8 @@ beforeEach(() => {
   );
   salesHolidayApi.save.mockImplementation((date, reason) => ok({ date, reason }));
   salesHolidayApi.remove.mockImplementation(() => ok({}));
+  // 운행 기록: 12일(휴무와 겹침) · 21일
+  salesApi.getDriving.mockImplementation(() => ok([{ date: `${ym}-12` }, { date: `${ym}-21` }, { date: `${ym}-21` }]));
 });
 
 const ready = async () => {
@@ -98,4 +101,15 @@ test("사유 없이 저장하면 막음", async () => {
   fireEvent.click(screen.getByText("휴무 저장"));
   expect(await screen.findByText(/휴무 사유를 적어주세요/)).toBeInTheDocument();
   expect(salesHolidayApi.save).not.toHaveBeenCalled();
+});
+
+test("운행 기록이 있는 날은 초록, 휴무와 겹치면 ⚠ 운행 · 기간에 들어가면 경고", async () => {
+  await ready();
+  await waitFor(() => expect(cell("21").className).toContain("is-driven"));
+  expect(cell("21").textContent).toContain("🚗 운행");
+  expect(cell("12").textContent).toContain("⚠ 운행");
+  expect(cell("20").className).not.toContain("is-driven");
+  press("20");
+  press("22");
+  expect(screen.getByText(/운행 기록이 있는 날이 있어요: 21일/)).toBeInTheDocument();
 });

@@ -985,3 +985,22 @@ describe("휴무 표시", () => {
     expect(screen.getByText("＋ 운행 추가")).toBeInTheDocument();
   });
 });
+
+test("영업 정산 통계 상세 (일별 상세): 운행 있는 날은 머리에 휴무 · 사유, 운행 없는 휴무 날은 휴무 줄", async () => {
+  salesAdminApi.getSummary.mockImplementation(() =>
+    ok([{ username: "kim", name: "김영업", enteredDates: [], holidays: [
+      { date: "2026-10-05", reason: "병원" },
+      { date: "2026-10-20", reason: "개인 사정" },
+    ] }]),
+  );
+  salesAdminApi.getDriving.mockImplementation(() =>
+    ok([{ id: 1, date: "2026-10-20", time: "09:00", type: "업무", meterReading: 1000, notes: [] }]),
+  );
+  render(<SalesAdminStatsTab />);
+  await screen.findByText("전체 2일");
+  const names = screen.getAllByText("김영업");
+  fireEvent.click(names[names.length - 1]);
+  expect(await screen.findByText("🏖 휴무 · 병원")).toBeInTheDocument();
+  expect(screen.getByText("(운행 기록 있음)")).toBeInTheDocument();
+  expect(screen.getByText("🏖 휴무 · 개인 사정", { exact: false })).toBeInTheDocument();
+});

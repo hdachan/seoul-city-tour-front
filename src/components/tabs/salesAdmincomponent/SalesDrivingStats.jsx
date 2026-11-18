@@ -7,13 +7,45 @@ const toNum = (v) => Number(v || 0) || 0;
 const fmt = (n) => toNum(n).toLocaleString();
 const fmtWon = (n) => fmt(n) + "원";
 
+const HOLIDAY_ROW = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  flexWrap: "wrap",
+  padding: "10px 16px",
+  background: "#faf5ff",
+  borderRadius: "12px",
+  border: "1px solid #d8b4fe",
+};
+
+// 🏖 휴무 · 사유 (운행 기록이 있는 날이면 그 사실도 같이)
+function HolidayBadge({ reason, driven }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        fontSize: "12px",
+        fontWeight: 600,
+        color: "#5b21b6",
+        background: "#f3e8ff",
+        border: "1px solid #d8b4fe",
+        borderRadius: "10px",
+        padding: "2px 10px",
+      }}
+    >
+      🏖 휴무{reason ? ` · ${reason}` : ""}
+      {driven && <span style={{ color: "#b45309" }}> (운행 기록 있음)</span>}
+    </span>
+  );
+}
+
 const TYPE_STYLE = {
   업무: { bg: "#e8f0fe", color: "#1557b0" },
   주유: { bg: "#fef3c7", color: "#92400e" },
   휴가: { bg: "#fce7f3", color: "#9d174d" },
 };
 
-export default function SalesDrivingStats({ username, name, year, month }) {
+export default function SalesDrivingStats({ username, name, year, month, holidays = [] }) {
   const [driving, setDriving] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [notes, setNotes] = useState({});
@@ -113,6 +145,14 @@ export default function SalesDrivingStats({ username, name, year, month }) {
       };
     });
 
+  // 🏖 휴무 (영업 휴무 탭에서 본인이 적은 날): 운행 있는 날은 머리에 표시, 운행 없는 날은 휴무 줄만
+  const offMap = Object.fromEntries(holidays.map((h) => [h.date, h.reason]));
+  const drivenDates = new Set(dailyStats.map((d) => d.date));
+  const dayList = [
+    ...dailyStats,
+    ...holidays.filter((h) => !drivenDates.has(h.date)).map((h) => ({ date: h.date, holidayOnly: true })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 헤더 */}
@@ -150,7 +190,15 @@ export default function SalesDrivingStats({ username, name, year, month }) {
           📅 일별 상세
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {dailyStats.map((d) => (
+          {dayList.map((d) =>
+            d.holidayOnly ? (
+              <div key={d.date} style={HOLIDAY_ROW}>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#1a1a2e", whiteSpace: "nowrap" }}>
+                  {month}월 {parseInt(d.date.split("-")[2])}일
+                </span>
+                <HolidayBadge reason={offMap[d.date]} />
+              </div>
+            ) : (
             <div
               key={d.date}
               style={{
@@ -179,6 +227,11 @@ export default function SalesDrivingStats({ username, name, year, month }) {
                   }}
                 >
                   {month}월 {parseInt(d.date.split("-")[2])}일
+                  {offMap[d.date] !== undefined && (
+                    <span style={{ marginLeft: "8px" }}>
+                      <HolidayBadge reason={offMap[d.date]} driven />
+                    </span>
+                  )}
                 </span>
                 <div style={{ display: "flex", gap: "12px", fontSize: "13px" }}>
                   {d.totalDist > 0 && (
@@ -413,7 +466,8 @@ export default function SalesDrivingStats({ username, name, year, month }) {
                 </div>
               )}
             </div>
-          ))}
+            ),
+          )}
         </div>
       </div>
     </div>

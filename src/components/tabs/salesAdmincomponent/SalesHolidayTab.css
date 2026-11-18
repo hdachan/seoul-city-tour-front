@@ -88,3 +88,16 @@
   .shd-band.pos-single { margin: 0; }
   .shd-period-text { margin-left: 0; }
 }
+
+/* 운행 기록 있는 날 (초록) – 휴무와 겹치면 주황 경고 */
+.shd-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; min-width: 0; }
+.shd-d.is-driven { background: #f0fdf4; border-color: #86efac; }
+.shd-d.is-driven.is-off { background: #fffbeb; border-color: #fbbf24; }
+.shd-drive { font-size: 10.5px; font-weight: 700; color: #fff; background: #22c55e; border-radius: 8px; padding: 0 6px; white-space: nowrap; }
+.shd-drive.is-warn { background: #f59e0b; }
+.shd-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #22c55e; vertical-align: -1px; }
+@media (max-width: 600px) {
+  .shd-drive { font-size: 0; padding: 0; width: 8px; height: 8px; border-radius: 50%; }
+}
+/* 고르는 중인 기간 표시가 초록 칸보다 앞서게 */
+.shd-d.is-sel { background: #ede9fe; border: 1px dashed #7c3aed; }

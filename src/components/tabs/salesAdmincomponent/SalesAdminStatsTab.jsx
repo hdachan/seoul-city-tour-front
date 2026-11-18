@@ -81,6 +81,7 @@ export default function SalesAdminStatsTab() {
           </div>
           <div className="sl-tab-panel">
             <SalesDrivingStats
+              holidays={summary.find((u) => u.username === selectedUser.username)?.holidays || []}
               username={selectedUser.username}
               name={selectedUser.name}
               year={year}

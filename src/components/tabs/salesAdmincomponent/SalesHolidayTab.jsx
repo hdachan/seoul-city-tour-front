@@ -3,7 +3,7 @@
 // 기간 고르기: ① 달력에서 끌기(드래그) ② 시작 날 → 끝나는 날 차례로 누르기 ③ 기간 칸에 직접 입력
 // 서버에는 하루 한 줄로 저장, 화면에서는 연달아 같은 사유인 날을 한 띠로 이어서 보여 줌
 import { useCallback, useEffect, useRef, useState } from "react";
-import { salesHolidayApi as api } from "../../../api/sales";
+import { salesHolidayApi as api, salesApi } from "../../../api/sales";
 import { toDateStr } from "../../../utils/dateUtils";
 import { WEEKDAYS, calendarWeeks } from "../GuidadminecategoryTab/guideDetailStats";
 import {
@@ -25,6 +25,7 @@ export default function SalesHolidayTab() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [list, setList] = useState([]); // [{ date, reason }]
+  const [drivenDates, setDrivenDates] = useState(new Set()); // 운행 기록이 있는 날 (초록)
   // 입력 창: null | { mode: "new" | "edit", start, end, reason, orig: [고치기 전 날짜] }
   const [form, setForm] = useState(null);
   const [dragSel, setDragSel] = useState(null); // 끄는 중인 기간 [a, b]
@@ -44,6 +45,17 @@ export default function SalesHolidayTab() {
   useEffect(() => {
     load();
   }, [load]);
+  // 영업 정산에 운행 기록이 있는 날 – 휴무와 겹치면 알려 주려고 (실패해도 휴무는 그대로)
+  useEffect(() => {
+    let alive = true;
+    salesApi
+      .getDriving(year, month)
+      .then((r) => alive && setDrivenDates(new Set((r.data || []).map((d) => d.date))))
+      .catch(() => alive && setDrivenDates(new Set()));
+    return () => {
+      alive = false;
+    };
+  }, [year, month]);
 
   const runs = holidayRuns(list);
   const byDate = runByDate(runs);
@@ -136,6 +148,7 @@ export default function SalesHolidayTab() {
   const [fs, fe] = form ? sortPair(form.start || form.end, form.end || form.start) : [null, null];
   const validDates = !!(form && fs && fe);
   const count = validDates ? dayCount(fs, fe) : 0;
+  const drivenInForm = validDates ? holidayRange(fs, fe).filter((d) => drivenDates.has(d)) : [];
   const overlap = validDates
     ? holidayRange(fs, fe).filter((d) => byDate[d] && !form.orig.includes(d)).length
     : 0;
@@ -216,6 +229,9 @@ export default function SalesHolidayTab() {
         <span>🖱 쉬는 날을 <b>끌어서</b> 기간 고르기</span>
         <span>👆 <b>시작 날 → 끝나는 날</b> 차례로 누르기</span>
         <span>🏖 보라색 휴무를 누르면 고치기 · 취소</span>
+        <span>
+          <i className="shd-dot" /> 초록 = 운행 기록 있는 날
+        </span>
       </div>
 
       <div className="shd-cal">
@@ -230,6 +246,7 @@ export default function SalesHolidayTab() {
             if (!d) return <div key={k} className="shd-d is-blank" />;
             const dow = k % 7;
             const hit = byDate[d];
+            const driven = drivenDates.has(d);
             const showLabel = hit && (hit.pos === "start" || hit.pos === "single" || dow === 0 || d.endsWith("-01"));
             return (
               <div
@@ -238,13 +255,20 @@ export default function SalesHolidayTab() {
                 role="button"
                 tabIndex={0}
                 aria-label={hit ? `${periodLabel(d, d)} 휴무: ${hit.run.reason}` : periodLabel(d, d)}
-                className={`shd-d ${hit ? "is-off" : ""} ${inSel(d) ? "is-sel" : ""} ${d === today ? "is-today" : ""}`}
+                className={`shd-d ${hit ? "is-off" : ""} ${driven ? "is-driven" : ""} ${inSel(d) ? "is-sel" : ""} ${d === today ? "is-today" : ""}`}
                 onPointerDown={onDown(d)}
                 onPointerEnter={onEnter(d)}
                 onKeyDown={(e) => e.key === "Enter" && tap(d)}
                 title={hit ? `${periodLabel(hit.run.start, hit.run.end)} 휴무: ${hit.run.reason}` : undefined}
               >
-                <span className={`shd-num ${dow === 0 ? "sun" : dow === 6 ? "sat" : ""}`}>{Number(d.slice(8))}</span>
+                <span className="shd-head">
+                  <span className={`shd-num ${dow === 0 ? "sun" : dow === 6 ? "sat" : ""}`}>{Number(d.slice(8))}</span>
+                  {driven && (
+                    <span className={`shd-drive ${hit ? "is-warn" : ""}`} title={hit ? "휴무인데 운행 기록이 있어요" : "운행 기록 있음"}>
+                      {hit ? "⚠ 운행" : "🚗 운행"}
+                    </span>
+                  )}
+                </span>
                 {hit && (
                   <span
                     className={`shd-band pos-${hit.pos} ${dow === 0 ? "row-start" : ""} ${dow === 6 ? "row-end" : ""}`}
@@ -285,6 +309,11 @@ export default function SalesHolidayTab() {
           {validDates && <div className="shd-period-text">{periodLabel(fs, fe)}</div>}
           {form.mode === "new" && form.start === form.end && (
             <div className="shd-tip">💡 달력에서 다른 날을 누르면 그 날까지 기간으로 늘어나요.</div>
+          )}
+          {drivenInForm.length > 0 && (
+            <div className="shd-warn">
+              ⚠ 이 기간에 운행 기록이 있는 날이 있어요: {drivenInForm.map((d) => `${Number(d.slice(8))}일`).join(", ")} – 휴무가 맞는지 확인해 주세요.
+            </div>
           )}
           {overlap > 0 && (
             <div className="shd-warn">⚠ 이미 적은 휴무 {overlap}일이 이 사유로 바뀝니다.</div>
