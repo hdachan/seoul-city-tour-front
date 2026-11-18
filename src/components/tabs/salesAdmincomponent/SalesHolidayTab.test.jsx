@@ -32,8 +32,7 @@ beforeEach(() => {
   );
   salesHolidayApi.save.mockImplementation((date, reason) => ok({ date, reason }));
   salesHolidayApi.remove.mockImplementation(() => ok({}));
-  // 운행 기록: 12일(휴무와 겹침) · 21일
-  salesApi.getDriving.mockImplementation(() => ok([{ date: `${ym}-12` }, { date: `${ym}-21` }, { date: `${ym}-21` }]));
+  salesApi.getDriving.mockImplementation(() => ok([]));
 });
 
 const ready = async () => {
@@ -103,13 +102,27 @@ test("사유 없이 저장하면 막음", async () => {
   expect(salesHolidayApi.save).not.toHaveBeenCalled();
 });
 
-test("운행 기록이 있는 날은 초록, 휴무와 겹치면 ⚠ 운행 · 기간에 들어가면 경고", async () => {
+test("운행 기록이 있는 날은 초록 · 휴무로 못 적음 (이미 겹친 휴무는 ⚠ 운행)", async () => {
+  // 운행 기록: 12일(예전에 적은 휴무와 겹침) · 21일
+  salesApi.getDriving.mockImplementation(() => ok([{ date: `${ym}-12` }, { date: `${ym}-21` }, { date: `${ym}-21` }]));
   await ready();
   await waitFor(() => expect(cell("21").className).toContain("is-driven"));
   expect(cell("21").textContent).toContain("🚗 운행");
   expect(cell("12").textContent).toContain("⚠ 운행");
   expect(cell("20").className).not.toContain("is-driven");
+  // 운행한 날을 누르면 휴무 창이 안 열림
+  press("21");
+  expect(screen.getByText(/운행 기록이 있어 휴무로 적을 수 없어요/)).toBeInTheDocument();
+  expect(screen.queryByLabelText("시작 날")).toBeNull();
+  // 기간에 운행한 날이 들어가면 저장 버튼이 막힘
   press("20");
   press("22");
-  expect(screen.getByText(/운행 기록이 있는 날이 있어요: 21일/)).toBeInTheDocument();
+  expect(screen.getByText(/운행 기록이 있는 날은 휴무로 적을 수 없어요: 21일/)).toBeInTheDocument();
+  fireEvent.change(screen.getByPlaceholderText(/휴무 사유/), { target: { value: "여행" } });
+  expect(screen.getByText("3일 휴무 저장").closest("button")).toBeDisabled();
+  // 기간을 줄이면 저장됨
+  fireEvent.change(screen.getByLabelText("끝나는 날"), { target: { value: `${ym}-20` } });
+  fireEvent.click(screen.getByText("휴무 저장"));
+  await screen.findByText(/휴무를 저장했습니다/);
+  expect(salesHolidayApi.save.mock.calls).toEqual([[`${ym}-20`, "여행"]]);
 });

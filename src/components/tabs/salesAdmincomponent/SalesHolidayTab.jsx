@@ -82,6 +82,11 @@ export default function SalesHolidayTab() {
   const tap = (d) => {
     const hit = byDate[d];
     if (hit) return openEdit(hit.run);
+    // 운행 기록이 있는 날은 휴무로 못 적음
+    if (drivenDates.has(d)) {
+      setSuccess("");
+      return setError(`${periodLabel(d, d)}은 운행 기록이 있어 휴무로 적을 수 없어요.`);
+    }
     // 시작 날만 고른 상태에서 다른 날을 누르면 → 그 날까지 기간으로
     if (form?.mode === "new" && form.start === form.end && d !== form.start) {
       const [s, e] = sortPair(form.start, d);
@@ -156,6 +161,8 @@ export default function SalesHolidayTab() {
   const save = async () => {
     if (!validDates) return setError("기간을 골라주세요.");
     if (count > MAX_HOLIDAY_DAYS) return setError(`휴무 기간은 ${MAX_HOLIDAY_DAYS}일까지 한 번에 적을 수 있습니다.`);
+    if (drivenInForm.length > 0)
+      return setError(`운행 기록이 있는 날(${drivenInForm.map((d) => `${Number(d.slice(8))}일`).join(", ")})은 휴무로 적을 수 없어요. 기간을 바꿔 주세요.`);
     const reason = form.reason.trim();
     if (!reason) return setError("휴무 사유를 적어주세요.");
     setSaving(true);
@@ -230,7 +237,7 @@ export default function SalesHolidayTab() {
         <span>👆 <b>시작 날 → 끝나는 날</b> 차례로 누르기</span>
         <span>🏖 보라색 휴무를 누르면 고치기 · 취소</span>
         <span>
-          <i className="shd-dot" /> 초록 = 운행 기록 있는 날
+          <i className="shd-dot" /> 초록 = 운행 기록 있는 날 (휴무로 못 적음)
         </span>
       </div>
 
@@ -312,7 +319,7 @@ export default function SalesHolidayTab() {
           )}
           {drivenInForm.length > 0 && (
             <div className="shd-warn">
-              ⚠ 이 기간에 운행 기록이 있는 날이 있어요: {drivenInForm.map((d) => `${Number(d.slice(8))}일`).join(", ")} – 휴무가 맞는지 확인해 주세요.
+              🚫 운행 기록이 있는 날은 휴무로 적을 수 없어요: {drivenInForm.map((d) => `${Number(d.slice(8))}일`).join(", ")} – 기간을 바꿔 주세요.
             </div>
           )}
           {overlap > 0 && (
@@ -327,7 +334,12 @@ export default function SalesHolidayTab() {
             onChange={(e) => setForm({ ...form, reason: e.target.value })}
           />
           <div className="shd-btns">
-            <button type="button" className="sl-btn-primary" onClick={save} disabled={saving}>
+            <button
+              type="button"
+              className="sl-btn-primary"
+              onClick={save}
+              disabled={saving || drivenInForm.length > 0}
+            >
               {saving ? "저장 중…" : count > 1 ? `${count}일 휴무 저장` : "휴무 저장"}
             </button>
             {form.mode === "edit" && (
