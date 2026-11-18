@@ -381,6 +381,9 @@ export default function TotalStats({
           }}
         >
           📋 입력 현황
+          <span style={{ fontSize: "11px", fontWeight: 500, color: "#888", marginLeft: "10px" }}>
+            <Swatch color="#22c55e" /> 입력 <Swatch color="#fee2e2" /> 미입력 <Swatch color="#a855f7" /> 휴무
+          </span>
         </p>
         <div
           style={{
@@ -391,7 +394,9 @@ export default function TotalStats({
         >
           {summary.map((u) => {
             const enteredSet = new Set(u.enteredDates || []);
-            const missingDays = allDays.filter((d) => !enteredSet.has(d));
+            // 🏖 휴무로 적은 날은 미입력으로 치지 않음
+            const offMap = Object.fromEntries((u.holidays || []).map((h) => [h.date, h.reason]));
+            const missingDays = allDays.filter((d) => !enteredSet.has(d) && offMap[d] === undefined);
             const allGood = missingDays.length === 0;
 
             return (
@@ -492,16 +497,19 @@ export default function TotalStats({
                     {allDays.map((dateStr) => {
                       const day = parseInt(dateStr.split("-")[2]);
                       const hasEntry = enteredSet.has(dateStr);
+                      const isOff = offMap[dateStr] !== undefined;
                       const isToday = dateStr === today;
                       return (
                         <div
                           key={dateStr}
-                          title={`${month}/${day}${hasEntry ? " ✓" : " 미입력"}`}
+                          title={`${month}/${day}${
+                            isOff ? ` 휴무: ${offMap[dateStr]}${hasEntry ? " (운행 기록 있음)" : ""}` : hasEntry ? " ✓" : " 미입력"
+                          }`}
                           style={{
                             width: "16px",
                             height: "16px",
                             borderRadius: "3px",
-                            background: hasEntry ? "#22c55e" : "#fee2e2",
+                            background: isOff ? "#a855f7" : hasEntry ? "#22c55e" : "#fee2e2",
                             outline: isToday ? "2px solid #1557b0" : "none",
                             display: "flex",
                             alignItems: "center",
@@ -511,7 +519,7 @@ export default function TotalStats({
                           <span
                             style={{
                               fontSize: "7px",
-                              color: hasEntry ? "#fff" : "#dc2626",
+                              color: isOff || hasEntry ? "#fff" : "#dc2626",
                               fontWeight: 700,
                             }}
                           >
@@ -809,6 +817,111 @@ export default function TotalStats({
             </tfoot>
           </table>
         </div>
+      </div>
+
+      {/* ④ 휴무 통계 (영업 휴무 탭에서 본인이 적은 날) */}
+      <HolidayStats summary={summary} month={month} onUserClick={onUserClick} />
+    </div>
+  );
+}
+
+// 잔디 색 설명용 작은 네모
+function Swatch({ color }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        width: "10px",
+        height: "10px",
+        borderRadius: "2px",
+        background: color,
+        verticalAlign: "-1px",
+        margin: "0 3px 0 6px",
+      }}
+    />
+  );
+}
+
+// 🏖 휴무 통계: 사람별 휴무 일수 + 날짜 · 사유
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const holidayDate = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return `${m}/${d} (${WEEK[new Date(y, m - 1, d).getDay()]})`;
+};
+
+function HolidayStats({ summary, month, onUserClick }) {
+  const total = summary.reduce((s, u) => s + (u.holidays || []).length, 0);
+  return (
+    <div>
+      <p style={{ fontSize: "13px", fontWeight: 700, color: "#1a1a2e", marginBottom: "10px" }}>
+        🏖 {month}월 휴무 통계
+        <span style={{ fontSize: "11px", fontWeight: 500, color: "#888", marginLeft: "8px" }}>
+          전체 {total}일
+        </span>
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "12px",
+        }}
+      >
+        {summary.map((u) => {
+          const list = u.holidays || [];
+          return (
+            <div
+              key={u.username}
+              style={{
+                background: "#fff",
+                borderRadius: "12px",
+                border: `1.5px solid ${list.length ? "#d8b4fe" : "#e8eaed"}`,
+                padding: "12px 14px",
+                cursor: onUserClick ? "pointer" : "default",
+              }}
+              role="button"
+              tabIndex={0}
+              onClick={() => onUserClick && onUserClick(u)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && onUserClick) onUserClick(u);
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: list.length ? "8px" : 0,
+                }}
+              >
+                <b style={{ fontSize: "14px" }}>{u.name}</b>
+                <b style={{ fontSize: "15px", color: list.length ? "#7c3aed" : "#bbb" }}>
+                  {list.length}일
+                </b>
+              </div>
+              {list.length === 0 ? (
+                <div style={{ fontSize: "12px", color: "#aaa", marginTop: "4px" }}>휴무 없음</div>
+              ) : (
+                list.map((h) => (
+                  <div
+                    key={h.date}
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      fontSize: "13px",
+                      padding: "5px 0",
+                      borderTop: "1px solid #f3f4f6",
+                    }}
+                  >
+                    <span style={{ color: "#6d28d9", fontWeight: 700, whiteSpace: "nowrap" }}>
+                      {holidayDate(h.date)}
+                    </span>
+                    <span style={{ color: "#374151", wordBreak: "break-all" }}>{h.reason}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1454,3 +1454,9 @@
     gap: 6px;
   }
 }
+
+/* 🏖 휴무 표시 (영업 정산 – 이날 휴무) */
+.sl-holiday-note {
+  margin: 8px 0; padding: 10px 14px; border-radius: 10px;
+  background: #f3e8ff; border: 1px solid #c4b5fd; color: #5b21b6; font-size: 14px;
+}

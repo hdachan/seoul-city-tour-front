@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { toDateStr } from "../../../utils/dateUtils";
 import useToday from "../../../utils/useToday";
 import "./sales.css";
-import { salesApi as api } from "../../../api/sales";
+import { salesApi as api, salesHolidayApi as holidayApi } from "../../../api/sales";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
@@ -63,6 +63,7 @@ export default function SalesContent() {
   const [monthDriving, setMonthDriving] = useState([]);
   const [monthStartMeter, setMonthStartMeter] = useState(0); // 지난달 마지막 미터기
   const [receipts, setReceipts] = useState([]);
+  const [holidays, setHolidays] = useState({}); // 🏖 휴무 { "YYYY-MM-DD": 사유 } – 표시만 (입력은 막지 않음)
 
   // 선택 날짜 관련
   const [selectedDate, setSelectedDate] = useState(TODAY);
@@ -205,6 +206,11 @@ export default function SalesContent() {
         .getPrevMeter(`${year}-${pad2(month)}-01`)
         .then((r) => setMonthStartMeter(r.data.prevMeter || 0))
         .catch(() => setMonthStartMeter(0));
+      // 🏖 휴무 (영업 휴무 탭에서 적은 날) - 실패해도 전체 영향 없음
+      holidayApi
+        .getMine(year, month)
+        .then((r) => setHolidays(Object.fromEntries((r.data || []).map((h) => [h.date, h.reason]))))
+        .catch(() => setHolidays({}));
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
@@ -708,6 +714,7 @@ export default function SalesContent() {
                   {month}월 {parseInt(d.split("-")[2])}일
                   {d === TODAY ? " (오늘)" : ""}
                   {enteredDates.has(d) ? " ●" : ""}
+                  {holidays[d] !== undefined ? " 🏖 휴무" : ""}
                   {weekLocks[getWeekNumForDate(d)] === true ? " 🔒" : ""}
                 </option>
               ))}
@@ -738,6 +745,13 @@ export default function SalesContent() {
               </span>
             )}
           </div>
+
+          {holidays[selectedDate] !== undefined && (
+            <div className="sl-holiday-note">
+              🏖 <b>이날은 휴무로 적은 날이에요</b>
+              {holidays[selectedDate] && <span> · 사유: {holidays[selectedDate]}</span>}
+            </div>
+          )}
 
           {prevMeter > 0 && (
             <div className="sl-prev-meter">

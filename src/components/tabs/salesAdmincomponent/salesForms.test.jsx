@@ -9,7 +9,7 @@ import SalesContent from "./SalesContent";
 import SalesAdminContent from "./SalesAdminContent";
 import SalesAdminStatsTab from "./SalesAdminStatsTab";
 import SalesDrivingStats from "./SalesDrivingStats";
-import { salesApi, salesAdminApi } from "../../../api/sales";
+import { salesApi, salesAdminApi, salesHolidayApi } from "../../../api/sales";
 
 jest.mock("../../../api/sales", () => {
   const fns = (names) => Object.fromEntries(names.map((n) => [n, jest.fn()]));
@@ -23,6 +23,7 @@ jest.mock("../../../api/sales", () => {
   return {
     salesApi: fns([...common, "getMyCard", "saveMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
     salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes", "saveCard"]),
+    salesHolidayApi: fns(["getMine", "save", "remove"]),
   };
 });
 
@@ -92,6 +93,7 @@ beforeEach(() => {
   setupApi(salesApi);
   setupApi(salesAdminApi);
   salesApi.getMyCard.mockImplementation(() => ok({ cardNumber: "1234-5678" }));
+  salesHolidayApi.getMine.mockImplementation(() => ok([]));
   salesApi.getDailyNote.mockImplementation(() => ok({ note: "" }));
   salesApi.getStartMeter.mockImplementation(() => ok({ startMeter: 800, needed: false }));
   salesApi.saveStartMeter.mockImplementation(() => ok({}));
@@ -953,5 +955,33 @@ describe("지출내역 – 기타 · 비고", () => {
       amount: "7000",
       note: "세차",
     });
+  });
+});
+
+// ───────────── 🏖 영업 휴무 표시 ─────────────
+describe("휴무 표시", () => {
+  test("영업 정산 통계: 휴무 날은 잔디에 휴무로, 아래 휴무 통계에 날짜 · 사유", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([
+        { username: "kim", name: "김영업", enteredDates: ["2026-10-01"], holidays: [{ date: "2026-10-05", reason: "병원" }] },
+        { username: "lee", name: "이영업", enteredDates: [], holidays: [] },
+      ]),
+    );
+    render(<SalesAdminStatsTab />);
+    expect(await screen.findByText("🏖 10월 휴무 통계", { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText("전체 1일")).toBeInTheDocument();
+    expect(screen.getByText("10/5 (월)")).toBeInTheDocument();
+    expect(screen.getByText("병원")).toBeInTheDocument();
+    expect(screen.getByText("휴무 없음")).toBeInTheDocument();
+    expect(screen.getByTitle("10/5 휴무: 병원")).toBeInTheDocument();
+    expect(screen.getAllByTitle("10/6 미입력")).toHaveLength(2); // 김영업 · 이영업 둘 다
+  });
+
+  test("영업 정산: 휴무로 적은 날을 고르면 안내 (입력 버튼은 그대로)", async () => {
+    salesHolidayApi.getMine.mockImplementation(() => ok([{ date: "2026-10-22", reason: "개인 사정" }]));
+    render(<SalesContent />);
+    expect(await screen.findByText("이날은 휴무로 적은 날이에요")).toBeInTheDocument();
+    expect(screen.getByText("· 사유: 개인 사정", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("＋ 운행 추가")).toBeInTheDocument();
   });
 });

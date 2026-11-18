@@ -15,6 +15,7 @@ import GuideDetailStatsTab from "./tabs/GuidadminecategoryTab/GuideDetailStatsTa
 import SalesAdminContent from "./tabs/salesAdmincomponent/SalesAdminContent";
 import SalesAdminStatsTab from "./tabs/salesAdmincomponent/SalesAdminStatsTab";
 import SalesContent from "./tabs/salesAdmincomponent/SalesContent";
+import SalesHolidayTab from "./tabs/salesAdmincomponent/SalesHolidayTab";
 import GuideFormContent from "./tabs/GuideFormContent";
 import GuideStatsContent from "./tabs/GuideStatsContent";
 import DevContent from "./tabs/DevContent";
@@ -37,6 +38,7 @@ const ALL_TABS = [
   { id: "guide-form", icon: "📝", label: "가이드 정산" },
   { id: "guide-stats", icon: "📊", label: "내 통계" },
   { id: "sales", icon: "💼", label: "영업 정산" },
+  { id: "sales-holiday", icon: "🏖", label: "영업 휴무" },
   { id: "requests", icon: "✉️", label: "요청사항" },
   { id: "dev", icon: "⚙️", label: "개발" },
 ];
@@ -106,7 +108,7 @@ export default function AppLayout() {
           "requests",
           "dev",
         ],
-        ROLE_SALES: ["sales"],
+        ROLE_SALES: ["sales", "sales-holiday"],
         ROLE_GUIDE: ["guide-form", "guide-stats"],
       };
       const tabs = fallback[role] || [];
@@ -175,6 +177,8 @@ export default function AppLayout() {
         return <GuideStatsContent />;
       case "sales":
         return <SalesContent />;
+      case "sales-holiday":
+        return <SalesHolidayTab />;
       case "requests":
         return <RequestsContent />;
       case "dev":

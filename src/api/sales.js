@@ -103,3 +103,10 @@ export const salesAdminApi = {
   updateReceipt: (id, data) => client.put(`/sales-admin/receipt/${id}`, data),
   deleteReceipt: (id) => client.delete(`/sales-admin/receipt/${id}`),
 };
+
+// 🏖 영업 휴무 (영업 사원 본인 · 쉬는 날 + 사유)
+export const salesHolidayApi = {
+  getMine: (y, m) => client.get(`/sales-holiday`, { params: { year: y, month: m } }),
+  save: (date, reason) => client.post(`/sales-holiday`, { date, reason }),
+  remove: (date) => client.delete(`/sales-holiday`, { params: { date } }),
+};

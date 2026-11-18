@@ -1,0 +1,90 @@
+/* 🏖 영업 휴무 */
+.shd { padding: 8px 0; max-width: 900px; }
+.shd-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.shd-nav { border: 1px solid #d8dce3; background: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; color: #4b5563; }
+.shd-nav:hover { border-color: #7c3aed; color: #7c3aed; }
+.shd-ym { font-size: 18px; color: #111827; min-width: 110px; text-align: center; }
+.shd-count { margin-left: auto; font-size: 14px; color: #6b7280; }
+.shd-count b { color: #7c3aed; }
+.shd-help { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #6b7280; margin: 4px 0 10px; }
+.shd-help b { color: #5b21b6; }
+
+/* 달력 */
+.shd-cal {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px;
+  background: #fff; border: 1px solid #e8eaed; border-radius: 12px; padding: 8px;
+  user-select: none; -webkit-user-select: none;
+}
+.shd-w { text-align: center; font-size: 12px; font-weight: 700; color: #6b7280; padding: 4px 0; }
+.shd-w.sun, .shd-num.sun { color: #e53e3e; }
+.shd-w.sat, .shd-num.sat { color: #1557b0; }
+.shd-d {
+  position: relative; min-height: 64px; border: 1px solid #eef0f3; border-radius: 8px; background: #fff;
+  padding: 5px 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  cursor: pointer; min-width: 0; outline: none;
+}
+.shd-d:hover { border-color: #c4b5fd; background: #faf5ff; }
+.shd-d:focus-visible { box-shadow: 0 0 0 2px #7c3aed; }
+.shd-d.is-blank { background: #fafafa; border-color: transparent; cursor: default; }
+.shd-d.is-off { background: #faf5ff; }
+/* 고르는 중인 기간 */
+.shd-d.is-sel { background: #ede9fe; border: 1px dashed #7c3aed; }
+.shd-d.is-today .shd-num { background: #1557b0; color: #fff; border-radius: 10px; padding: 0 6px; }
+.shd-num { font-size: 13px; font-weight: 700; color: #374151; }
+
+/* 휴무 띠: 연달아 쉬는 날은 옆 칸과 이어져 보이게 (칸 사이 틈까지 덮음) */
+.shd-band {
+  position: relative; z-index: 1; align-self: stretch; height: 22px; line-height: 22px;
+  margin: 0 -9px; padding: 0 8px; background: #7c3aed; color: #fff;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shd-band.pos-start { margin-left: 0; border-radius: 11px 0 0 11px; }
+.shd-band.pos-end { margin-right: 0; border-radius: 0 11px 11px 0; }
+.shd-band.pos-single { margin: 0; border-radius: 11px; }
+.shd-band.row-start { margin-left: 0; }
+.shd-band.row-end { margin-right: 0; }
+
+/* 입력 창 */
+.shd-form { margin-top: 12px; background: #fff; border: 2px solid #7c3aed; border-radius: 12px; padding: 14px 16px; }
+.shd-form-title { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 10px; }
+.shd-period { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.shd-label { font-size: 14px; font-weight: 700; color: #4b5563; }
+.shd-period input[type="date"] {
+  padding: 8px 10px; border: 1px solid #d8dce3; border-radius: 8px; font-size: 15px; font-family: inherit; outline: none;
+}
+.shd-period input[type="date"]:focus { border-color: #7c3aed; }
+.shd-days { background: #7c3aed; color: #fff; border-radius: 12px; padding: 3px 10px; font-size: 13px; }
+.shd-period-text { font-size: 13px; color: #5b21b6; margin: 6px 0 0 40px; }
+.shd-tip { font-size: 12px; color: #6b7280; margin-top: 6px; }
+.shd-warn { font-size: 13px; color: #b45309; background: #fffbeb; border-radius: 8px; padding: 6px 10px; margin-top: 8px; }
+.shd-input {
+  width: 100%; box-sizing: border-box; border: 1px solid #d8dce3; border-radius: 8px; padding: 10px; margin-top: 10px;
+  font-size: 15px; font-family: inherit; resize: vertical; outline: none;
+}
+.shd-input:focus { border-color: #7c3aed; }
+.shd-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.shd-btn-del { background: #fff; color: #e53e3e; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.shd-btn-del:hover { background: #fef2f2; }
+
+/* 목록 */
+.shd-list-box { margin-top: 14px; background: #fff; border: 1px solid #e8eaed; border-radius: 12px; padding: 12px 14px; }
+.shd-list-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+.shd-empty { font-size: 13px; color: #9ca3af; padding: 8px 0; }
+.shd-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; font-size: 14px; cursor: pointer;
+  padding: 9px 10px; border: none; border-top: 1px solid #f3f4f6; background: #fff; flex-wrap: wrap;
+}
+.shd-row:first-of-type { border-top: none; }
+.shd-row:hover { background: #faf5ff; }
+.shd-row b { white-space: nowrap; color: #5b21b6; }
+.shd-row em { font-style: normal; font-size: 12px; font-weight: 700; color: #fff; background: #7c3aed; border-radius: 10px; padding: 1px 8px; }
+.shd-row span { color: #374151; word-break: break-all; }
+
+@media (max-width: 600px) {
+  .shd-d { min-height: 52px; padding: 4px; }
+  .shd-band { height: 18px; line-height: 18px; font-size: 10px; padding: 0 4px; margin: 0 -7px; }
+  .shd-band.pos-start, .shd-band.row-start { margin-left: 0; }
+  .shd-band.pos-end, .shd-band.row-end { margin-right: 0; }
+  .shd-band.pos-single { margin: 0; }
+  .shd-period-text { margin-left: 0; }
+}
