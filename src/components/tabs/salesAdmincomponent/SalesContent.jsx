@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { toDateStr } from "../../../utils/dateUtils";
 import useToday from "../../../utils/useToday";
 import "./sales.css";
-import { salesApi as api, salesHolidayApi as holidayApi } from "../../../api/sales";
+import { salesApi, salesHolidayApi } from "../../../api/sales";
+import { salesViewAsApis, VIEW_AS_READ_ONLY } from "../../../api/salesViewAs";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
@@ -44,15 +45,34 @@ const getWeekSunday = (dateStr) => {
   return toDateStr(d);
 };
 
-export default function SalesContent() {
+// viewAs: 관리자가 영업 사원 한 명의 화면을 그 사람이 보는 그대로 볼 때 { username, name, cardNumber }
+//         (보기 전용 – 추가 · 수정 · 삭제 버튼은 그대로 보이지만 누르면 안내만)
+// initialYear / initialMonth: 처음 보여줄 연 · 월 (관리자 화면에서 보던 달)
+export default function SalesContent({ viewAs = null, initialYear, initialMonth } = {}) {
   const now = new Date();
+  const viewAsUser = viewAs?.username;
+  const viewAsCard = viewAs?.cardNumber;
+  const { api, holidayApi } = useMemo(
+    () =>
+      viewAsUser
+        ? salesViewAsApis({ username: viewAsUser, cardNumber: viewAsCard || "" })
+        : { api: salesApi, holidayApi: salesHolidayApi },
+    [viewAsUser, viewAsCard],
+  );
+  // 보기 전용이면 안내만 하고 true (입력창을 열지 않음)
+  const blockViewAs = () => {
+    if (!viewAsUser) return false;
+    setOpenMenu(null);
+    setError(VIEW_AS_READ_ONLY);
+    return true;
+  };
   // 오늘 / 이번 주 (화면을 켜둔 채 자정이 지나면 자동 갱신)
   const TODAY = useToday();
   const THIS_WEEK_MONDAY = getWeekMonday(TODAY);
   const THIS_WEEK_SUNDAY = getWeekSunday(TODAY);
-  const username = sessionStorage.getItem("username");
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const username = viewAsUser || sessionStorage.getItem("username");
+  const [year, setYear] = useState(initialYear || now.getFullYear());
+  const [month, setMonth] = useState(initialMonth || now.getMonth() + 1);
   const [mainTab, setMainTab] = useState("driving");
 
   const [isLocked, setIsLocked] = useState(false);
@@ -114,6 +134,7 @@ export default function SalesContent() {
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const daysInMonth = new Date(year, month, 0).getDate();
 
+  const monthFirst = `${year}-${pad2(month)}-01`;
   // 날짜 드롭다운 목록 (이번 달 날짜들)
   const dateOptions = Array.from({ length: daysInMonth }, (_, i) => {
     const d = `${year}-${pad2(month)}-${pad2(i + 1)}`;
@@ -165,7 +186,7 @@ export default function SalesContent() {
     const later = monthDriving
       .filter(
         (d) =>
-          d.date > selectedDate &&
+          d.date > (drivingForm.startDate || selectedDate) &&
           d.meterReading > 0 &&
           (!editTarget || d.id !== editTarget.id),
       )
@@ -214,7 +235,7 @@ export default function SalesContent() {
     } catch {
       setError("데이터를 불러오지 못했습니다.");
     }
-  }, [year, month]);
+  }, [year, month, api, holidayApi]);
 
   const loadDay = useCallback(async () => {
     try {
@@ -236,7 +257,7 @@ export default function SalesContent() {
         todayMeters.length > 0 ? Math.max(...todayMeters) : prev.data.prevMeter,
       );
     } catch {}
-  }, [selectedDate]);
+  }, [selectedDate, api]);
 
   useEffect(() => {
     loadMonth();
@@ -246,7 +267,7 @@ export default function SalesContent() {
       .getStartMeter()
       .then((r) => setNeedStartMeter(!!r.data.needed))
       .catch(() => {});
-  }, []);
+  }, [api]);
   // 연/월을 바꾸면 선택 날짜도 그 달로 이동 (이번 달이면 오늘, 아니면 1일)
   useEffect(() => {
     const ym = `${year}-${pad2(month)}`;
@@ -291,6 +312,7 @@ export default function SalesContent() {
   }, []);
 
   const handleSaveNote = async () => {
+    if (blockViewAs()) return;
     if (!canEditDay) {
       setError("잠긴 날짜의 비고는 수정할 수 없습니다.");
       return;
@@ -309,6 +331,7 @@ export default function SalesContent() {
 
   // 운행일지 모달
   const openAdd = async (type = "업무") => {
+    if (blockViewAs()) return;
     if (!canEditDay) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -343,6 +366,7 @@ export default function SalesContent() {
     setShowModal(true);
   };
   const openEdit = (row) => {
+    if (blockViewAs()) return;
     setError("");
     setDrivingDraft(null);
     setEditTarget(row);
@@ -376,7 +400,11 @@ export default function SalesContent() {
     e.preventDefault();
     setError("");
     if (!isDateEditable(drivingForm.startDate)) {
-      setError("잠긴 주입니다. 입력할 수 없습니다.");
+      setError(
+        drivingForm.startDate === selectedDate
+          ? "잠긴 주입니다. 입력할 수 없습니다."
+          : `${drivingForm.startDate} 은 잠긴 주라 이 날짜로 옮길 수 없어요. 잠금이 풀린 날짜를 골라주세요.`,
+      );
       return;
     }
     if (meterTooLow) {
@@ -415,6 +443,7 @@ export default function SalesContent() {
     }
   };
   const handleDelete = async (id) => {
+    if (blockViewAs()) return;
     setOpenMenu(null);
     if (!canEditDay) {
       setError("잠긴 주입니다. 삭제할 수 없습니다.");
@@ -433,6 +462,7 @@ export default function SalesContent() {
   // 법인카드 모달 (입력 가능한 날짜: 이번 달 중 열린 주, 이번 주 일요일까지)
   const receiptDates = dateOptions.filter(isDateEditable);
   const openReceiptAdd = (mode) => {
+    if (blockViewAs()) return;
     if (receiptDates.length === 0) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -456,6 +486,7 @@ export default function SalesContent() {
     setShowReceiptModal(true);
   };
   const openReceiptEdit = (row) => {
+    if (blockViewAs()) return;
     setReceiptMode(row.category === "개인사용" ? "개인" : "법인");
     setError("");
     setEditTarget(row);
@@ -489,6 +520,7 @@ export default function SalesContent() {
     }
   };
   const handleDeleteReceipt = async (id) => {
+    if (blockViewAs()) return;
     setOpenMenu(null);
     if (!window.confirm("삭제할까요?")) return;
     try {
@@ -612,7 +644,7 @@ export default function SalesContent() {
         <div>
           <h2 className="sl-page-title">💼 영업 정산</h2>
           <p className="sl-page-sub">
-            {username} {myCard ? `· ${myCard}` : ""}
+            {viewAs?.name ? `${viewAs.name} (${username})` : username} {myCard ? `· ${myCard}` : ""}
           </p>
         </div>
         <div className="sl-btn-group">
@@ -641,6 +673,11 @@ export default function SalesContent() {
         </div>
       </div>
 
+      {viewAsUser && (
+        <div className="sl-viewas-note">
+          👤 <b>{viewAs.name || username}</b> 님이 보는 화면 그대로예요 (보기 전용 · 잠금 · 회색 날짜도 그 사람 기준)
+        </div>
+      )}
       {isLocked && (
         <div className="sl-banner-month-locked">
           🔒 이번 달은 잠겨있습니다. 입력/수정/삭제가 불가합니다.
@@ -972,7 +1009,7 @@ export default function SalesContent() {
                 ) : (
                   <span
                     className={`sl-day-note-edit${dailyNote ? "" : " is-empty"}${isLocked ? " is-locked" : ""}`}
-                    onClick={() => !isLocked && setNoteEditing(true)}
+                    onClick={() => !isLocked && !blockViewAs() && setNoteEditing(true)}
                   >
                     {dailyNote || (isLocked ? "없음" : "클릭해서 입력...")}
                   </span>
@@ -1147,8 +1184,8 @@ export default function SalesContent() {
           error={error}
           onClose={() => setShowModal(false)}
           onSubmit={handleSubmitDriving}
-          dateMin={getWeekMonday(selectedDate)}
-          dateMax={getWeekSunday(selectedDate)}
+          dateMin={monthFirst < THIS_WEEK_MONDAY ? monthFirst : THIS_WEEK_MONDAY}
+          dateMax={THIS_WEEK_SUNDAY}
           meter={{
             lowerMeter,
             nextMeter,

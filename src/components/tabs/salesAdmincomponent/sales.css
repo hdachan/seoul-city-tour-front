@@ -1460,3 +1460,10 @@
   margin: 8px 0; padding: 10px 14px; border-radius: 10px;
   background: #f3e8ff; border: 1px solid #c4b5fd; color: #5b21b6; font-size: 14px;
 }
+
+/* 👤 영업 정산관리 – 관리자 화면 / 그 사람 화면 바꾸기 */
+.sl-viewmode { display: inline-flex; border: 1px solid #d8dce3; border-radius: 8px; overflow: hidden; margin-left: auto; }
+.sl-viewmode button { border: none; background: #fff; padding: 7px 12px; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; font-family: inherit; }
+.sl-viewmode button + button { border-left: 1px solid #d8dce3; }
+.sl-viewmode button.active { background: #1557b0; color: #fff; }
+.sl-viewas-note { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }

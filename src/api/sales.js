@@ -87,6 +87,8 @@ export const salesAdminApi = {
   deleteDriving: (id) => client.delete(`/sales-admin/driving/${id}`),
   saveDrivingNotes: (drivingId, contents) =>
     client.post(`/sales-admin/driving/${drivingId}/notes`, contents),
+  getDailyNote: (u, date) =>
+    client.get(`/sales-admin/daily-note`, { params: { salesUsername: u, date } }),
   getDailyNotes: (u, y, m) =>
     client.get(`/sales-admin/daily-notes`, {
       params: { salesUsername: u, year: y, month: m },
@@ -110,3 +112,4 @@ export const salesHolidayApi = {
   save: (date, reason) => client.post(`/sales-holiday`, { date, reason }),
   remove: (date) => client.delete(`/sales-holiday`, { params: { date } }),
 };
+

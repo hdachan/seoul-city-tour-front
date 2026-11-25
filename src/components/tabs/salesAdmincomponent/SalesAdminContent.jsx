@@ -6,6 +6,7 @@ import { useDateRollover } from "../../../utils/useToday";
 import "./sales.css";
 
 import SalesDrivingStats from "./SalesDrivingStats";
+import SalesContent from "./SalesContent";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
 import { openDraft, clearDraft } from "../../../utils/drivingDraft";
@@ -34,6 +35,8 @@ export default function SalesAdminContent() {
   const [mainTab, setMainTab] = useState("list");
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("driving");
+  // 한 사람 상세: 🛠 관리자 화면 / 👤 그 사람이 보는 영업 정산 화면 그대로 (문제 찾기용)
+  const [viewMode, setViewMode] = useState("admin");
 
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -572,9 +575,32 @@ export default function SalesAdminContent() {
             >
               ← 목록
             </button>
-            {yearMonthSelects}
+            {viewMode === "admin" && yearMonthSelects}
             <span className="sl-filter-name">{selectedUser.name}</span>
+            <div className="sl-viewmode" role="group" aria-label="보는 방식">
+              <button
+                className={viewMode === "admin" ? "active" : ""}
+                onClick={() => setViewMode("admin")}
+              >
+                🛠 관리자 화면
+              </button>
+              <button
+                className={viewMode === "user" ? "active" : ""}
+                onClick={() => setViewMode("user")}
+              >
+                👤 {selectedUser.name} 화면
+              </button>
+            </div>
           </div>
+          {viewMode === "user" ? (
+            <SalesContent
+              key={selectedUser.username}
+              viewAs={selectedUser}
+              initialYear={year}
+              initialMonth={month}
+            />
+          ) : (
+          <>
           {isLocked && <div className="locked-banner">✅ 정산 완료된 달입니다.</div>}
 
           {/* 서브 탭 + 추가 버튼 */}
@@ -736,6 +762,8 @@ export default function SalesAdminContent() {
               onClose={() => setShowReceiptModal(false)}
               onSubmit={handleSubmitReceipt}
             />
+          )}
+          </>
           )}
         </div>
       )}
