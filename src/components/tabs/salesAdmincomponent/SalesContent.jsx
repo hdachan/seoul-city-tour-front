@@ -291,6 +291,16 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
           : `${ym}-01`,
     );
   }, [year, month]); // eslint-disable-line react-hooks/exhaustive-deps -- 연/월 변경 시에만 실행
+  // 운행 · 주유 입력창에서 날짜를 고르면 뒤 화면도 그 날짜로 이동
+  //   (그날 기록 · 미터기 기준이 고른 날짜로 맞춰지고, 저장 후에도 그 날짜가 보임)
+  useEffect(() => {
+    const d = drivingForm.startDate;
+    if (!showModal || !d || d === selectedDate) return;
+    const [y, m] = d.split("-").map(Number);
+    if (y !== year) setYear(y);
+    if (m !== month) setMonth(m);
+    setSelectedDate(d);
+  }, [showModal, drivingForm.startDate]); // eslint-disable-line react-hooks/exhaustive-deps -- 고른 날짜가 바뀔 때만
   useEffect(() => {
     loadDay();
   }, [loadDay]);

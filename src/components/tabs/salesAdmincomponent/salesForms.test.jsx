@@ -408,6 +408,24 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     expect(salesApi.addDriving.mock.calls[0][0].date).toBe("2026-10-15");
   });
 
+  test("운행 추가에서 다른 날짜를 고르면 뒤 화면도 그 날짜로 이동 · 저장 후에도 그 날짜", async () => {
+    reopenWeek3();
+    await openAt();
+    expect(daySelect().value).toBe("2026-10-22");
+    fireEvent.click(screen.getByText("＋ 운행 추가"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    pickDate("2026-10-15");
+    await waitFor(() => expect(daySelect().value).toBe("2026-10-15"));
+    // 미터기 기준도 고른 날짜로 다시 불러옴
+    await waitFor(() => expect(salesApi.getDrivingDate).toHaveBeenLastCalledWith("2026-10-15"));
+    expect(salesApi.getPrevMeter).toHaveBeenCalledWith("2026-10-15");
+    setValue(modal().querySelector("input[placeholder='계량기 숫자']"), "900");
+    await submit();
+    expect(salesApi.addDriving.mock.calls[0][0].date).toBe("2026-10-15");
+    expect(modal()).toBeNull();
+    expect(daySelect().value).toBe("2026-10-15");
+  });
+
   test("이번 주 → 입력 가능 (날짜 목록: 이번 주만 고를 수 있고 1~18일은 🔒)", async () => {
     await openAt();
     fireEvent.click(screen.getByText("＋ 운행 추가"));
