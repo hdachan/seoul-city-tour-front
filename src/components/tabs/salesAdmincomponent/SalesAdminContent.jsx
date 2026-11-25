@@ -580,7 +580,14 @@ export default function SalesAdminContent() {
             <div className="sl-viewmode" role="group" aria-label="보는 방식">
               <button
                 className={viewMode === "admin" ? "active" : ""}
-                onClick={() => setViewMode("admin")}
+                onClick={() => {
+                  // 👤 화면에서 고친 내용이 보이게 다시 불러옴
+                  if (viewMode !== "admin") {
+                    loadDetail();
+                    loadDay();
+                  }
+                  setViewMode("admin");
+                }}
               >
                 🛠 관리자 화면
               </button>

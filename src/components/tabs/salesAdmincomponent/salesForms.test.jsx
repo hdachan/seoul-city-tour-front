@@ -10,6 +10,9 @@ import SalesAdminContent from "./SalesAdminContent";
 import SalesAdminStatsTab from "./SalesAdminStatsTab";
 import SalesDrivingStats from "./SalesDrivingStats";
 import { salesApi, salesAdminApi, salesHolidayApi } from "../../../api/sales";
+import { salesViewAsApis } from "../../../api/salesViewAs";
+
+jest.mock("../../../api/salesViewAs", () => ({ salesViewAsApis: jest.fn() }));
 
 jest.mock("../../../api/sales", () => {
   const fns = (names) => Object.fromEntries(names.map((n) => [n, jest.fn()]));
@@ -22,7 +25,7 @@ jest.mock("../../../api/sales", () => {
   ];
   return {
     salesApi: fns([...common, "getMyCard", "saveMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
-    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNote", "getDailyNotes", "saveCard"]),
+    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes", "saveCard"]),
     salesHolidayApi: fns(["getMine", "save", "remove"]),
   };
 });
@@ -1033,52 +1036,52 @@ test("영업 정산 통계 상세 (일별 상세): 운행 있는 날은 머리�
 });
 
 describe("영업 정산관리 – 👤 그 사람 화면으로 보기", () => {
+  // 👤 화면은 영업 본인과 같은 API(salesApi 모양)를 X-View-As 머리로 부름 – 여기선 그 API 를 salesApi 목으로 대신
+  beforeEach(() => {
+    salesViewAsApis.mockImplementation(() => ({ api: salesApi, holidayApi: salesHolidayApi }));
+  });
   async function openAsUser() {
-    salesAdminApi.getSummary.mockImplementation(() =>
-      ok([{ username: "kim", name: "김영업", cardNumber: "9999-0000", locked: false, hasData: true, receiptCount: 1,
-        holidays: [{ date: "2026-10-22", reason: "개인 사정" }] }]),
-    );
-    salesAdminApi.getDailyNote.mockImplementation(() => ok({ note: "오늘 비고" }));
+    salesHolidayApi.getMine.mockImplementation(() => ok([{ date: "2026-10-22", reason: "개인 사정" }]));
+    salesApi.getDailyNote.mockImplementation(() => ok({ note: "오늘 비고" }));
     render(<SalesAdminContent />);
     fireEvent.click(await screen.findByText("김영업"));
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    expect(salesApi.getDriving).not.toHaveBeenCalled(); // 관리자 화면은 관리자 API
     fireEvent.click(screen.getByText("👤 김영업 화면"));
-    await screen.findByText("님이 보는 화면 그대로예요", { exact: false });
+    await screen.findByText("님 화면 그대로예요", { exact: false });
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
   }
 
-  test("영업 정산 화면을 그 사람 데이터로 그대로 보여줌 (관리자 조회 API 사용)", async () => {
+  test("그 사람 이름으로 영업 정산 화면을 그대로 보여줌", async () => {
     await openAsUser();
+    expect(salesViewAsApis).toHaveBeenCalledWith({ username: "kim" });
     expect(screen.getByText("💼 영업 정산")).toBeInTheDocument();
-    expect(screen.getByText("김영업 (kim) · 9999-0000", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("김영업 (kim) · 1234-5678", { exact: false })).toBeInTheDocument();
     expect(await screen.findByText("이날은 휴무로 적은 날이에요")).toBeInTheDocument();
     expect(await screen.findByText("오늘 비고")).toBeInTheDocument();
-    expect(salesAdminApi.getDrivingDate).toHaveBeenCalledWith("kim", "2026-10-22");
-    expect(salesAdminApi.getDailyNote).toHaveBeenCalledWith("kim", "2026-10-22");
-    // 영업 본인 API 는 안 부름
-    expect(salesApi.getDriving).not.toHaveBeenCalled();
-    expect(salesApi.getMyCard).not.toHaveBeenCalled();
-    expect(salesHolidayApi.getMine).not.toHaveBeenCalled();
+    expect(salesApi.getDriving).toHaveBeenCalledWith(2026, 10);
   });
 
-  test("보기 전용 – 추가 · 수정 · 삭제는 안내만, 관리자 화면으로 돌아갈 수 있음", async () => {
+  test("추가 · 수정은 실제로 저장되고, 잠금은 그 사람 기준 · 관리자 화면으로 돌아가면 다시 불러옴", async () => {
     await openAsUser();
-    fireEvent.click(screen.getByText("＋ 운행 추가"));
-    expect(await screen.findByText("보기 전용이에요", { exact: false })).toBeInTheDocument();
-    expect(modal()).toBeNull();
-    await clickRowEditMaybe();
-    expect(modal()).toBeNull();
-    expect(salesAdminApi.addDriving).not.toHaveBeenCalled();
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    const dateInput = modal().querySelector("input[type=date]");
+    // 그 사람에게 잠긴 3주차로는 못 옮김 (영업 정산 화면과 같은 오류)
+    setValue(dateInput, "2026-10-15");
+    await submit();
+    expect(salesApi.updateDriving).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("잠긴 주라 이 날짜로 옮길 수 없어요");
+    setValue(dateInput, "2026-10-22");
+    await submit();
+    expect(salesApi.updateDriving).toHaveBeenCalledTimes(1);
+    expect(salesApi.updateDriving.mock.calls[0][0]).toBe(2);
+    expect(salesApi.updateDriving.mock.calls[0][1]).toMatchObject({ date: "2026-10-22" });
     expect(salesAdminApi.updateDriving).not.toHaveBeenCalled();
+    const before = salesAdminApi.getDriving.mock.calls.length;
     fireEvent.click(screen.getByText("🛠 관리자 화면"));
     expect(screen.queryByText("💼 영업 정산")).toBeNull();
     expect(screen.getByText("⛽ 주유 추가")).toBeInTheDocument();
+    await waitFor(() => expect(salesAdminApi.getDriving.mock.calls.length).toBeGreaterThan(before));
   });
 });
-
-async function clickRowEditMaybe() {
-  fireEvent.click(screen.getAllByText("···")[0]);
-  const edit = screen.queryAllByText("수정");
-  if (edit.length) fireEvent.click(edit[0]);
-  await act(async () => {});
-}

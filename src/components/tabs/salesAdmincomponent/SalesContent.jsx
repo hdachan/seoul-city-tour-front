@@ -3,7 +3,7 @@ import { toDateStr } from "../../../utils/dateUtils";
 import useToday from "../../../utils/useToday";
 import "./sales.css";
 import { salesApi, salesHolidayApi } from "../../../api/sales";
-import { salesViewAsApis, VIEW_AS_READ_ONLY } from "../../../api/salesViewAs";
+import { salesViewAsApis } from "../../../api/salesViewAs";
 import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
@@ -45,27 +45,19 @@ const getWeekSunday = (dateStr) => {
   return toDateStr(d);
 };
 
-// viewAs: 관리자가 영업 사원 한 명의 화면을 그 사람이 보는 그대로 볼 때 { username, name, cardNumber }
-//         (보기 전용 – 추가 · 수정 · 삭제 버튼은 그대로 보이지만 누르면 안내만)
+// viewAs: 관리자가 영업 사원 한 명의 화면을 그 사람이 쓰는 그대로 쓸 때 { username, name }
+//         (서버도 그 사람으로 동작 – 잠금 · 미터기 · 오류 · 저장이 영업 본인과 똑같음, 문제 재현용)
 // initialYear / initialMonth: 처음 보여줄 연 · 월 (관리자 화면에서 보던 달)
 export default function SalesContent({ viewAs = null, initialYear, initialMonth } = {}) {
   const now = new Date();
   const viewAsUser = viewAs?.username;
-  const viewAsCard = viewAs?.cardNumber;
   const { api, holidayApi } = useMemo(
     () =>
       viewAsUser
-        ? salesViewAsApis({ username: viewAsUser, cardNumber: viewAsCard || "" })
+        ? salesViewAsApis({ username: viewAsUser })
         : { api: salesApi, holidayApi: salesHolidayApi },
-    [viewAsUser, viewAsCard],
+    [viewAsUser],
   );
-  // 보기 전용이면 안내만 하고 true (입력창을 열지 않음)
-  const blockViewAs = () => {
-    if (!viewAsUser) return false;
-    setOpenMenu(null);
-    setError(VIEW_AS_READ_ONLY);
-    return true;
-  };
   // 오늘 / 이번 주 (화면을 켜둔 채 자정이 지나면 자동 갱신)
   const TODAY = useToday();
   const THIS_WEEK_MONDAY = getWeekMonday(TODAY);
@@ -312,7 +304,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
   }, []);
 
   const handleSaveNote = async () => {
-    if (blockViewAs()) return;
     if (!canEditDay) {
       setError("잠긴 날짜의 비고는 수정할 수 없습니다.");
       return;
@@ -331,7 +322,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
 
   // 운행일지 모달
   const openAdd = async (type = "업무") => {
-    if (blockViewAs()) return;
     if (!canEditDay) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -366,7 +356,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
     setShowModal(true);
   };
   const openEdit = (row) => {
-    if (blockViewAs()) return;
     setError("");
     setDrivingDraft(null);
     setEditTarget(row);
@@ -443,7 +432,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
     }
   };
   const handleDelete = async (id) => {
-    if (blockViewAs()) return;
     setOpenMenu(null);
     if (!canEditDay) {
       setError("잠긴 주입니다. 삭제할 수 없습니다.");
@@ -462,7 +450,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
   // 법인카드 모달 (입력 가능한 날짜: 이번 달 중 열린 주, 이번 주 일요일까지)
   const receiptDates = dateOptions.filter(isDateEditable);
   const openReceiptAdd = (mode) => {
-    if (blockViewAs()) return;
     if (receiptDates.length === 0) {
       setError("잠긴 주입니다. 입력할 수 없습니다.");
       return;
@@ -486,7 +473,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
     setShowReceiptModal(true);
   };
   const openReceiptEdit = (row) => {
-    if (blockViewAs()) return;
     setReceiptMode(row.category === "개인사용" ? "개인" : "법인");
     setError("");
     setEditTarget(row);
@@ -520,7 +506,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
     }
   };
   const handleDeleteReceipt = async (id) => {
-    if (blockViewAs()) return;
     setOpenMenu(null);
     if (!window.confirm("삭제할까요?")) return;
     try {
@@ -675,7 +660,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
 
       {viewAsUser && (
         <div className="sl-viewas-note">
-          👤 <b>{viewAs.name || username}</b> 님이 보는 화면 그대로예요 (보기 전용 · 잠금 · 회색 날짜도 그 사람 기준)
+          👤 <b>{viewAs.name || username}</b> 님 화면 그대로예요 – 잠금 · 회색 날짜 · 오류도 그 사람 기준 (추가 · 수정하면 실제로 저장돼요)
         </div>
       )}
       {isLocked && (
@@ -1009,7 +994,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                 ) : (
                   <span
                     className={`sl-day-note-edit${dailyNote ? "" : " is-empty"}${isLocked ? " is-locked" : ""}`}
-                    onClick={() => !isLocked && !blockViewAs() && setNoteEditing(true)}
+                    onClick={() => !isLocked && setNoteEditing(true)}
                   >
                     {dailyNote || (isLocked ? "없음" : "클릭해서 입력...")}
                   </span>
