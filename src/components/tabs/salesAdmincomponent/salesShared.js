@@ -90,3 +90,6 @@ export const calcDistances = (list, startMeter = 0) => {
 // 지출내역 기본 카테고리 = 입력창 목록 맨 위 (기타 · 개인사용은 목록 아래쪽이라 제외)
 export const defaultCategory = (categories) =>
   categories.map((c) => c.name).find((n) => n !== "기타" && n !== "개인사용") || "기타";
+
+// 💳 카드 사용: 개인사용인지 (＋ 개인으로 적은 것) – 목록에서 빨간 줄 · "개인" 표시, 엑셀 내용 앞에 표시
+export const isPersonal = (r) => r?.category === "개인사용";

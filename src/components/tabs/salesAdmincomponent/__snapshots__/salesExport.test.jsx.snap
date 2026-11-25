@@ -689,24 +689,24 @@ Object {
         "주차장",
       ],
       Array [
+        "2026-10-23",
+        "1234-5678",
+        "거래처 미팅 <커피>",
+        8800,
+        8000,
+        800,
         "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
+        "카페",
       ],
       Array [
+        "2026-10-24",
+        "1234-5678",
+        "개인사용 · 개인 식사",
+        9900,
+        9000,
+        900,
         "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
+        "분식",
       ],
       Array [
         "",
@@ -872,9 +872,9 @@ Object {
         "합  계",
         "",
         "",
-        16500,
-        15000,
-        1500,
+        35200,
+        32000,
+        3200,
         "",
         "",
       ],
@@ -1008,11 +1008,11 @@ Object {
       },
       "A6": Object {
         "t": "s",
-        "v": "",
+        "v": "2026-10-23",
       },
       "A7": Object {
         "t": "s",
-        "v": "",
+        "v": "2026-10-24",
       },
       "A8": Object {
         "t": "s",
@@ -1100,11 +1100,11 @@ Object {
       },
       "B6": Object {
         "t": "s",
-        "v": "",
+        "v": "1234-5678",
       },
       "B7": Object {
         "t": "s",
-        "v": "",
+        "v": "1234-5678",
       },
       "B8": Object {
         "t": "s",
@@ -1192,11 +1192,11 @@ Object {
       },
       "C6": Object {
         "t": "s",
-        "v": "",
+        "v": "거래처 미팅 <커피>",
       },
       "C7": Object {
         "t": "s",
-        "v": "",
+        "v": "개인사용 · 개인 식사",
       },
       "C8": Object {
         "t": "s",
@@ -1268,7 +1268,7 @@ Object {
       },
       "D24": Object {
         "t": "n",
-        "v": 16500,
+        "v": 35200,
       },
       "D3": Object {
         "t": "s",
@@ -1283,12 +1283,12 @@ Object {
         "v": 5500,
       },
       "D6": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 8800,
       },
       "D7": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 9900,
       },
       "D8": Object {
         "t": "s",
@@ -1360,7 +1360,7 @@ Object {
       },
       "E24": Object {
         "t": "n",
-        "v": 15000,
+        "v": 32000,
       },
       "E3": Object {
         "t": "s",
@@ -1375,12 +1375,12 @@ Object {
         "v": 5000,
       },
       "E6": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 8000,
       },
       "E7": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 9000,
       },
       "E8": Object {
         "t": "s",
@@ -1452,7 +1452,7 @@ Object {
       },
       "F24": Object {
         "t": "n",
-        "v": 1500,
+        "v": 3200,
       },
       "F3": Object {
         "t": "s",
@@ -1467,12 +1467,12 @@ Object {
         "v": 500,
       },
       "F6": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 800,
       },
       "F7": Object {
-        "t": "s",
-        "v": "",
+        "t": "n",
+        "v": 900,
       },
       "F8": Object {
         "t": "s",
@@ -1652,11 +1652,11 @@ Object {
       },
       "H6": Object {
         "t": "s",
-        "v": "",
+        "v": "카페",
       },
       "H7": Object {
         "t": "s",
-        "v": "",
+        "v": "분식",
       },
       "H8": Object {
         "t": "s",
@@ -1727,11 +1727,31 @@ Object {
         <td style=\\"text-align:right\\">500</td>
         <td></td>
         <td>주차장</td>
-      </tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style=\\"font-weight:bold\\">
+      </tr>
+      <tr>
+        <td style=\\"text-align:center\\">10-23</td>
+        <td>1234-5678</td>
+        <td>거래처 미팅 &lt;커피&gt;</td>
+        <td style=\\"text-align:right\\">8,800</td>
+        <td style=\\"text-align:right\\">8,000</td>
+        <td style=\\"text-align:right\\">800</td>
+        <td></td>
+        <td>카페</td>
+      </tr>
+      <tr>
+        <td style=\\"text-align:center\\">10-24</td>
+        <td>1234-5678</td>
+        <td>개인사용 · 개인 식사</td>
+        <td style=\\"text-align:right\\">9,900</td>
+        <td style=\\"text-align:right\\">9,000</td>
+        <td style=\\"text-align:right\\">900</td>
+        <td></td>
+        <td>분식</td>
+      </tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style=\\"font-weight:bold\\">
       <td colspan=\\"3\\" style=\\"text-align:center;border-top:2px solid #000\\">합 계</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">16,500</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">15,000</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">1,500</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">35,200</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">32,000</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">3,200</td>
       <td style=\\"border-top:2px solid #000\\"></td>
       <td style=\\"border-top:2px solid #000\\"></td>
     </tr></tbody>

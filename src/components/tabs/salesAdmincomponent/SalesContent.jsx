@@ -26,6 +26,7 @@ import {
   calcDistances,
   getKoreaTime,
   sumDist,
+  isPersonal,
 } from "./salesShared";
 
 // 기준일(YYYY-MM-DD)이 속한 주의 월요일 / 일요일
@@ -1045,7 +1046,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
               )}
               {!isLocked && receiptDates.length > 0 && (
                 <>
-                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("개인")}>
+                  <button className="sl-btn-primary is-personal" onClick={() => openReceiptAdd("개인")}>
                     ＋ 개인
                   </button>
                   <button className="sl-btn-primary" onClick={() => openReceiptAdd("법인")}>
@@ -1062,11 +1063,11 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
               <div className="sl-empty-box is-small">내역이 없습니다.</div>
             ) : (
               receipts.map((r) => (
-                <div key={r.id} className="sl-card">
+                <div key={r.id} className={`sl-card${isPersonal(r) ? " is-personal" : ""}`}>
                   <div className="sl-card-head">
                     <div className="sl-card-head-left">
                       <span className="sl-card-date">{r.date}</span>
-                      {r.category && <span className="sl-cat-chip">{r.category}</span>}
+                      {isPersonal(r) && <span className="sl-personal-tag">개인</span>}
                     </div>
                     {isDateEditable(r.date) && (
                       <DotMenu
@@ -1085,7 +1086,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                     {r.vat > 0 && <Row label="VAT" value={fmtWon(r.vat)} color="#059669" />}
                     {r.businessNumber && <Row label="사업자" value={r.businessNumber} />}
                     {r.companyName && <Row label="상호" value={r.companyName} />}
-                    {r.note && <Row label="비고" value={r.note} />}
+                    {r.note && <Row label="사용 이유" value={r.note} />}
                   </div>
                 </div>
               ))
@@ -1105,29 +1106,30 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                 <thead>
                   <tr>
                     <th>날짜</th>
-                    <th>카테고리</th>
                     <th>신용카드 번호</th>
                     <th className="sl-num">총금액</th>
                     <th className="sl-num">공급가액</th>
                     <th className="sl-num">VAT</th>
                     <th>사업자</th>
                     <th>상호</th>
-                    <th>비고</th>
+                    <th>사용 이유</th>
                     {!isLocked && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {receipts.length === 0 ? (
                     <tr className="sl-no-line">
-                      <td colSpan={10} className="sl-empty-cell is-tall">
+                      <td colSpan={9} className="sl-empty-cell is-tall">
                         내역이 없습니다.
                       </td>
                     </tr>
                   ) : (
                     receipts.map((r) => (
-                      <tr key={r.id}>
-                        <td className="sl-cell-date">{r.date}</td>
-                        <td>{r.category ? <span className="cat-badge">{r.category}</span> : "-"}</td>
+                      <tr key={r.id} className={isPersonal(r) ? "is-personal-row" : ""}>
+                        <td className="sl-cell-date">
+                          {r.date}
+                          {isPersonal(r) && <span className="sl-personal-tag">개인</span>}
+                        </td>
                         <td className="sl-cell-ellipsis">{r.content || "-"}</td>
                         <td className="sl-num sl-cell-amount">
                           {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
@@ -1159,7 +1161,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                 {receipts.length > 0 && (
                   <tfoot>
                     <tr>
-                      <td colSpan={3} className="sl-foot-label">
+                      <td colSpan={2} className="sl-foot-label">
                         합계
                       </td>
                       <td className="sl-num sl-foot-total">{fmtWon(receiptTotal)}</td>

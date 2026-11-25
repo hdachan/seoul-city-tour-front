@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PersonalFuelPanel from "./PersonalFuelPanel";
+import FuelHistory from "./FuelHistory";
 
 const fmt = (n) => Number(n || 0).toLocaleString();
 
@@ -151,6 +152,7 @@ export default function SalesMonthlyStats({
           extra={`${fmtL(personalFuelL)} L`}
         />
       </Section>
+      <FuelHistory driving={driving} />
 
       {receipts && (
         <Section title="💳 카드 사용">

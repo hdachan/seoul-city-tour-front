@@ -20,6 +20,9 @@ jest.mock("../../../api/sales", () => {
   const RECEIPTS = [
     { id: 5, date: "2026-10-22", category: "식대", content: "1234-5678", totalAmount: 11000, supplyAmount: 10000, vat: 1000, businessNumber: "123-45-67890", companyName: "식당" },
     { id: 6, date: "2026-10-23", category: "주차", content: "1234-5678", totalAmount: 5500, supplyAmount: 5000, vat: 500, businessNumber: "", companyName: "주차장" },
+    // 새 방식: 카테고리 법인 / 개인사용 + 사용 이유 (엑셀 · 인쇄 "내 용" 칸에 사용 이유)
+    { id: 7, date: "2026-10-23", category: "법인", note: "거래처 미팅 <커피>", content: "1234-5678", totalAmount: 8800, supplyAmount: 8000, vat: 800, businessNumber: "", companyName: "카페" },
+    { id: 8, date: "2026-10-24", category: "개인사용", note: "개인 식사", content: "1234-5678", totalAmount: 9900, supplyAmount: 9000, vat: 900, businessNumber: "", companyName: "분식" },
   ];
   const common = {
     getLockStatus: ok({ locked: false, weekLocks: { 1: true, 2: true, 3: true, 4: false, 5: true } }),

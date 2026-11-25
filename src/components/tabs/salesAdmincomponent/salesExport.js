@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { formatDrivingTime } from "./DrivingTimeFields";
-import { fmt, calcDistances, sumDist } from "./salesShared";
+import { fmt, calcDistances, sumDist, isPersonal } from "./salesShared";
 
 // 📥 엑셀 · 🖨 인쇄 (영업 정산 · 영업 정산관리 공용)
 //   author : 작성자 (아이디)
@@ -186,6 +186,14 @@ export const printDriving = ({ year, month, author, driving, startMeter }) => {
   w.document.close();
 };
 
+// 카드 사용 "내 용" 칸: 사용 이유 (개인사용은 앞에 표시, 사용 이유가 없는 예전 기록은 카테고리)
+export const receiptText = (r) => {
+  const text = (r.note || "").trim() || (isPersonal(r) ? "" : r.category || "");
+  return isPersonal(r) ? (text ? `개인사용 · ${text}` : "개인사용") : text;
+};
+const escHtml = (v) =>
+  String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[c]);
+
 // 법인카드 엑셀 다운로드
 export const downloadReceiptExcel = ({ year, month, author, receipts }) => {
   const wb = XLSX.utils.book_new();
@@ -217,7 +225,7 @@ export const downloadReceiptExcel = ({ year, month, author, receipts }) => {
   const dataRows = receipts.map((r) => [
     r.date,
     r.content || "",
-    r.category || "",
+    receiptText(r),
     r.totalAmount || 0,
     r.supplyAmount || 0,
     r.vat || 0,
@@ -280,7 +288,7 @@ export const printReceipt = ({ year, month, author, receipts }) => {
       <tr>
         <td style="text-align:center">${r.date ? r.date.slice(5) : ""}</td>
         <td>${r.content || ""}</td>
-        <td>${r.category || ""}</td>
+        <td>${escHtml(receiptText(r))}</td>
         <td style="text-align:right">${r.totalAmount ? fmt(r.totalAmount) : ""}</td>
         <td style="text-align:right">${r.supplyAmount ? fmt(r.supplyAmount) : ""}</td>
         <td style="text-align:right">${r.vat ? fmt(r.vat) : ""}</td>

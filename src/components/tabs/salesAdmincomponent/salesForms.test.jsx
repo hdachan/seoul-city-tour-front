@@ -124,9 +124,15 @@ const modalForm = () => modal().querySelector("form");
 // 지출내역 사용 이유 칸 (필수)
 const reasonInput = () => modal().querySelector("input[placeholder='어떤 이유로 사용했는지 적어주세요']");
 // 입력창 날짜 목록 (영업 정산: 잠긴 날은 🔒 · 못 고름)
-const dateList = () => modal().querySelector("select.sl-date-select");
-const openDates = () => [...dateList().options].filter((o) => !o.disabled).map((o) => o.value);
-const lockedDates = () => [...dateList().options].filter((o) => o.disabled).map((o) => o.value);
+// 입력창 날짜 달력 (영업 정산: 잠긴 날은 🔒 · 못 누름)
+const calDays = () => {
+  if (!modal().querySelector(".sl-dp-pop")) fireEvent.click(modal().querySelector(".sl-dp-btn"));
+  return [...modal().querySelectorAll(".sl-dp-day")];
+};
+const openDates = () => calDays().filter((b) => !b.disabled).map((b) => b.dataset.date);
+const lockedDates = () => calDays().filter((b) => b.classList.contains("is-locked")).map((b) => b.dataset.date);
+const dateValue = () => calDays().find((b) => b.classList.contains("is-sel"))?.dataset.date;
+const pickDate = (d) => fireEvent.click(calDays().find((b) => b.dataset.date === d));
 const setValue = (el, value) => fireEvent.change(el, { target: { value } });
 const typeButton = (name) =>
   [...modal().querySelectorAll("button[type=button]")].find((b) => b.textContent.trim().endsWith(name));
@@ -380,14 +386,16 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     await openAt("2026-10-15");
     fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    expect(dateList().value).toBe("2026-10-15");
+    expect(dateValue()).toBe("2026-10-15");
     expect(openDates()).toEqual([
       "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18",
       "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
     ]);
     expect(lockedDates()).toContain("2026-10-01");
     expect(lockedDates()).not.toContain("2026-10-26"); // 이번 주 일요일 다음은 목록에 없음
-    expect([...dateList().options].find((o) => o.value === "2026-10-05").textContent).toBe("10월 5일 (월) 🔒 잠김");
+    const day5 = calDays().find((b) => b.dataset.date === "2026-10-05");
+    expect(day5).toBeDisabled();
+    expect(day5.textContent).toBe("5🔒");
     // 10/20 에 900km 기록이 있으므로 950 은 막히고 900 은 저장됨 (미터기 검사도 그대로)
     const meterInput = modal().querySelector("input[placeholder='계량기 숫자']");
     setValue(meterInput, "950");
@@ -423,15 +431,13 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     await screen.findAllByText("···", undefined, { timeout: 3000 });
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = dateList();
-    // 잠긴 2주차(5~11일)는 목록에서 못 고름 (억지로 넣어도 저장 안 됨)
+    // 잠긴 2주차(5~11일)는 달력에서 눌러도 안 바뀜
     expect(lockedDates()).toContain("2026-10-08");
-    setValue(dateInput, "2026-10-08");
-    await submit();
-    expect(salesApi.updateDriving).not.toHaveBeenCalled();
-    expect(modal().textContent).toContain("잠긴 주라 이 날짜로 옮길 수 없어요");
+    pickDate("2026-10-08");
+    expect(dateValue()).toBe("2026-10-22");
     // 다시 열린 3주차(12~18일)로는 옮겨짐
-    setValue(dateInput, "2026-10-15");
+    pickDate("2026-10-15");
+    expect(modal().querySelector(".sl-dp-btn").textContent).toBe("📅 10월 15일 (목)");
     await submit();
     expect(salesApi.updateDriving).toHaveBeenCalledTimes(1);
     expect(salesApi.updateDriving.mock.calls[0][0]).toBe(3);
@@ -449,7 +455,7 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     expect(screen.getAllByText("···")).toHaveLength(2);
     fireEvent.click(screen.getByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    expect(dateList().value).toBe("2026-10-22");
+    expect(dateValue()).toBe("2026-10-22");
     expect(openDates()).toEqual([
       "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
     ]);
@@ -464,19 +470,19 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = dateList();
     // 1주차(1~4일) + 4주차만 고를 수 있음, 2·3주차는 🔒
     expect(openDates()).toEqual([
       "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04",
       "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
     ]);
     expect(lockedDates()).toContain("2026-10-14");
-    setValue(dateInput, "2026-10-14");
+    pickDate("2026-10-14"); // 잠긴 날은 눌러도 안 바뀜
+    expect(dateValue()).toBe("2026-10-22");
+    pickDate("2026-10-03");
     setValue(modal().querySelector("input[type=number]"), "5000");
     setValue(reasonInput(), "회의");
     await submit();
-    expect(salesApi.addReceipt).not.toHaveBeenCalled();
-    expect(modal().textContent).toContain("잠긴 주의 날짜입니다");
+    expect(salesApi.addReceipt.mock.calls[0][0].date).toBe("2026-10-03");
   });
 });
 
@@ -856,6 +862,37 @@ describe("카드번호", () => {
 });
 
 // ───────────── 📊 월간 통계 – 법인카드 ─────────────
+describe("월간 통계 – ⛽ 주유 내역", () => {
+  test("주유 내역 보기: 법인 · 개인주유를 날짜 순으로, 합계까지", async () => {
+    salesApi.getDriving.mockImplementation(() =>
+      ok([
+        ...DRIVING,
+        { id: 11, date: "2026-10-21", type: "개인주유", fuelAmount: 10, fuelCost: 17000, fuelUnitPrice: 1700, notes: [] },
+        { id: 10, date: "2026-10-05", type: "주유", fuelAmount: 30.5, fuelCost: 50000, fuelUnitPrice: 1639, notes: [] },
+        { id: 12, date: "2026-10-22", type: "주유", fuelAmount: 20, fuelCost: 33000, fuelUnitPrice: 1650, notes: [] },
+      ]),
+    );
+    render(<SalesContent />);
+    await screen.findAllByText("명동", undefined, { timeout: 3000 });
+    fireEvent.click(screen.getByText("📊 월간 통계"));
+    const btn = await screen.findByText("⛽ 주유 내역 보기 (3건) ▼");
+    expect(document.querySelector(".sl-fuel-hist-table")).toBeNull();
+    fireEvent.click(btn);
+    const rows = [...document.querySelectorAll(".sl-fuel-hist-table tbody tr")].map((r) =>
+      [...r.cells].map((c) => c.textContent),
+    );
+    expect(rows).toEqual([
+      ["10/5 (월)", "주유 (법인)", "30.5L", "1,639원", "50,000원"],
+      ["10/21 (수)", "개인주유", "10.0L", "1,700원", "17,000원"],
+      ["10/22 (목)", "주유 (법인)", "20.0L", "1,650원", "33,000원"],
+    ]);
+    const foot = [...document.querySelectorAll(".sl-fuel-hist-table tfoot tr")].map((r) => r.textContent);
+    expect(foot).toEqual(["주유 (법인) 합계50.5L83,000원", "개인주유 합계10.0L17,000원"]);
+    fireEvent.click(screen.getByText("⛽ 주유 내역 접기 ▲"));
+    expect(document.querySelector(".sl-fuel-hist-table")).toBeNull();
+  });
+});
+
 describe("월간 통계 – 법인카드", () => {
   test("법인카드 · 개인사용 · 총금액", async () => {
     salesApi.getReceipts.mockImplementation(() =>
@@ -990,6 +1027,23 @@ describe("지출내역 – 카테고리 칸 없음, 사용 이유 필수", () =>
     expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({ category: "개인사용", note: "개인 식사" });
   });
 
+  test("목록: 카테고리 칸 없이 개인사용은 앞 빨간 줄 + 개인 표시, ＋ 개인 버튼은 빨간색", async () => {
+    salesApi.getReceipts.mockImplementation(() =>
+      ok([...RECEIPTS, { ...RECEIPTS[0], id: 7, category: "개인사용", note: "개인 식사" }]),
+    );
+    await openReceipts();
+    await screen.findAllByText("개인 식사");
+    expect(screen.queryByText("카테고리")).toBeNull();
+    expect(screen.queryByText("식대")).toBeNull();
+    expect(screen.getAllByText("사용 이유").length).toBeGreaterThan(0);
+    // PC 표 + 모바일 카드에 각각 개인 표시 1개
+    expect(screen.getAllByText("개인")).toHaveLength(2);
+    expect(document.querySelectorAll("tr.is-personal-row")).toHaveLength(1);
+    expect(document.querySelectorAll(".sl-card.is-personal")).toHaveLength(1);
+    expect(screen.getByText("＋ 개인")).toHaveClass("is-personal");
+    expect(screen.getByText("＋ 법인")).not.toHaveClass("is-personal");
+  });
+
   test("예전 기록(식대) 수정 → 카테고리는 그대로, 사용 이유를 적어야 저장", async () => {
     await openReceipts();
     await clickRowEdit(0);
@@ -1081,14 +1135,10 @@ describe("영업 정산관리 – 👤 그 사람 화면으로 보기", () => {
     await openAsUser();
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = dateList();
+    // 그 사람에게 잠긴 3주차는 달력에서 못 고름 (영업 정산 화면과 같음)
     expect(lockedDates()).toContain("2026-10-15");
-    // 그 사람에게 잠긴 3주차로는 못 옮김 (영업 정산 화면과 같은 오류)
-    setValue(dateInput, "2026-10-15");
-    await submit();
-    expect(salesApi.updateDriving).not.toHaveBeenCalled();
-    expect(modal().textContent).toContain("잠긴 주라 이 날짜로 옮길 수 없어요");
-    setValue(dateInput, "2026-10-22");
+    pickDate("2026-10-15");
+    expect(dateValue()).toBe("2026-10-22");
     await submit();
     expect(salesApi.updateDriving).toHaveBeenCalledTimes(1);
     expect(salesApi.updateDriving.mock.calls[0][0]).toBe(2);

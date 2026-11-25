@@ -25,6 +25,7 @@ import {
   TYPE_STYLE,
   getWeeksOfMonth,
   calcDistances,
+  isPersonal,
 } from "./salesShared";
 
 export default function SalesAdminContent() {
@@ -660,7 +661,7 @@ export default function SalesAdminContent() {
               )}
               {!isLocked && activeTab === "receipt" && (
                 <>
-                  <button className="sl-btn-primary" onClick={() => openReceiptAdd("개인")}>
+                  <button className="sl-btn-primary is-personal" onClick={() => openReceiptAdd("개인")}>
                     ＋ 개인
                   </button>
                   <button className="sl-btn-primary" onClick={() => openReceiptAdd("법인")}>
@@ -1113,29 +1114,30 @@ function ReceiptTable({ receipts, showMenu, renderMenu }) {
         <thead>
           <tr>
             <th>날짜</th>
-            <th>카테고리</th>
             <th>신용카드 번호</th>
             <th className="sl-num">총금액</th>
             <th className="sl-num">공급가액</th>
             <th className="sl-num">VAT</th>
             <th>사업자</th>
             <th>상호</th>
-            <th>비고</th>
+            <th>사용 이유</th>
             {showMenu && <th></th>}
           </tr>
         </thead>
         <tbody>
           {receipts.length === 0 ? (
             <tr>
-              <td colSpan={10} className="sl-empty-cell is-tall">
+              <td colSpan={9} className="sl-empty-cell is-tall">
                 내역 없음
               </td>
             </tr>
           ) : (
             receipts.map((r) => (
-              <tr key={r.id}>
-                <td className="sl-cell-date">{r.date}</td>
-                <td>{r.category ? <span className="cat-badge">{r.category}</span> : "-"}</td>
+              <tr key={r.id} className={isPersonal(r) ? "is-personal-row" : ""}>
+                <td className="sl-cell-date">
+                  {r.date}
+                  {isPersonal(r) && <span className="sl-personal-tag">개인</span>}
+                </td>
                 <td className="sl-cell-ellipsis">{r.content || "-"}</td>
                 <td className="sl-num sl-cell-amount">
                   {r.totalAmount ? fmtWon(r.totalAmount) : "-"}
@@ -1155,7 +1157,7 @@ function ReceiptTable({ receipts, showMenu, renderMenu }) {
         {receipts.length > 0 && (
           <tfoot>
             <tr>
-              <td colSpan={3} className="sl-text-blue">
+              <td colSpan={2} className="sl-text-blue">
                 합계
               </td>
               <td className="sl-num sl-nowrap sl-text-blue">{fmtWon(sum("totalAmount"))}</td>
