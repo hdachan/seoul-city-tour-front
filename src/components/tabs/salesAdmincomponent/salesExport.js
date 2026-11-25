@@ -186,10 +186,25 @@ export const printDriving = ({ year, month, author, driving, startMeter }) => {
   w.document.close();
 };
 
-// 카드 사용 "내 용" 칸: 사용 이유 (개인사용은 앞에 표시, 사용 이유가 없는 예전 기록은 카테고리)
+// 카드 사용 "내 용" 칸: 사용 이유만 (카테고리는 안 씀)
+//   법인 → "거래처 미팅" / 개인사용 → "개인사용 - 개인 식사" (이유 없으면 "개인사용")
 export const receiptText = (r) => {
-  const text = (r.note || "").trim() || (isPersonal(r) ? "" : r.category || "");
-  return isPersonal(r) ? (text ? `개인사용 · ${text}` : "개인사용") : text;
+  const text = (r.note || "").trim();
+  if (isPersonal(r)) return text ? `개인사용 - ${text}` : "개인사용";
+  return text;
+};
+// 합계: 법인 / 개인사용 / 전체 – [{ label, totalAmount, supplyAmount, vat }]
+export const receiptTotals = (receipts) => {
+  const sum = (list) => ({
+    totalAmount: list.reduce((s, r) => s + (r.totalAmount || 0), 0),
+    supplyAmount: list.reduce((s, r) => s + (r.supplyAmount || 0), 0),
+    vat: list.reduce((s, r) => s + (r.vat || 0), 0),
+  });
+  return [
+    { label: "법인 합계", ...sum(receipts.filter((r) => !isPersonal(r))) },
+    { label: "개인사용 합계", ...sum(receipts.filter(isPersonal)) },
+    { label: "합  계", ...sum(receipts) },
+  ];
 };
 const escHtml = (v) =>
   String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[c]);
@@ -236,28 +251,28 @@ export const downloadReceiptExcel = ({ year, month, author, receipts }) => {
     { length: Math.max(0, 20 - dataRows.length) },
     () => ["", "", "", "", "", "", "", ""],
   );
-  const totalRow = [
-    "합  계",
+  const totalRows = receiptTotals(receipts).map((t) => [
+    t.label,
     "",
     "",
-    receipts.reduce((s, r) => s + (r.totalAmount || 0), 0),
-    receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0),
-    receipts.reduce((s, r) => s + (r.vat || 0), 0),
+    t.totalAmount,
+    t.supplyAmount,
+    t.vat,
     "",
     "",
-  ];
+  ]);
   const ws = XLSX.utils.aoa_to_sheet([
     ...titleRow,
     ...infoRow,
     ...colHeader,
     ...dataRows,
     ...emptyRows,
-    totalRow,
+    ...totalRows,
   ]);
   ws["!cols"] = [
     { wch: 10 },
     { wch: 20 },
-    { wch: 14 },
+    { wch: 28 }, // 내 용 (사용 이유)
     { wch: 14 },
     { wch: 14 },
     { wch: 12 },
@@ -302,17 +317,20 @@ export const printReceipt = ({ year, month, author, receipts }) => {
     () =>
       `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`,
   ).join("");
-  const totalAmt = receipts.reduce((s, r) => s + (r.totalAmount || 0), 0);
-  const totalSupply = receipts.reduce((s, r) => s + (r.supplyAmount || 0), 0);
-  const totalVat = receipts.reduce((s, r) => s + (r.vat || 0), 0);
-  const total = `<tr style="font-weight:bold">
-      <td colspan="3" style="text-align:center;border-top:2px solid #000">합 계</td>
-      <td style="text-align:right;border-top:2px solid #000">${fmt(totalAmt)}</td>
-      <td style="text-align:right;border-top:2px solid #000">${fmt(totalSupply)}</td>
-      <td style="text-align:right;border-top:2px solid #000">${fmt(totalVat)}</td>
-      <td style="border-top:2px solid #000"></td>
-      <td style="border-top:2px solid #000"></td>
+  // 합계: 법인 / 개인사용 / 전체 (첫 줄 위에 굵은 선)
+  const total = receiptTotals(receipts)
+    .map((t, i) => {
+      const line = i === 0 ? ";border-top:2px solid #000" : "";
+      return `<tr style="font-weight:bold">
+      <td colspan="3" style="text-align:center${line}">${t.label}</td>
+      <td style="text-align:right${line}">${fmt(t.totalAmount)}</td>
+      <td style="text-align:right${line}">${fmt(t.supplyAmount)}</td>
+      <td style="text-align:right${line}">${fmt(t.vat)}</td>
+      <td style="${line.slice(1)}"></td>
+      <td style="${line.slice(1)}"></td>
     </tr>`;
+    })
+    .join("");
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -323,13 +341,13 @@ export const printReceipt = ({ year, month, author, receipts }) => {
         th { border: 1.5px solid #000; padding: 5px 4px; text-align: center; font-weight: bold; background: #fff; }
         td { border: 1px solid #000; padding: 4px; height: 22px; }
         th:nth-child(1), td:nth-child(1) { width: 7%; }
-        th:nth-child(2), td:nth-child(2) { width: 18%; }
-        th:nth-child(3), td:nth-child(3) { width: 12%; }
+        th:nth-child(2), td:nth-child(2) { width: 15%; }
+        th:nth-child(3), td:nth-child(3) { width: 21%; }
         th:nth-child(4), td:nth-child(4) { width: 11%; }
         th:nth-child(5), td:nth-child(5) { width: 11%; }
         th:nth-child(6), td:nth-child(6) { width: 8%; }
-        th:nth-child(7), td:nth-child(7) { width: 14%; }
-        th:nth-child(8), td:nth-child(8) { width: 14%; }
+        th:nth-child(7), td:nth-child(7) { width: 12%; }
+        th:nth-child(8), td:nth-child(8) { width: 11%; }
         @media print {
           @page { size: A4 landscape; margin: 8mm; }
           body { padding: 0; }

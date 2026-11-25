@@ -671,7 +671,7 @@ Object {
       Array [
         "2026-10-22",
         "1234-5678",
-        "식대",
+        "",
         11000,
         10000,
         1000,
@@ -681,7 +681,7 @@ Object {
       Array [
         "2026-10-23",
         "1234-5678",
-        "주차",
+        "",
         5500,
         5000,
         500,
@@ -701,7 +701,7 @@ Object {
       Array [
         "2026-10-24",
         "1234-5678",
-        "개인사용 · 개인 식사",
+        "개인사용 - 개인 식사",
         9900,
         9000,
         900,
@@ -869,6 +869,26 @@ Object {
         "",
       ],
       Array [
+        "법인 합계",
+        "",
+        "",
+        25300,
+        23000,
+        2300,
+        "",
+        "",
+      ],
+      Array [
+        "개인사용 합계",
+        "",
+        "",
+        9900,
+        9000,
+        900,
+        "",
+        "",
+      ],
+      Array [
         "합  계",
         "",
         "",
@@ -888,7 +908,7 @@ Object {
           "wch": 20,
         },
         Object {
-          "wch": 14,
+          "wch": 28,
         },
         Object {
           "wch": 14,
@@ -925,7 +945,7 @@ Object {
         "orientation": "landscape",
         "paperSize": 9,
       },
-      "!ref": "A1:H24",
+      "!ref": "A1:H26",
       "A1": Object {
         "t": "s",
         "v": "신용카드 매출전표 등 수취금액 합계표",
@@ -991,6 +1011,14 @@ Object {
         "v": "",
       },
       "A24": Object {
+        "t": "s",
+        "v": "법인 합계",
+      },
+      "A25": Object {
+        "t": "s",
+        "v": "개인사용 합계",
+      },
+      "A26": Object {
         "t": "s",
         "v": "합  계",
       },
@@ -1086,6 +1114,14 @@ Object {
         "t": "s",
         "v": "",
       },
+      "B25": Object {
+        "t": "s",
+        "v": "",
+      },
+      "B26": Object {
+        "t": "s",
+        "v": "",
+      },
       "B3": Object {
         "t": "s",
         "v": "신용카드 카드번호",
@@ -1178,17 +1214,25 @@ Object {
         "t": "s",
         "v": "",
       },
+      "C25": Object {
+        "t": "s",
+        "v": "",
+      },
+      "C26": Object {
+        "t": "s",
+        "v": "",
+      },
       "C3": Object {
         "t": "s",
         "v": "내  용",
       },
       "C4": Object {
         "t": "s",
-        "v": "식대",
+        "v": "",
       },
       "C5": Object {
         "t": "s",
-        "v": "주차",
+        "v": "",
       },
       "C6": Object {
         "t": "s",
@@ -1196,7 +1240,7 @@ Object {
       },
       "C7": Object {
         "t": "s",
-        "v": "개인사용 · 개인 식사",
+        "v": "개인사용 - 개인 식사",
       },
       "C8": Object {
         "t": "s",
@@ -1267,6 +1311,14 @@ Object {
         "v": "",
       },
       "D24": Object {
+        "t": "n",
+        "v": 25300,
+      },
+      "D25": Object {
+        "t": "n",
+        "v": 9900,
+      },
+      "D26": Object {
         "t": "n",
         "v": 35200,
       },
@@ -1360,6 +1412,14 @@ Object {
       },
       "E24": Object {
         "t": "n",
+        "v": 23000,
+      },
+      "E25": Object {
+        "t": "n",
+        "v": 9000,
+      },
+      "E26": Object {
+        "t": "n",
         "v": 32000,
       },
       "E3": Object {
@@ -1451,6 +1511,14 @@ Object {
         "v": "",
       },
       "F24": Object {
+        "t": "n",
+        "v": 2300,
+      },
+      "F25": Object {
+        "t": "n",
+        "v": 900,
+      },
+      "F26": Object {
         "t": "n",
         "v": 3200,
       },
@@ -1546,6 +1614,14 @@ Object {
         "t": "s",
         "v": "",
       },
+      "G25": Object {
+        "t": "s",
+        "v": "",
+      },
+      "G26": Object {
+        "t": "s",
+        "v": "",
+      },
       "G3": Object {
         "t": "s",
         "v": "사업자등록번호",
@@ -1638,6 +1714,14 @@ Object {
         "t": "s",
         "v": "",
       },
+      "H25": Object {
+        "t": "s",
+        "v": "",
+      },
+      "H26": Object {
+        "t": "s",
+        "v": "",
+      },
       "H3": Object {
         "t": "s",
         "v": "상호",
@@ -1679,13 +1763,13 @@ Object {
         th { border: 1.5px solid #000; padding: 5px 4px; text-align: center; font-weight: bold; background: #fff; }
         td { border: 1px solid #000; padding: 4px; height: 22px; }
         th:nth-child(1), td:nth-child(1) { width: 7%; }
-        th:nth-child(2), td:nth-child(2) { width: 18%; }
-        th:nth-child(3), td:nth-child(3) { width: 12%; }
+        th:nth-child(2), td:nth-child(2) { width: 15%; }
+        th:nth-child(3), td:nth-child(3) { width: 21%; }
         th:nth-child(4), td:nth-child(4) { width: 11%; }
         th:nth-child(5), td:nth-child(5) { width: 11%; }
         th:nth-child(6), td:nth-child(6) { width: 8%; }
-        th:nth-child(7), td:nth-child(7) { width: 14%; }
-        th:nth-child(8), td:nth-child(8) { width: 14%; }
+        th:nth-child(7), td:nth-child(7) { width: 12%; }
+        th:nth-child(8), td:nth-child(8) { width: 11%; }
         @media print {
           @page { size: A4 landscape; margin: 8mm; }
           body { padding: 0; }
@@ -1711,7 +1795,7 @@ Object {
       <tr>
         <td style=\\"text-align:center\\">10-22</td>
         <td>1234-5678</td>
-        <td>식대</td>
+        <td></td>
         <td style=\\"text-align:right\\">11,000</td>
         <td style=\\"text-align:right\\">10,000</td>
         <td style=\\"text-align:right\\">1,000</td>
@@ -1721,7 +1805,7 @@ Object {
       <tr>
         <td style=\\"text-align:center\\">10-23</td>
         <td>1234-5678</td>
-        <td>주차</td>
+        <td></td>
         <td style=\\"text-align:right\\">5,500</td>
         <td style=\\"text-align:right\\">5,000</td>
         <td style=\\"text-align:right\\">500</td>
@@ -1741,19 +1825,33 @@ Object {
       <tr>
         <td style=\\"text-align:center\\">10-24</td>
         <td>1234-5678</td>
-        <td>개인사용 · 개인 식사</td>
+        <td>개인사용 - 개인 식사</td>
         <td style=\\"text-align:right\\">9,900</td>
         <td style=\\"text-align:right\\">9,000</td>
         <td style=\\"text-align:right\\">900</td>
         <td></td>
         <td>분식</td>
       </tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style=\\"font-weight:bold\\">
-      <td colspan=\\"3\\" style=\\"text-align:center;border-top:2px solid #000\\">합 계</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">35,200</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">32,000</td>
-      <td style=\\"text-align:right;border-top:2px solid #000\\">3,200</td>
+      <td colspan=\\"3\\" style=\\"text-align:center;border-top:2px solid #000\\">법인 합계</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">25,300</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">23,000</td>
+      <td style=\\"text-align:right;border-top:2px solid #000\\">2,300</td>
       <td style=\\"border-top:2px solid #000\\"></td>
       <td style=\\"border-top:2px solid #000\\"></td>
+    </tr><tr style=\\"font-weight:bold\\">
+      <td colspan=\\"3\\" style=\\"text-align:center\\">개인사용 합계</td>
+      <td style=\\"text-align:right\\">9,900</td>
+      <td style=\\"text-align:right\\">9,000</td>
+      <td style=\\"text-align:right\\">900</td>
+      <td style=\\"\\"></td>
+      <td style=\\"\\"></td>
+    </tr><tr style=\\"font-weight:bold\\">
+      <td colspan=\\"3\\" style=\\"text-align:center\\">합  계</td>
+      <td style=\\"text-align:right\\">35,200</td>
+      <td style=\\"text-align:right\\">32,000</td>
+      <td style=\\"text-align:right\\">3,200</td>
+      <td style=\\"\\"></td>
+      <td style=\\"\\"></td>
     </tr></tbody>
       </table>
       <script>window.onload=()=>{window.print();window.close();}</script>
