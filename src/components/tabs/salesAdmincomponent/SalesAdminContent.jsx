@@ -25,7 +25,6 @@ import {
   TYPE_STYLE,
   getWeeksOfMonth,
   calcDistances,
-  defaultCategory,
 } from "./salesShared";
 
 export default function SalesAdminContent() {
@@ -87,7 +86,6 @@ export default function SalesAdminContent() {
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  const activeCats = categories; // active 컬럼 제거됨
   const daysInMonth = new Date(year, month, 0).getDate();
   const enteredDates = new Set(monthDriving.map((d) => d.date));
 
@@ -359,7 +357,8 @@ export default function SalesAdminContent() {
     setEditTarget(null);
     setReceiptForm({
       date: selectedDate,
-      category: mode === "개인" ? "개인사용" : defaultCategory(activeCats),
+      // 카테고리는 화면에서 안 고름: ＋ 개인 → 개인사용, ＋ 법인 → 법인
+      category: mode === "개인" ? "개인사용" : "법인",
       content: selectedUser?.cardNumber || "",
       amount: "",
       businessNumber: "",
@@ -764,7 +763,6 @@ export default function SalesAdminContent() {
               setForm={setReceiptForm}
               isEdit={!!editTarget}
               mode={receiptMode}
-              categories={activeCats}
               error={error}
               onClose={() => setShowReceiptModal(false)}
               onSubmit={handleSubmitReceipt}

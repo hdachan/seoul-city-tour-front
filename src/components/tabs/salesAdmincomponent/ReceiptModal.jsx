@@ -1,43 +1,41 @@
+import { useState } from "react";
 import { fmtWon, formatCard } from "./salesShared";
+import DateField from "./DateField";
 import "./sales.css";
 
 // 💳 법인카드 지출내역 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm  : 입력값 (화면마다 자기 상태를 넘김)
 //   dateMin/dateMax : 고를 수 있는 날짜 범위 (없으면 제한 없음)
-//   mode            : "개인" → 카테고리 개인사용 고정 / "법인" → 목록에서 개인사용 빼고 (없으면 전부)
+//   dateChoices     : 날짜 목록 (잠긴 날은 못 고름) – 있으면 달력 대신 목록
+//   mode            : "개인" / "법인" – 카테고리는 화면에서 안 고름 (추가 버튼에 따라 개인사용 / 법인으로 저장)
+//   사용 이유(note) 는 항상 필수
 export default function ReceiptModal({
   form,
   setForm,
   isEdit,
   mode,
-  categories,
   error,
   onClose,
   onSubmit,
   dateMin,
   dateMax,
+  dateChoices,
 }) {
   // 총금액(부가세 포함) → 공급가액 · 부가세 미리보기
   const total = Number(form.amount || 0);
   const supply = total ? Math.round(total / 1.1) : 0;
   const vat = total ? total - supply : 0;
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-  // 관리자 카테고리 + 맨 끝에 항상 "기타" (자세한 내용은 비고에)
-  //   수정 중인 기록의 카테고리가 지금 목록에 없으면(삭제됨) 그것도 보여줌
-  const names = categories.map((c) => c.name).filter((n) => n !== "기타");
-  if (
-    form.category &&
-    form.category !== "기타" &&
-    !names.includes(form.category)
-  )
-    names.push(form.category);
-  // 개인사용은 기타 뒤 맨 아래
-  const categoryNames = [
-    ...names.filter((n) => n !== "개인사용"),
-    "기타",
-    ...(mode === "법인" ? [] : names.filter((n) => n === "개인사용")),
-  ];
-  const personal = mode === "개인";
+  const [reasonError, setReasonError] = useState("");
+  const handleSubmit = (e) => {
+    if (!(form.note || "").trim()) {
+      e.preventDefault();
+      setReasonError("사용 이유를 적어주세요.");
+      return;
+    }
+    setReasonError("");
+    onSubmit(e);
+  };
 
   return (
     <div className="sl-modal-bg">
@@ -50,64 +48,29 @@ export default function ReceiptModal({
             ✕
           </button>
         </div>
-        <form onSubmit={onSubmit} className="sl-modal-form">
+        <form onSubmit={handleSubmit} className="sl-modal-form">
           <div className="sl-field">
             <label>날짜</label>
-            <input
-              type="date"
-              value={form.date || ""}
+            <DateField
+              value={form.date}
+              choices={dateChoices}
               min={dateMin}
               max={dateMax}
-              onChange={set("date")}
+              onChange={(v) => setForm((f) => ({ ...f, date: v }))}
             />
           </div>
+          {/* 사용 이유 (필수) – 카테고리 칸 대신 */}
           <div className="sl-field">
-            <label>카테고리</label>
-            {personal ? (
-              // 개인: 카테고리는 개인사용 고정 (못 바꿈)
-              <input
-                type="text"
-                value="개인사용"
-                readOnly
-                disabled
-                aria-label="카테고리"
-              />
-            ) : (
-              <select
-                value={form.category || ""}
-                onChange={(e) =>
-                  // 기타 · 개인사용이 아니면 비고 칸이 없으니 비고도 비움
-                  setForm((f) => ({
-                    ...f,
-                    category: e.target.value,
-                    note: ["기타", "개인사용"].includes(e.target.value)
-                      ? f.note
-                      : "",
-                  }))
-                }
-              >
-                {categoryNames.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            )}
-            {/* 개인사용은 이유 필수 (기타의 비고와 같은 칸에 저장) */}
-            {form.category === "개인사용" && (
-              <div className="sl-field">
-                <label>개인사용 이유 *</label>
-                <input
-                  type="text"
-                  placeholder="어떤 이유로 사용했는지 적어주세요"
-                  value={form.note || ""}
-                  onChange={set("note")}
-                  pattern=".*\S.*"
-                  title="개인사용 이유를 적어주세요"
-                  required
-                />
-              </div>
-            )}
+            <label>사용 이유 *</label>
+            <input
+              type="text"
+              placeholder="어떤 이유로 사용했는지 적어주세요"
+              value={form.note || ""}
+              onChange={set("note")}
+              pattern=".*\S.*"
+              title="사용 이유를 적어주세요"
+              required
+            />
             <p className="sl-hint is-info">
               주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.
             </p>
@@ -169,19 +132,7 @@ export default function ReceiptModal({
               onChange={set("companyName")}
             />
           </div>
-          {form.category === "기타" && (
-            <div className="sl-field">
-              <label>
-                비고 <span className="sl-optional">(선택)</span>
-              </label>
-              <input
-                type="text"
-                value={form.note || ""}
-                onChange={set("note")}
-              />
-            </div>
-          )}
-          {error && <p className="sl-field-error">⚠ {error}</p>}
+          {(reasonError || error) && <p className="sl-field-error">⚠ {reasonError || error}</p>}
           <div className="sl-modal-btns">
             <button type="button" className="sl-btn-outline" onClick={onClose}>
               취소

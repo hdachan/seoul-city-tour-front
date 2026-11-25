@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import DrivingTimeFields from "./DrivingTimeFields";
+import DateField from "./DateField";
 import { fmt, DRIVE_TYPES, FUEL_TYPES, TYPE_STYLE, HALF_DAYS } from "./salesShared";
 import { saveDraft, clearDraft } from "../../../utils/drivingDraft";
 import "./sales.css";
@@ -26,6 +27,7 @@ const timeError = (form) => {
 // 📋 운행일지 추가/수정 입력창 (영업 정산 · 영업 정산관리 공용)
 //   form / setForm   : 입력값 (화면마다 자기 상태를 넘김)
 //   dateMin/dateMax  : 고를 수 있는 날짜 범위 (없으면 제한 없음)
+//   dateChoices      : 날짜 목록 (잠긴 날은 못 고름) – 있으면 달력 대신 목록
 //   meter            : 미터기 검사 값 { lowerMeter, nextMeter, distPreview, tooLow, tooHigh }
 //   draft            : 입력 중인 값 임시 보관 정보 (새로 추가할 때만, 수정이면 없음)
 export default function DrivingModal({
@@ -37,6 +39,7 @@ export default function DrivingModal({
   onSubmit,
   dateMin,
   dateMax,
+  dateChoices,
   meter,
   draft,
 }) {
@@ -87,14 +90,12 @@ export default function DrivingModal({
           {/* 날짜 - 모든 구분 하루 단위 */}
           <div className="sl-field">
             <label>날짜 *</label>
-            <input
-              type="date"
-              value={form.startDate || ""}
+            <DateField
+              value={form.startDate}
+              choices={dateChoices}
               min={dateMin}
               max={dateMax}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, startDate: e.target.value, endDate: "" }))
-              }
+              onChange={(v) => setForm((f) => ({ ...f, startDate: v, endDate: "" }))}
               required
             />
           </div>

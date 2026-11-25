@@ -121,6 +121,12 @@ const modalState = () => ({
   ),
 });
 const modalForm = () => modal().querySelector("form");
+// 지출내역 사용 이유 칸 (필수)
+const reasonInput = () => modal().querySelector("input[placeholder='어떤 이유로 사용했는지 적어주세요']");
+// 입력창 날짜 목록 (영업 정산: 잠긴 날은 🔒 · 못 고름)
+const dateList = () => modal().querySelector("select.sl-date-select");
+const openDates = () => [...dateList().options].filter((o) => !o.disabled).map((o) => o.value);
+const lockedDates = () => [...dateList().options].filter((o) => o.disabled).map((o) => o.value);
 const setValue = (el, value) => fireEvent.change(el, { target: { value } });
 const typeButton = (name) =>
   [...modal().querySelectorAll("button[type=button]")].find((b) => b.textContent.trim().endsWith(name));
@@ -338,6 +344,7 @@ describe("영업 정산 (SalesContent)", () => {
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("수정 입력창");
+    setValue(reasonInput(), "거래처 점심");
     await submit();
     expect(salesApi.updateReceipt.mock.calls).toMatchSnapshot("updateReceipt");
   });
@@ -368,13 +375,19 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     expect(screen.getByText(/🔒 잠긴 주/)).toBeInTheDocument();
   });
 
-  test("관리자가 다시 연 지난 주 → 입력 가능 (날짜는 이번 달 1일 ~ 이번 주 일요일)", async () => {
+  test("관리자가 다시 연 지난 주 → 입력 가능 (날짜 목록에서 열린 주만 고를 수 있음)", async () => {
     reopenWeek3();
     await openAt("2026-10-15");
     fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
-    expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-01", "2026-10-25", "2026-10-15"]);
+    expect(dateList().value).toBe("2026-10-15");
+    expect(openDates()).toEqual([
+      "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18",
+      "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+    ]);
+    expect(lockedDates()).toContain("2026-10-01");
+    expect(lockedDates()).not.toContain("2026-10-26"); // 이번 주 일요일 다음은 목록에 없음
+    expect([...dateList().options].find((o) => o.value === "2026-10-05").textContent).toBe("10월 5일 (월) 🔒 잠김");
     // 10/20 에 900km 기록이 있으므로 950 은 막히고 900 은 저장됨 (미터기 검사도 그대로)
     const meterInput = modal().querySelector("input[placeholder='계량기 숫자']");
     setValue(meterInput, "950");
@@ -387,12 +400,14 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     expect(salesApi.addDriving.mock.calls[0][0].date).toBe("2026-10-15");
   });
 
-  test("이번 주 → 입력 가능 (고르는 범위는 1~25일, 잠긴 주는 저장할 때 막음)", async () => {
+  test("이번 주 → 입력 가능 (날짜 목록: 이번 주만 고를 수 있고 1~18일은 🔒)", async () => {
     await openAt();
     fireEvent.click(screen.getByText("＋ 운행 추가"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
-    expect([dateInput.min, dateInput.max]).toEqual(["2026-10-01", "2026-10-25"]);
+    expect(openDates()).toEqual([
+      "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+    ]);
+    expect(lockedDates()).toHaveLength(18);
   });
 
   test("주유 수정 – 잠금 풀린 다른 주로 날짜 옮기기 (잠긴 주로는 안 됨)", async () => {
@@ -408,8 +423,9 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     await screen.findAllByText("···", undefined, { timeout: 3000 });
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
-    // 잠긴 2주차(5~11일)로는 못 옮김
+    const dateInput = dateList();
+    // 잠긴 2주차(5~11일)는 목록에서 못 고름 (억지로 넣어도 저장 안 됨)
+    expect(lockedDates()).toContain("2026-10-08");
     setValue(dateInput, "2026-10-08");
     await submit();
     expect(salesApi.updateDriving).not.toHaveBeenCalled();
@@ -433,8 +449,10 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     expect(screen.getAllByText("···")).toHaveLength(2);
     fireEvent.click(screen.getByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
-    expect([dateInput.min, dateInput.max, dateInput.value]).toEqual(["2026-10-19", "2026-10-25", "2026-10-22"]);
+    expect(dateList().value).toBe("2026-10-22");
+    expect(openDates()).toEqual([
+      "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+    ]);
   });
 
   test("법인카드 – 범위 안이라도 잠긴 주 날짜면 저장 안 됨", async () => {
@@ -446,10 +464,16 @@ describe("영업 정산 – 입력 가능 날짜", () => {
     fireEvent.click(screen.getByText("💳 카드 사용"));
     fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
-    expect([dateInput.min, dateInput.max]).toEqual(["2026-10-01", "2026-10-25"]);
+    const dateInput = dateList();
+    // 1주차(1~4일) + 4주차만 고를 수 있음, 2·3주차는 🔒
+    expect(openDates()).toEqual([
+      "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04",
+      "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+    ]);
+    expect(lockedDates()).toContain("2026-10-14");
     setValue(dateInput, "2026-10-14");
     setValue(modal().querySelector("input[type=number]"), "5000");
+    setValue(reasonInput(), "회의");
     await submit();
     expect(salesApi.addReceipt).not.toHaveBeenCalled();
     expect(modal().textContent).toContain("잠긴 주의 날짜입니다");
@@ -638,6 +662,7 @@ describe("영업 정산관리 (SalesAdminContent)", () => {
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
     expect(modalState()).toMatchSnapshot("수정 입력창");
+    setValue(reasonInput(), "거래처 점심");
     await submit();
     expect(salesAdminApi.updateReceipt.mock.calls).toMatchSnapshot("updateReceipt");
   });
@@ -915,76 +940,66 @@ describe("영업 정산 통계 탭", () => {
 });
 
 // ───────────── 💳 지출내역 기타 · 비고 ─────────────
-describe("지출내역 – 기타 · 비고", () => {
-  test("＋ 법인은 개인사용 없이, ＋ 개인은 개인사용 고정 + 이유 필수", async () => {
-    salesApi.getCategories.mockImplementation(() =>
-      ok([{ id: 1, name: "개인사용" }, { id: 2, name: "식대" }, { id: 3, name: "주차" }]),
-    );
+describe("지출내역 – 카테고리 칸 없음, 사용 이유 필수", () => {
+  async function openReceipts() {
     render(<SalesContent />);
     await screen.findAllByText("명동", undefined, { timeout: 3000 });
     fireEvent.click(screen.getByText("💳 카드 사용"));
+  }
+
+  test("＋ 법인 → 카테고리 법인으로 저장, 사용 이유 · 카드번호가 서버로 감", async () => {
+    await openReceipts();
     fireEvent.click(await screen.findByText("＋ 법인"));
     await waitFor(() => expect(modal()).not.toBeNull());
-    const select = modal().querySelector("select");
-    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);
-    expect(select.value).toBe("식대"); // 개인사용이 먼저 와도 기본 선택은 목록 맨 위
     expect(modal().textContent).toContain("법인 지출내역 추가");
-    fireEvent.click(modal().querySelector(".sl-modal-close"));
-    await waitFor(() => expect(modal()).toBeNull());
-
-    // ＋ 개인: 카테고리 개인사용 고정 (고르는 칸 없음), 바로 밑에 이유 칸 (필수, 비고로 저장)
-    fireEvent.click(screen.getByText("＋ 개인"));
-    await waitFor(() => expect(modal()).not.toBeNull());
-    expect(modal().querySelector("select")).toBeNull();
-    const fixed = modal().querySelector('[aria-label="카테고리"]');
-    expect(fixed).toHaveValue("개인사용");
-    expect(fixed).toBeDisabled();
-    expect(modal().textContent).toContain("개인 지출내역 추가");
-    const reasonLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("개인사용 이유"));
-    expect(fixed.parentElement.contains(reasonLabel())).toBe(true);
-    const reason = reasonLabel().parentElement.querySelector("input");
+    // 카테고리 고르는 칸 없음 (날짜 목록만)
+    expect(modal().querySelector("select:not(.sl-date-select)")).toBeNull();
+    expect(modal().querySelector('[aria-label="카테고리"]')).toBeNull();
+    expect(modal().textContent).not.toContain("카테고리");
+    expect(modal().textContent).toContain("사용 이유 *");
+    expect(modal().textContent).toContain("주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.");
+    expect(modal().querySelectorAll("input[type=text]")[1].value).toBe("1234-5678"); // 내 카드번호 미리 채움
     setValue(modal().querySelector("input[type=number]"), "7000");
-    expect(modalForm().checkValidity()).toBe(false); // 비어 있으면 저장 안 됨
-    setValue(reason, "   ");
-    expect(modalForm().checkValidity()).toBe(false); // 띄어쓰기만도 안 됨
-    setValue(reason, "개인 식사");
+    // 사용 이유가 비었거나 띄어쓰기만이면 저장 안 됨
+    expect(modalForm().checkValidity()).toBe(false);
+    await submit();
+    expect(salesApi.addReceipt).not.toHaveBeenCalled();
+    expect(modal().textContent).toContain("사용 이유를 적어주세요.");
+    setValue(reasonInput(), "   ");
+    expect(modalForm().checkValidity()).toBe(false);
+    setValue(reasonInput(), "세차");
     expect(modalForm().checkValidity()).toBe(true);
     await submit();
-    expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({ category: "개인사용", note: "개인 식사" });
-  });
-
-  test("카테고리 맨 끝에 기타, 비고 · 카드번호가 서버로 감", async () => {
-    salesApi.getCategories.mockImplementation(() => ok([{ id: 1, name: "식대" }, { id: 2, name: "주차" }]));
-    render(<SalesContent />);
-    await screen.findAllByText("명동", undefined, { timeout: 3000 });
-    fireEvent.click(screen.getByText("💳 카드 사용"));
-    fireEvent.click(await screen.findByText("＋ 법인"));
-    await waitFor(() => expect(modal()).not.toBeNull());
-    const select = modal().querySelector("select");
-    expect([...select.options].map((o) => o.value)).toEqual(["식대", "주차", "기타"]);
-    expect(modal().textContent).toContain("주유는 여기 말고 운행일지의 ⛽ 주유 추가에 적어주세요.");
-    const noteLabel = () => [...modal().querySelectorAll("label")].find((l) => l.textContent.startsWith("비고"));
-    // 비고 칸은 기타일 때만
-    expect(noteLabel()).toBeUndefined();
-    setValue(select, "기타");
-    expect(noteLabel()).toBeDefined();
-    const inputs = modal().querySelectorAll("input[type=text]");
-    expect(inputs[0].value).toBe("1234-5678"); // 내 카드번호 미리 채움
-    setValue(modal().querySelector("input[type=number]"), "7000");
-    setValue(inputs[inputs.length - 1], "세차");
-    // 기타 → 식대 → 기타: 숨겨진 비고는 비워짐
-    setValue(select, "식대");
-    expect(noteLabel()).toBeUndefined();
-    setValue(select, "기타");
-    expect(modal().querySelectorAll("input[type=text]")[3].value).toBe("");
-    setValue(modal().querySelectorAll("input[type=text]")[3], "세차");
-    await submit();
     expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({
-      category: "기타",
+      category: "법인",
       content: "1234-5678",
       amount: "7000",
       note: "세차",
     });
+  });
+
+  test("＋ 개인 → 카테고리 개인사용으로 저장 (사용 이유 필수)", async () => {
+    await openReceipts();
+    fireEvent.click(await screen.findByText("＋ 개인"));
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(modal().textContent).toContain("개인 지출내역 추가");
+    expect(modal().querySelector("select:not(.sl-date-select)")).toBeNull();
+    setValue(modal().querySelector("input[type=number]"), "7000");
+    setValue(reasonInput(), "개인 식사");
+    await submit();
+    expect(salesApi.addReceipt.mock.calls[0][0]).toMatchObject({ category: "개인사용", note: "개인 식사" });
+  });
+
+  test("예전 기록(식대) 수정 → 카테고리는 그대로, 사용 이유를 적어야 저장", async () => {
+    await openReceipts();
+    await clickRowEdit(0);
+    await waitFor(() => expect(modal()).not.toBeNull());
+    expect(modal().textContent).toContain("법인 지출내역 수정");
+    await submit();
+    expect(salesApi.updateReceipt).not.toHaveBeenCalled();
+    setValue(reasonInput(), "거래처 점심");
+    await submit();
+    expect(salesApi.updateReceipt.mock.calls[0][1]).toMatchObject({ category: "식대", note: "거래처 점심" });
   });
 });
 
@@ -1066,7 +1081,8 @@ describe("영업 정산관리 – 👤 그 사람 화면으로 보기", () => {
     await openAsUser();
     await clickRowEdit(0);
     await waitFor(() => expect(modal()).not.toBeNull());
-    const dateInput = modal().querySelector("input[type=date]");
+    const dateInput = dateList();
+    expect(lockedDates()).toContain("2026-10-15");
     // 그 사람에게 잠긴 3주차로는 못 옮김 (영업 정산 화면과 같은 오류)
     setValue(dateInput, "2026-10-15");
     await submit();

@@ -25,7 +25,6 @@ import {
   getWeeksOfMonth,
   calcDistances,
   getKoreaTime,
-  defaultCategory,
   sumDist,
 } from "./salesShared";
 
@@ -70,7 +69,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
   const [isLocked, setIsLocked] = useState(false);
   const [weekLocks, setWeekLocks] = useState({}); // ← 이 줄 추가
   const [myCard, setMyCard] = useState("");
-  const [categories, setCategories] = useState([]);
   const [expandedNotes, setExpandedNotes] = useState({}); // 모바일 비고 펼치기
   const [monthDriving, setMonthDriving] = useState([]);
   const [monthStartMeter, setMonthStartMeter] = useState(0); // 지난달 마지막 미터기
@@ -126,7 +124,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  const monthFirst = `${year}-${pad2(month)}-01`;
   // 날짜 드롭다운 목록 (이번 달 날짜들)
   const dateOptions = Array.from({ length: daysInMonth }, (_, i) => {
     const d = `${year}-${pad2(month)}-${pad2(i + 1)}`;
@@ -169,6 +166,30 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
   };
   const canEditDay = isDateEditable(selectedDate);
 
+  // 입력창 날짜 목록: 보고 있는 달 (+ 이번 주가 다음 · 지난 달에 걸치면 그 날들), 이번 주 일요일까지
+  //   잠긴 주 날짜는 🔒 회색으로 보이고 못 고름 (주유 · 운행 · 지출 공통)
+  const WD = ["일", "월", "화", "수", "목", "금", "토"];
+  const choiceOf = (d) => {
+    const [, mm, dd] = d.split("-").map(Number);
+    const ok = isDateEditable(d);
+    const wd = WD[parseLocalDate(d).getDay()];
+    return {
+      value: d,
+      label: `${mm}월 ${dd}일 (${wd})${d === TODAY ? " 오늘" : ""}${ok ? "" : " 🔒 잠김"}`,
+      disabled: !ok,
+    };
+  };
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = parseLocalDate(THIS_WEEK_MONDAY);
+    d.setDate(d.getDate() + i);
+    return toDateStr(d);
+  });
+  const monthChoices = dateOptions.filter((d) => d <= THIS_WEEK_SUNDAY).map(choiceOf);
+  const drivingChoices = [...new Set([...dateOptions, ...weekDays])]
+    .filter((d) => d <= THIS_WEEK_SUNDAY)
+    .sort()
+    .map(choiceOf);
+
   const distPreview =
     drivingForm.meterReading && lastMeter
       ? parseInt(drivingForm.meterReading) - lastMeter
@@ -200,18 +221,16 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
 
   const loadMonth = useCallback(async () => {
     try {
-      const [lock, drv, rec, cats, card] = await Promise.all([
+      const [lock, drv, rec, card] = await Promise.all([
         api.getLockStatus(year, month),
         api.getDriving(year, month),
         api.getReceipts(year, month),
-        api.getCategories(),
         api.getMyCard(),
       ]);
       setIsLocked(lock.data.locked);
       setWeekLocks(lock.data.weekLocks || {});
       setMonthDriving(drv.data);
       setReceipts(rec.data);
-      setCategories(cats.data);
       setMyCard(card.data.cardNumber);
       setNeedCard(!card.data.cardNumber);
       // 지난달 마지막 미터기 (엑셀·인쇄 첫 운행거리용) - 실패해도 전체 영향 없음
@@ -462,7 +481,8 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
         : receiptDates.includes(selectedDate)
           ? selectedDate
           : receiptDates[receiptDates.length - 1],
-      category: mode === "개인" ? "개인사용" : defaultCategory(categories),
+      // 카테고리는 화면에서 안 고름: ＋ 개인 → 개인사용, ＋ 법인 → 법인 (서버에서 개인 · 법인 나눔)
+      category: mode === "개인" ? "개인사용" : "법인",
       content: myCard || "",
       amount: "",
       businessNumber: "",
@@ -1169,8 +1189,7 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
           error={error}
           onClose={() => setShowModal(false)}
           onSubmit={handleSubmitDriving}
-          dateMin={monthFirst < THIS_WEEK_MONDAY ? monthFirst : THIS_WEEK_MONDAY}
-          dateMax={THIS_WEEK_SUNDAY}
+          dateChoices={drivingChoices}
           meter={{
             lowerMeter,
             nextMeter,
@@ -1188,12 +1207,10 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
           setForm={setReceiptForm}
           isEdit={!!editTarget}
           mode={receiptMode}
-          categories={categories}
           error={error}
           onClose={() => setShowReceiptModal(false)}
           onSubmit={handleSubmitReceipt}
-          dateMin={receiptDates[0]}
-          dateMax={receiptDates[receiptDates.length - 1]}
+          dateChoices={monthChoices}
         />
       )}
     </div>
