@@ -25,7 +25,7 @@ jest.mock("../../../api/sales", () => {
   ];
   return {
     salesApi: fns([...common, "getMyCard", "saveMyCard", "getDrivingNotes", "getDailyNote", "saveDailyNote", "getStartMeter"]),
-    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "addCategory", "deleteCategory", "getDailyNotes", "saveCard"]),
+    salesAdminApi: fns([...common, "getSalesUsers", "getSummary", "toggleLock", "bulkLock", "addCategory", "deleteCategory", "getDailyNotes", "saveCard"]),
     salesHolidayApi: fns(["getMine", "save", "remove"]),
   };
 });
@@ -806,8 +806,37 @@ describe("시작 미터기", () => {
     ["총 운행거리", "총 주유량", "평균 연비", "총 주유금액"].forEach((t) =>
       expect(screen.queryByText(t)).toBeNull(),
     );
-    expect(screen.getAllByText("열림").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("잠김").length).toBeGreaterThan(0);
+    // 잠금 버튼은 원래 모양 (개수 · 잠김 / 열림 글자 없음)
+    expect(screen.queryByText("열림")).toBeNull();
+    expect(screen.queryByText(/🔒 d+ · 🔓/)).toBeNull();
+  });
+
+  test("관리자 – 잠금 한꺼번에: 전체 열기 / 한 사람 모두 잠그기 (확인 후 서버로, 취소하면 안 보냄)", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([
+        { username: "kim", name: "김영업", hasData: true, weekLocks: { 1: true } },
+        { username: "lee", name: "이영업", hasData: false, weekLocks: { 1: true } },
+      ]),
+    );
+    salesAdminApi.bulkLock.mockImplementation(() => ok({}));
+    render(<SalesAdminContent />);
+    await screen.findByText("김영업");
+    const month = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+
+    window.confirm.mockReturnValueOnce(false);
+    fireEvent.click(screen.getByText("🔓 전체 열기"));
+    expect(salesAdminApi.bulkLock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("🔓 전체 열기"));
+    expect(window.confirm).toHaveBeenLastCalledWith(`${month}월 영업 사원 전체(2명)의 모든 주를 🔓 열까요?`);
+    await waitFor(() => expect(salesAdminApi.bulkLock).toHaveBeenCalledWith(year, month, false, null));
+
+    fireEvent.click(screen.getAllByText("모두 잠그기")[1]);
+    expect(window.confirm).toHaveBeenLastCalledWith(`${month}월 이영업 님의 모든 주를 🔒 잠글까요?`);
+    await waitFor(() => expect(salesAdminApi.bulkLock).toHaveBeenLastCalledWith(year, month, true, "lee"));
+    // 상세 화면으로 안 넘어감
+    expect(screen.getByText("🔒 전체 잠그기")).toBeInTheDocument();
   });
 
   test("관리자 – 사람 카드에서 시작 미터기 확인 · 수정", async () => {

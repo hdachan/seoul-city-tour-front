@@ -19,6 +19,9 @@ export const salesAdminApi = {
       `/sales-admin/lock`,
       { salesUsername: u, year: y, month: m, locked: l, weekNum },
     ),
+  // 그 달 모든 주 한꺼번에 열기 / 잠그기 (u 없으면 영업 사원 전체)
+  bulkLock: (y, m, l, u = null) =>
+    client.post(`/sales-admin/lock-bulk`, { year: y, month: m, locked: l, salesUsername: u }),
   getCategories: () => client.get(`/sales-admin/categories`),
   addCategory: (name) => client.post(`/sales-admin/categories`, { name }),
   deleteCategory: (id) => client.delete(`/sales-admin/categories/${id}`),

@@ -82,17 +82,28 @@ const lastExcel = () => {
   return { fileName, sheetName, rows: XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 }), sheet: wb.Sheets[sheetName] };
 };
 
+// 영업 정산은 엑셀 · 인쇄가 ⋯ 메뉴 안에 있음 → 있으면 먼저 열기
+const openMore = () => {
+  const more = screen.queryByLabelText("엑셀 · 인쇄");
+  if (more) fireEvent.click(more);
+};
+const clickExport = async (label) => {
+  await screen.findAllByText(/명동|식당|내역/);
+  openMore();
+  fireEvent.click(await screen.findByText(label));
+};
+
 // 운행일지 / 법인카드 탭에서 엑셀 · 인쇄를 눌러 결과를 모음
 async function collect(openReceiptTab) {
   const out = {};
-  fireEvent.click(await screen.findByText("📥 엑셀"));
+  await clickExport("📥 엑셀");
   out.drivingExcel = lastExcel();
-  fireEvent.click(screen.getByText("🖨 인쇄"));
+  await clickExport("🖨 인쇄");
   out.drivingPrint = printed.at(-1);
   openReceiptTab();
-  fireEvent.click(await screen.findByText("📥 엑셀"));
+  await clickExport("📥 엑셀");
   out.receiptExcel = lastExcel();
-  fireEvent.click(screen.getByText("🖨 인쇄"));
+  await clickExport("🖨 인쇄");
   out.receiptPrint = printed.at(-1);
   return out;
 }
@@ -120,4 +131,19 @@ test("영업 정산관리 – 같은 사람 · 같은 달이면 영업 정산과
   );
   expect(admin).toEqual(sales);
   expect(printed).toHaveLength(4);
+});
+
+test("영업 정산 – 엑셀 · 인쇄는 ⋯ 안에 숨김, 카드 사용 탭에 카드번호 줄 없음", async () => {
+  render(<SalesContent />);
+  await screen.findAllByText("명동", undefined, { timeout: 3000 });
+  expect(screen.queryByText("📥 엑셀")).toBeNull();
+  fireEvent.click(screen.getByLabelText("엑셀 · 인쇄"));
+  expect(screen.getByText("📥 엑셀")).toBeInTheDocument();
+  // 바깥 누르면 닫힘
+  fireEvent.mouseDown(document.body);
+  expect(screen.queryByText("📥 엑셀")).toBeNull();
+
+  fireEvent.click(screen.getByText("💳 카드 사용"));
+  await screen.findAllByLabelText("엑셀 · 인쇄");
+  expect(screen.queryByText(/카드번호:/)).toBeNull();
 });

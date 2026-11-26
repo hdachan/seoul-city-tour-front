@@ -8,6 +8,7 @@ import { formatDrivingTime } from "./DrivingTimeFields";
 import SalesMonthlyStats from "./SalesMonthlyStats";
 import ReceiptModal from "./ReceiptModal";
 import DrivingModal from "./DrivingModal";
+import ExportMenu from "./ExportMenu";
 import { openDraft, clearDraft } from "../../../utils/drivingDraft";
 import StartMeterModal from "./StartMeterModal";
 import CardModal from "./CardModal";
@@ -772,16 +773,6 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                 </option>
               ))}
             </select>
-            {monthDriving.length > 0 && (
-              <>
-                <button className="sl-btn-outline is-small" onClick={downloadDrivingExcel}>
-                  📥 엑셀
-                </button>
-                <button className="sl-btn-outline is-small" onClick={printDriving}>
-                  🖨 인쇄
-                </button>
-              </>
-            )}
             {canEditDay && (
               <>
                 <button className="sl-btn-primary" onClick={() => openAdd("업무")}>
@@ -796,6 +787,9 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
               <span className="sl-readonly-note">
                 {isWeekLocked ? "🔒 잠긴 주" : "입력 기간이 아닙니다"} (조회만)
               </span>
+            )}
+            {monthDriving.length > 0 && (
+              <ExportMenu onExcel={downloadDrivingExcel} onPrint={printDriving} />
             )}
           </div>
 
@@ -1039,21 +1033,9 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
       {/* ──── 법인카드 ──── */}
       {mainTab === "receipt" && (
         <div>
+          {/* 카드번호는 맨 위 이름 옆에 있음 / 엑셀 · 인쇄는 ⋯ 안에 */}
           <div className="sl-receipt-head">
-            <p className="sl-card-no">
-              카드번호: <strong className="sl-text-dark">{myCard || "미등록"}</strong>
-            </p>
             <div className="sl-btn-group">
-              {receipts.length > 0 && (
-                <>
-                  <button className="sl-btn-outline is-small" onClick={downloadReceiptExcel}>
-                    📥 엑셀
-                  </button>
-                  <button className="sl-btn-outline is-small" onClick={printReceipt}>
-                    🖨 인쇄
-                  </button>
-                </>
-              )}
               {!isLocked && receiptDates.length > 0 && (
                 <>
                   <button className="sl-btn-primary is-personal" onClick={() => openReceiptAdd("개인")}>
@@ -1063,6 +1045,9 @@ export default function SalesContent({ viewAs = null, initialYear, initialMonth 
                     ＋ 법인
                   </button>
                 </>
+              )}
+              {receipts.length > 0 && (
+                <ExportMenu onExcel={downloadReceiptExcel} onPrint={printReceipt} />
               )}
             </div>
           </div>

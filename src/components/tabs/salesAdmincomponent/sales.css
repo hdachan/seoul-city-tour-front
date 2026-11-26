@@ -767,6 +767,35 @@
   padding-left: 8px;
 }
 
+/* 잠금 한꺼번에 (첫 화면 위 · 사람 카드) */
+.sl-bulk-lock {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.sl-week-lock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.sl-week-lock-all {
+  font-size: 10px;
+  color: var(--sl-faint);
+  white-space: nowrap;
+}
+.sl-week-lock-all button {
+  border: 0;
+  background: none;
+  padding: 0 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #1557b0;
+  cursor: pointer;
+}
+.sl-week-lock-all button:hover {
+  text-decoration: underline;
+}
+
 /* 주 단위 잠금 버튼 */
 .sl-week-lock {
   border-top: 1px solid var(--sl-line-soft);
@@ -774,18 +803,10 @@
   margin-top: 4px;
 }
 .sl-week-lock-title {
-  font-size: 13px;
-  color: var(--sl-sub);
-  font-weight: 700;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.sl-week-lock-count {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
   color: var(--sl-faint);
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 .sl-week-lock-row {
   display: flex;
@@ -794,11 +815,11 @@
 }
 .sl-week-btn {
   flex: 1;
-  min-width: 54px;
-  padding: 10px 2px 8px;
-  border: 2px solid #e0e0e0;
-  border-radius: 9px;
-  font-size: 12px;
+  min-width: 44px;
+  padding: 6px 2px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 7px;
+  font-size: 10px;
   cursor: pointer;
   font-weight: 600;
   text-align: center;
@@ -810,18 +831,9 @@
   color: #065f46;
   border-color: #86efac;
 }
-.sl-week-icon {
-  font-size: 20px;
-  line-height: 1.1;
-}
-.sl-week-state {
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 2px;
-}
 .sl-week-label {
-  font-size: 10px;
-  margin-top: 2px;
+  font-size: 9px;
+  margin-top: 1px;
   white-space: nowrap; /* "12일~18일" 이 두 줄로 안 갈라지게 */
 }
 
@@ -1388,6 +1400,57 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+/* ⋯ 엑셀 · 인쇄 메뉴 (영업 정산) */
+.sl-more {
+  position: relative;
+  margin-left: auto;
+}
+.sl-more-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--sl-line-soft, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--sl-sub, #555);
+  cursor: pointer;
+  line-height: 1;
+}
+.sl-more-btn:hover,
+.sl-more-btn.is-open {
+  background: #f1f5f9;
+}
+.sl-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 120px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.sl-more-menu button {
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sl-more-menu button:hover {
+  background: #f1f5f9;
+}
+.sl-receipt-head .sl-btn-group {
+  width: 100%;
 }
 .sl-card-no {
   font-size: 13px;

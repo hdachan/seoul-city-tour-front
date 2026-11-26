@@ -200,6 +200,19 @@ export default function SalesAdminContent() {
       .catch(() => {});
 
   // 주 단위 잠금
+  // 🔓 / 🔒 한꺼번에 (user 없으면 영업 사원 전체) – 관리자가 연 주는 자정에도 안 잠김
+  const handleBulkLock = async (locked, user = null) => {
+    const who = user ? `${user.name} 님의` : `영업 사원 전체(${summary.length}명)의`;
+    if (!window.confirm(`${month}월 ${who} 모든 주를 ${locked ? "🔒 잠글까요" : "🔓 열까요"}?`)) return;
+    try {
+      await api.bulkLock(year, month, locked, user?.username ?? null);
+      setSuccess(`${locked ? "🔒" : "🔓"} ${month}월 ${user ? user.name : "전체"} 모든 주 ${locked ? "잠금" : "열림"}`);
+      reloadSummary();
+    } catch (err) {
+      setError(err.response?.data?.error || "변경 실패");
+    }
+  };
+
   const handleWeekLock = async (user, week, currentLocked) => {
     try {
       await api.toggleLock(
@@ -470,7 +483,19 @@ export default function SalesAdminContent() {
       {/* ──── 정산 목록 (사람별 카드) ──── */}
       {!selectedUser && (
         <div>
-          <div className="sac-filter-bar">{yearMonthSelects}</div>
+          <div className="sac-filter-bar">
+            {yearMonthSelects}
+            {summary.length > 0 && (
+              <div className="sl-bulk-lock">
+                <button type="button" className="sl-btn-outline is-small" onClick={() => handleBulkLock(false)}>
+                  🔓 전체 열기
+                </button>
+                <button type="button" className="sl-btn-outline is-small" onClick={() => handleBulkLock(true)}>
+                  🔒 전체 잠그기
+                </button>
+              </div>
+            )}
+          </div>
           <div className="sac-card-grid">
             {summary.map((u) => (
               <UserSummaryCard
@@ -483,6 +508,7 @@ export default function SalesAdminContent() {
                   setActiveTab("driving");
                 }}
                 onWeekLock={handleWeekLock}
+                onBulkLock={(locked) => handleBulkLock(locked, u)}
                 onStartMeter={setStartMeterUser}
                 onCard={setCardUser}
               />
@@ -773,7 +799,7 @@ function CardNumberLine({ user: u, onEdit }) {
 }
 
 // ──── 정산 목록 카드 (한 사람 요약 + 주 단위 잠금) ────
-function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onCard }) {
+function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onBulkLock, onStartMeter, onCard }) {
   const countClass = (n, color) => `sl-card-value ${n > 0 ? color : "sl-text-none"}`;
   return (
     <div
@@ -825,13 +851,18 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onC
 
       {/* 주 단위 잠금 버튼 (기록 없음 = 자동 잠금, false = 관리자가 열어줌) */}
       <div className="sl-week-lock">
-        <p className="sl-week-lock-title">
-          📅 주 단위 잠금
-          <span className="sl-week-lock-count">
-            🔒 {weeks.filter((w) => (u.weekLocks || {})[w.weekNum] !== false).length} · 🔓{" "}
-            {weeks.filter((w) => (u.weekLocks || {})[w.weekNum] === false).length}
+        <div className="sl-week-lock-head">
+          <p className="sl-week-lock-title">📅 주 단위 관리</p>
+          <span className="sl-week-lock-all">
+            <button type="button" onClick={() => onBulkLock(false)}>
+              모두 열기
+            </button>
+            ·
+            <button type="button" onClick={() => onBulkLock(true)}>
+              모두 잠그기
+            </button>
           </span>
-        </p>
+        </div>
         <div className="sl-week-lock-row">
           {weeks.map((week) => {
             const wLocked = (u.weekLocks || {})[week.weekNum] !== false;
@@ -844,8 +875,7 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onC
                   onWeekLock(u, week, wLocked);
                 }}
               >
-                <div className="sl-week-icon">{wLocked ? "🔒" : "🔓"}</div>
-                <div className="sl-week-state">{wLocked ? "잠김" : "열림"}</div>
+                <div>{wLocked ? "🔒" : "🔓"}</div>
                 <div className="sl-week-label">{week.label}</div>
               </button>
             );
