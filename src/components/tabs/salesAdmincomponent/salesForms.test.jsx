@@ -788,6 +788,28 @@ describe("시작 미터기", () => {
     expect(screen.queryByText("🚗 처음 시작하시네요!")).toBeNull();
   });
 
+  test("관리자 – 사람 카드는 카드번호 · 시작 / 현재 미터기 + 주 잠금만 (거리 · 연비 · 주유 숫자 없음)", async () => {
+    salesAdminApi.getSummary.mockImplementation(() =>
+      ok([
+        {
+          username: "kim", name: "김영업", hasData: true, receiptCount: 1, startMeter: 5000,
+          currentMeter: 6234, totalDist: 1234, workDist: 1000, personalDist: 234,
+          totalFuelL: 50, avgKmL: "24.7", totalFuelC: 80000,
+          weekLocks: { 1: true, 2: false },
+        },
+        { username: "lee", name: "이영업", hasData: false, receiptCount: 0, startMeter: 5000 },
+      ]),
+    );
+    render(<SalesAdminContent />);
+    expect(await screen.findByText("6,234km")).toBeInTheDocument();
+    expect(screen.getAllByText("현재 미터기")).toHaveLength(2);
+    ["총 운행거리", "총 주유량", "평균 연비", "총 주유금액"].forEach((t) =>
+      expect(screen.queryByText(t)).toBeNull(),
+    );
+    expect(screen.getAllByText("열림").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("잠김").length).toBeGreaterThan(0);
+  });
+
   test("관리자 – 사람 카드에서 시작 미터기 확인 · 수정", async () => {
     salesAdminApi.getSummary.mockImplementation(() =>
       ok([

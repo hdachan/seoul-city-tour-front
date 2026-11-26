@@ -812,46 +812,26 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onC
               {u.startMeter ? `${fmt(u.startMeter)}km` : u.startMeterNeeded ? "미입력" : "-"} ✏️
             </span>
           </button>
+          {/* 현재 미터기 (그 달 마지막 기록, 없으면 이전 기록) */}
+          <div className="sl-card-line">
+            <span className="sl-muted">현재 미터기</span>
+            <span className={`sl-card-value ${u.currentMeter ? "sl-text-blue" : "sl-text-none"}`}>
+              {u.currentMeter ? `${fmt(u.currentMeter)}km` : "-"}
+            </span>
+          </div>
           <CardNumberLine user={u} onEdit={onCard} />
-          {u.totalDist > 0 && (
-            <div className="sl-card-dist">
-              <div className="sl-row-between">
-                <span className="sl-faint">총 운행거리</span>
-                <span className="sl-card-value sl-text-blue">{fmt(u.totalDist)}km</span>
-              </div>
-              <div className="sl-card-subline">
-                <span className="sl-faintest">└ 업무 / 개인</span>
-                <span className="sl-muted">
-                  {fmt(u.workDist)}km /{" "}
-                  <span className="sl-text-purple">{fmt(u.personalDist)}km</span>
-                </span>
-              </div>
-              <div className="sl-row-between">
-                <span className="sl-faint">총 주유량</span>
-                <span className="sl-card-value sl-text-amber">
-                  {u.totalFuelL ? u.totalFuelL.toFixed(1) + "L" : "-"}
-                </span>
-              </div>
-              <div className="sl-row-between">
-                <span className="sl-faint">평균 연비</span>
-                <span className="sl-card-value sl-text-green">
-                  {u.avgKmL ? u.avgKmL + "km/L" : "-"}
-                </span>
-              </div>
-              <div className="sl-row-between">
-                <span className="sl-faint">총 주유금액</span>
-                <span className="sl-card-value sl-text-violet">
-                  {u.totalFuelC ? fmtWon(u.totalFuelC) : "-"}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* 주 단위 잠금 버튼 (기록 없음 = 자동 잠금, false = 관리자가 열어줌) */}
       <div className="sl-week-lock">
-        <p className="sl-week-lock-title">📅 주 단위 관리</p>
+        <p className="sl-week-lock-title">
+          📅 주 단위 잠금
+          <span className="sl-week-lock-count">
+            🔒 {weeks.filter((w) => (u.weekLocks || {})[w.weekNum] !== false).length} · 🔓{" "}
+            {weeks.filter((w) => (u.weekLocks || {})[w.weekNum] === false).length}
+          </span>
+        </p>
         <div className="sl-week-lock-row">
           {weeks.map((week) => {
             const wLocked = (u.weekLocks || {})[week.weekNum] !== false;
@@ -864,7 +844,8 @@ function UserSummaryCard({ user: u, weeks, onOpen, onWeekLock, onStartMeter, onC
                   onWeekLock(u, week, wLocked);
                 }}
               >
-                <div>{wLocked ? "🔒" : "🔓"}</div>
+                <div className="sl-week-icon">{wLocked ? "🔒" : "🔓"}</div>
+                <div className="sl-week-state">{wLocked ? "잠김" : "열림"}</div>
                 <div className="sl-week-label">{week.label}</div>
               </button>
             );

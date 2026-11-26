@@ -774,10 +774,18 @@
   margin-top: 4px;
 }
 .sl-week-lock-title {
-  font-size: 10px;
-  color: var(--sl-faint);
+  font-size: 13px;
+  color: var(--sl-sub);
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sl-week-lock-count {
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 6px;
+  color: var(--sl-faint);
 }
 .sl-week-lock-row {
   display: flex;
@@ -786,11 +794,11 @@
 }
 .sl-week-btn {
   flex: 1;
-  min-width: 44px;
-  padding: 6px 2px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 7px;
-  font-size: 10px;
+  min-width: 54px;
+  padding: 10px 2px 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 9px;
+  font-size: 12px;
   cursor: pointer;
   font-weight: 600;
   text-align: center;
@@ -802,9 +810,18 @@
   color: #065f46;
   border-color: #86efac;
 }
+.sl-week-icon {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.sl-week-state {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
 .sl-week-label {
-  font-size: 9px;
-  margin-top: 1px;
+  font-size: 10px;
+  margin-top: 2px;
   white-space: nowrap; /* "12일~18일" 이 두 줄로 안 갈라지게 */
 }
 
