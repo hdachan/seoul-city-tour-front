@@ -297,32 +297,33 @@ export const downloadReceiptExcel = ({ year, month, author, receipts }) => {
 // 법인카드 인쇄
 export const printReceipt = ({ year, month, author, receipts }) => {
   const fmt = (n) => Number(n || 0).toLocaleString();
+  // 카드번호는 다 같은 카드라 표 위에 한 번만 (여러 개면 쉼표로)
+  const cards = [...new Set(receipts.map((r) => (r.content || "").trim()).filter(Boolean))];
   const rows = receipts
     .map(
       (r) => `
       <tr>
         <td style="text-align:center">${r.date ? r.date.slice(5) : ""}</td>
-        <td>${r.content || ""}</td>
         <td>${escHtml(receiptText(r))}</td>
         <td style="text-align:right">${r.totalAmount ? fmt(r.totalAmount) : ""}</td>
         <td style="text-align:right">${r.supplyAmount ? fmt(r.supplyAmount) : ""}</td>
         <td style="text-align:right">${r.vat ? fmt(r.vat) : ""}</td>
         <td>${r.businessNumber || ""}</td>
-        <td>${r.companyName || ""}</td>
+        <td class="co">${escHtml(r.companyName || "")}</td>
       </tr>`,
     )
     .join("");
   const emptyRows = Array.from(
     { length: Math.max(0, 22 - receipts.length) },
     () =>
-      `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`,
+      `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`,
   ).join("");
   // 합계: 법인 / 개인사용 / 전체 (첫 줄 위에 굵은 선)
   const total = receiptTotals(receipts)
     .map((t, i) => {
       const line = i === 0 ? ";border-top:2px solid #000" : "";
       return `<tr style="font-weight:bold">
-      <td colspan="3" style="text-align:center${line}">${t.label}</td>
+      <td colspan="2" style="text-align:center${line}">${t.label}</td>
       <td style="text-align:right${line}">${fmt(t.totalAmount)}</td>
       <td style="text-align:right${line}">${fmt(t.supplyAmount)}</td>
       <td style="text-align:right${line}">${fmt(t.vat)}</td>
@@ -340,14 +341,15 @@ export const printReceipt = ({ year, month, author, receipts }) => {
         table { width: 100%; border-collapse: collapse; font-size: 9pt; }
         th { border: 1.5px solid #000; padding: 5px 4px; text-align: center; font-weight: bold; background: #fff; }
         td { border: 1px solid #000; padding: 4px; height: 22px; }
-        th:nth-child(1), td:nth-child(1) { width: 7%; }
-        th:nth-child(2), td:nth-child(2) { width: 15%; }
-        th:nth-child(3), td:nth-child(3) { width: 21%; }
-        th:nth-child(4), td:nth-child(4) { width: 11%; }
-        th:nth-child(5), td:nth-child(5) { width: 11%; }
-        th:nth-child(6), td:nth-child(6) { width: 8%; }
-        th:nth-child(7), td:nth-child(7) { width: 12%; }
-        th:nth-child(8), td:nth-child(8) { width: 11%; }
+        /* 날짜 · 내용 · 총금액 · 공급가액 · VAT · 사업자번호 · 상호 */
+        th:nth-child(1) { width: 7%; }
+        th:nth-child(2) { width: 27%; }
+        th:nth-child(3) { width: 9%; }
+        th:nth-child(4) { width: 9%; }
+        th:nth-child(5) { width: 7%; }
+        th:nth-child(6) { width: 13%; }
+        th:nth-child(7) { width: 28%; }
+        td.co { font-size: 10.5pt; font-weight: bold; }
         @media print {
           @page { size: A4 landscape; margin: 8mm; }
           body { padding: 0; }
@@ -357,11 +359,11 @@ export const printReceipt = ({ year, month, author, receipts }) => {
       <div class="info">
         <span>20&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;${month}&nbsp;&nbsp;&nbsp;월</span>
         <span>작성자: ${author}</span>
+        <span>신용카드 번호: ${escHtml(cards.join(", "))}</span>
       </div>
-      <table>
+      <table style="table-layout:fixed">
         <thead><tr>
           <th>날 짜</th>
-          <th>신용카드 카드번호</th>
           <th>내&nbsp;&nbsp;용</th>
           <th>총 금액</th>
           <th>공급가액</th>

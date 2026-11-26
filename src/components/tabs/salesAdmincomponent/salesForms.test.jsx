@@ -958,7 +958,7 @@ describe("영업 정산 통계 탭", () => {
   test("영업 정산관리에는 전체 통계가 없음", async () => {
     render(<SalesAdminContent />);
     await screen.findByText("김영업");
-    expect(screen.getByText("📊 정산 목록")).toBeInTheDocument();
+    expect(screen.queryByText("🏷 카테고리")).toBeNull(); // 카테고리 탭 없앰
     expect(screen.queryByText("📈 전체 통계")).toBeNull();
   });
 

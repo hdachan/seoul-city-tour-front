@@ -32,14 +32,12 @@ export default function SalesAdminContent() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [mainTab, setMainTab] = useState("list");
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("driving");
   // 한 사람 상세: 🛠 관리자 화면 / 👤 그 사람이 보는 영업 정산 화면 그대로 (문제 찾기용)
   const [viewMode, setViewMode] = useState("admin");
 
   const [summary, setSummary] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
   const [monthDriving, setMonthDriving] = useState([]);
   const [monthStartMeter, setMonthStartMeter] = useState(0); // 지난달 마지막 미터기
@@ -66,8 +64,6 @@ export default function SalesAdminContent() {
   const prevMeterRef = useRef(0);
   const [lastMeter, setLastMeter] = useState(0);
   const lastMeterRef = useRef(0);
-
-  const [newCatName, setNewCatName] = useState("");
 
   const [showDrivingModal, setShowDrivingModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -134,12 +130,6 @@ export default function SalesAdminContent() {
     return sorted.map((d) => ({ ...d, calcDist: distMap[d.id] || 0 }));
   };
 
-  useEffect(() => {
-    api
-      .getCategories()
-      .then((r) => setCategories(r.data))
-      .catch(() => {});
-  }, []);
   useEffect(() => {
     api
       .getSummary(year, month)
@@ -466,25 +456,6 @@ export default function SalesAdminContent() {
 
   return (
     <div className="sac-wrapper">
-      {/* 메인 탭 */}
-      <div className="sl-tab-bar sl-tab-bar-main">
-        {[
-          { id: "list", label: "📊 정산 목록" },
-          { id: "category", label: "🏷 카테고리" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            className={`sl-tab ${mainTab === t.id ? "active" : ""}`}
-            onClick={() => {
-              setMainTab(t.id);
-              setSelectedUser(null);
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {error && (
         <div className="sl-alert sl-alert-error" onClick={() => setError("")}>
           ⚠ {error}
@@ -496,24 +467,8 @@ export default function SalesAdminContent() {
         </div>
       )}
 
-      {/* ──── 카테고리 ──── */}
-      {mainTab === "category" && (
-        <CategoryPanel
-          categories={categories}
-          newCatName={newCatName}
-          setNewCatName={setNewCatName}
-          onAdd={handleAddCategory}
-          onDelete={(c) => {
-            if (window.confirm("삭제?"))
-              api
-                .deleteCategory(c.id)
-                .then(() => api.getCategories().then((r) => setCategories(r.data)));
-          }}
-        />
-      )}
-
       {/* ──── 정산 목록 (사람별 카드) ──── */}
-      {mainTab === "list" && !selectedUser && (
+      {!selectedUser && (
         <div>
           <div className="sac-filter-bar">{yearMonthSelects}</div>
           <div className="sac-card-grid">
@@ -563,7 +518,7 @@ export default function SalesAdminContent() {
       )}
 
       {/* ──── 상세 (한 사람) ──── */}
-      {mainTab === "list" && selectedUser && (
+      {selectedUser && (
         <div>
           <div className="sac-filter-bar">
             <button
@@ -773,76 +728,6 @@ export default function SalesAdminContent() {
           )}
         </div>
       )}
-    </div>
-  );
-
-  function handleAddCategory(e) {
-    e.preventDefault();
-    setError("");
-    if (!newCatName.trim()) {
-      setError("이름을 입력해주세요.");
-      return;
-    }
-    api
-      .addCategory(newCatName.trim())
-      .then(() => {
-        setNewCatName("");
-        setSuccess("추가되었습니다.");
-        api.getCategories().then((r) => setCategories(r.data));
-      })
-      .catch((err) => setError(err.response?.data?.error || "추가 실패"));
-  }
-}
-
-// ──── 🏷 카테고리 (추가 · 목록 · 삭제) ────
-function CategoryPanel({ categories, newCatName, setNewCatName, onAdd, onDelete }) {
-  return (
-    <div>
-      <div className="sl-panel">
-        <h3 className="sl-panel-title">카테고리 추가</h3>
-        <form className="sl-inline-form" onSubmit={onAdd}>
-          <input
-            type="text"
-            className="sl-text-input"
-            placeholder="카테고리 이름"
-            value={newCatName}
-            onChange={(e) => setNewCatName(e.target.value)}
-          />
-          <button type="submit" className="sl-btn-primary">
-            추가
-          </button>
-        </form>
-      </div>
-      <div className="sac-table-wrap">
-        <table className="sac-table">
-          <thead>
-            <tr>
-              <th>카테고리명</th>
-              <th className="sl-col-action"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.length === 0 ? (
-              <tr>
-                <td colSpan={2} className="sl-empty-cell">
-                  없음
-                </td>
-              </tr>
-            ) : (
-              categories.map((c) => (
-                <tr key={c.id}>
-                  <td className="sl-cell-name">{c.name}</td>
-                  <td>
-                    <button className="sl-btn-delete" onClick={() => onDelete(c)}>
-                      삭제
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
